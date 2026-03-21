@@ -19,7 +19,7 @@ from agent_core.tools.registry import ToolRegistry
 SAMPLE_TOOLS = [
     {"name": "edit_file", "description": "Edit files"},
     {"name": "write_file", "description": "Write files"},
-    {"name": "run_tests", "description": "Run tests"}
+    {"name": "run_tests", "description": "Run tests"},
 ]
 
 
@@ -40,7 +40,9 @@ class TestRanker:
         assert result == []  # No keyword overlap
 
         # Hybrid: may find semantic matches even without keywords
-        result_hybrid = rank_tools("deploy kubernetes cluster", SAMPLE_TOOLS, top_k=2, method="hybrid")
+        result_hybrid = rank_tools(
+            "deploy kubernetes cluster", SAMPLE_TOOLS, top_k=2, method="hybrid"
+        )
         assert isinstance(result_hybrid, list)
         # Hybrid may or may not return results depending on semantic similarity
 

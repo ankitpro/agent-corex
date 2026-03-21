@@ -13,10 +13,7 @@ from .hybrid_scorer import HybridScorer
 
 
 def rank_tools(
-    query: str,
-    tools: List[Dict[str, Any]],
-    top_k: int = 5,
-    method: str = "hybrid"
+    query: str, tools: List[Dict[str, Any]], top_k: int = 5, method: str = "hybrid"
 ) -> List[Dict[str, Any]]:
     """
     Rank tools by relevance to a query.
@@ -43,9 +40,7 @@ def rank_tools(
         raise ValueError(f"Unknown ranking method: {method}")
 
 
-def _rank_by_keyword(
-    query: str, tools: List[Dict[str, Any]], top_k: int
-) -> List[Dict[str, Any]]:
+def _rank_by_keyword(query: str, tools: List[Dict[str, Any]], top_k: int) -> List[Dict[str, Any]]:
     """Rank by keyword overlap only (fast)."""
     scored = []
 
@@ -62,9 +57,7 @@ def _rank_by_keyword(
     return ranked[:top_k]
 
 
-def _rank_by_hybrid(
-    query: str, tools: List[Dict[str, Any]], top_k: int
-) -> List[Dict[str, Any]]:
+def _rank_by_hybrid(query: str, tools: List[Dict[str, Any]], top_k: int) -> List[Dict[str, Any]]:
     """Rank by hybrid scoring (keyword + embeddings)."""
     try:
         scorer = HybridScorer()
@@ -81,9 +74,7 @@ def _rank_by_hybrid(
         return _rank_by_keyword(query, tools, top_k)
 
 
-def _rank_by_embedding(
-    query: str, tools: List[Dict[str, Any]], top_k: int
-) -> List[Dict[str, Any]]:
+def _rank_by_embedding(query: str, tools: List[Dict[str, Any]], top_k: int) -> List[Dict[str, Any]]:
     """Rank by semantic similarity only (requires embeddings)."""
     from .embeddings import EmbeddingIndexer
 

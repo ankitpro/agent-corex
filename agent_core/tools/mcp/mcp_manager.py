@@ -15,7 +15,7 @@ class MCPManager:
                 "server": server,
                 "name": tool["name"],
                 "description": tool.get("description", ""),
-                "schema": tool.get("input_schema", {})
+                "schema": tool.get("input_schema", {}),
             }
             self.tools.append(tool_obj)
 

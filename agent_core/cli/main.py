@@ -11,7 +11,7 @@ import json
 app = typer.Typer(
     name="agent-corex",
     help="Fast, accurate MCP tool retrieval engine for LLMs",
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 
 
@@ -19,8 +19,12 @@ app = typer.Typer(
 def retrieve(
     query: str = typer.Argument(..., help="Search query for tool retrieval"),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of results to return"),
-    method: str = typer.Option("hybrid", "--method", "-m", help="Ranking method: keyword, hybrid, or embedding"),
-    config: Optional[str] = typer.Option(None, "--config", "-c", help="Path to mcp.json config file")
+    method: str = typer.Option(
+        "hybrid", "--method", "-m", help="Ranking method: keyword, hybrid, or embedding"
+    ),
+    config: Optional[str] = typer.Option(
+        None, "--config", "-c", help="Path to mcp.json config file"
+    ),
 ):
     """
     Retrieve the most relevant tools for a given query.
@@ -81,7 +85,9 @@ def start(
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Server host"),
     port: int = typer.Option(8000, "--port", "-p", help="Server port"),
     reload: bool = typer.Option(True, "--reload/--no-reload", help="Enable auto-reload"),
-    config: Optional[str] = typer.Option(None, "--config", "-c", help="Path to mcp.json config file")
+    config: Optional[str] = typer.Option(
+        None, "--config", "-c", help="Path to mcp.json config file"
+    ),
 ):
     """
     Start the Agent-Core API server.
@@ -99,19 +105,14 @@ def start(
     typer.echo(f"Starting Agent-Core API server at http://{host}:{port}")
     typer.echo("Press Ctrl+C to stop\n")
 
-    uvicorn.run(
-        "agent_core.api.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info"
-    )
+    uvicorn.run("agent_core.api.main:app", host=host, port=port, reload=reload, log_level="info")
 
 
 @app.command()
 def version():
     """Show Agent-Core version."""
     from agent_core import __version__
+
     typer.echo(f"Agent-Core {__version__}")
 
 
@@ -119,6 +120,7 @@ def version():
 def health():
     """Check API health (requires running server)."""
     import requests
+
     try:
         response = requests.get("http://127.0.0.1:8000/health", timeout=5)
         if response.status_code == 200:

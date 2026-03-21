@@ -14,7 +14,7 @@ class MCPClient:
         self.command = command
         self.args = args
         self.process = None
-        
+
     def initialize(self):
         request_id = str(uuid.uuid4())
         request = {
@@ -24,11 +24,8 @@ class MCPClient:
             "params": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
-                "clientInfo": {
-                    "name": "agent-corex",
-                    "version": "1.0"
-                }
-            }
+                "clientInfo": {"name": "agent-corex", "version": "1.0"},
+            },
         }
         self.process.stdin.write(json.dumps(request) + "\n")
         self.process.stdin.flush()
@@ -42,11 +39,7 @@ class MCPClient:
                 break
 
         # send initialized notification
-        notification = {
-            "jsonrpc": "2.0",
-            "method": "initialized",
-            "params": {}
-        }
+        notification = {"jsonrpc": "2.0", "method": "initialized", "params": {}}
 
         self.process.stdin.write(json.dumps(notification) + "\n")
         self.process.stdin.flush()
@@ -74,10 +67,10 @@ class MCPClient:
                 text=True,
                 env=env,
                 shell=True,
-                bufsize=1
+                bufsize=1,
             )
             time.sleep(1)
-            
+
             if self.process.poll() is not None:
                 err = self.process.stderr.read()
                 raise RuntimeError(f"MCP server failed to start: {err}")
@@ -89,18 +82,17 @@ class MCPClient:
                 stderr=subprocess.PIPE,
                 text=True,
                 env=env,
-                bufsize=1
+                bufsize=1,
             )
 
         print(f"MCP server started: {self.name}")
 
-    
     def list_tools(self):
 
         result = self._send_request("tools/list")
 
         return result.get("tools", [])
-    
+
     def _send_request(self, method, params=None):
 
         if self.process is None:
@@ -108,12 +100,7 @@ class MCPClient:
 
         request_id = str(uuid.uuid4())
 
-        request = {
-            "jsonrpc": "2.0",
-            "id": request_id,
-            "method": method,
-            "params": params or {}
-        }
+        request = {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params or {}}
 
         self.process.stdin.write(json.dumps(request) + "\n")
         self.process.stdin.flush()

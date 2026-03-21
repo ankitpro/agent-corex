@@ -37,8 +37,7 @@ class EmbeddingIndexer:
         # Load model once and cache at class level
         if EmbeddingIndexer._model is None:
             EmbeddingIndexer._model = SentenceTransformer(
-                "sentence-transformers/all-MiniLM-L6-v2",
-                cache_folder=".agent_corex_models"
+                "sentence-transformers/all-MiniLM-L6-v2", cache_folder=".agent_corex_models"
             )
 
         self.model = EmbeddingIndexer._model
@@ -55,10 +54,7 @@ class EmbeddingIndexer:
         Args:
             tools: List of tools to index.
         """
-        texts = [
-            f"{t['name']} {t.get('description', '')}"
-            for t in tools
-        ]
+        texts = [f"{t['name']} {t.get('description', '')}" for t in tools]
 
         embeddings = self.model.encode(texts)
         dim = embeddings.shape[1]
@@ -73,10 +69,7 @@ class EmbeddingIndexer:
         Args:
             tools: List of tools to add.
         """
-        texts = [
-            f"{t['name']} {t.get('description', '')}"
-            for t in tools
-        ]
+        texts = [f"{t['name']} {t.get('description', '')}" for t in tools]
 
         embeddings = self.model.encode(texts)
 
@@ -109,10 +102,6 @@ class EmbeddingIndexer:
         query_vec = self.model.encode([query])
         D, I = self.index.search(np.array(query_vec, dtype=np.float32), min(top_k, len(self.tools)))
 
-        results = [
-            self.tools[i]
-            for i in I[0]
-            if 0 <= i < len(self.tools)
-        ]
+        results = [self.tools[i] for i in I[0] if 0 <= i < len(self.tools)]
 
         return results

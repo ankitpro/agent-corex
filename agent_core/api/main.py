@@ -17,20 +17,11 @@ app.add_middleware(
 tool_registry = ToolRegistry()
 
 # Example tools (replace with MCP-loaded later)
-tool_registry.register({
-    "name": "edit_file",
-    "description": "Edit a file with line-based changes"
-})
+tool_registry.register({"name": "edit_file", "description": "Edit a file with line-based changes"})
 
-tool_registry.register({
-    "name": "write_file",
-    "description": "Create or overwrite a file"
-})
+tool_registry.register({"name": "write_file", "description": "Create or overwrite a file"})
 
-tool_registry.register({
-    "name": "run_tests",
-    "description": "Run test suite"
-})
+tool_registry.register({"name": "run_tests", "description": "Run test suite"})
 
 
 @app.get("/health")
@@ -45,7 +36,7 @@ def health():
         "status": "ok",
         "version": "1.0.3",
         "tools_loaded": len(tool_registry.get_all_tools()),
-        "message": "Agent-Corex API is running"
+        "message": "Agent-Corex API is running",
     }
 
 
@@ -57,10 +48,7 @@ def list_tools():
     Returns:
         List of all registered tools with their metadata
     """
-    return {
-        "tools": tool_registry.get_all_tools(),
-        "total": len(tool_registry.get_all_tools())
-    }
+    return {"tools": tool_registry.get_all_tools(), "total": len(tool_registry.get_all_tools())}
 
 
 @app.get("/endpoints")
@@ -77,19 +65,19 @@ def list_endpoints():
                 "name": "Health Check",
                 "method": "GET",
                 "path": "/health",
-                "description": "Test backend connection and get version info"
+                "description": "Test backend connection and get version info",
             },
             {
                 "name": "List Tools",
                 "method": "GET",
                 "path": "/tools",
-                "description": "Get all available tools"
+                "description": "Get all available tools",
             },
             {
                 "name": "List Endpoints",
                 "method": "GET",
                 "path": "/endpoints",
-                "description": "Get documentation for all API endpoints"
+                "description": "Get documentation for all API endpoints",
             },
             {
                 "name": "Retrieve Tools",
@@ -99,9 +87,9 @@ def list_endpoints():
                 "parameters": {
                     "query": "Search query describing what you need (required)",
                     "top_k": "Number of results to return (default: 5)",
-                    "method": "Ranking method: 'keyword', 'hybrid', or 'embedding' (default: 'hybrid')"
-                }
-            }
+                    "method": "Ranking method: 'keyword', 'hybrid', or 'embedding' (default: 'hybrid')",
+                },
+            },
         ]
     }
 

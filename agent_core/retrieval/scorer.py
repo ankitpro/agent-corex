@@ -1,7 +1,9 @@
 import re
 
+
 def tokenize(text: str):
     return set(re.findall(r"\w+", text.lower()))
+
 
 def score(query: str, tool) -> float:
     """

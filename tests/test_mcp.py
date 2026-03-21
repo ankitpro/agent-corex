@@ -14,11 +14,7 @@ class TestMCPManager:
         """Verify tools can be registered and retrieved."""
         manager = MCPManager()
         tools = [
-            {
-                "name": "list_files",
-                "description": "List files in a directory",
-                "input_schema": {}
-            }
+            {"name": "list_files", "description": "List files in a directory", "input_schema": {}}
         ]
         manager.register_tools("filesystem", tools)
         all_tools = manager.get_all_tools()
@@ -30,11 +26,7 @@ class TestMCPManager:
         """Verify input_schema is normalized to schema."""
         manager = MCPManager()
         tools = [
-            {
-                "name": "test_tool",
-                "description": "Test tool",
-                "input_schema": {"type": "object"}
-            }
+            {"name": "test_tool", "description": "Test tool", "input_schema": {"type": "object"}}
         ]
         manager.register_tools("test_server", tools)
         all_tools = manager.get_all_tools()
@@ -45,20 +37,8 @@ class TestMCPManager:
         """Verify tools from multiple servers are aggregated."""
         manager = MCPManager()
 
-        fs_tools = [
-            {
-                "name": "read_file",
-                "description": "Read a file",
-                "input_schema": {}
-            }
-        ]
-        memory_tools = [
-            {
-                "name": "recall",
-                "description": "Recall from memory",
-                "input_schema": {}
-            }
-        ]
+        fs_tools = [{"name": "read_file", "description": "Read a file", "input_schema": {}}]
+        memory_tools = [{"name": "recall", "description": "Recall from memory", "input_schema": {}}]
 
         manager.register_tools("filesystem", fs_tools)
         manager.register_tools("memory", memory_tools)
@@ -86,13 +66,7 @@ class TestMCPManager:
     def test_get_tools_alias(self):
         """Verify get_tools() is an alias for get_all_tools()."""
         manager = MCPManager()
-        tools = [
-            {
-                "name": "dummy",
-                "description": "Dummy tool",
-                "input_schema": {}
-            }
-        ]
+        tools = [{"name": "dummy", "description": "Dummy tool", "input_schema": {}}]
         manager.register_tools("test", tools)
         assert manager.get_tools() == manager.get_all_tools()
 

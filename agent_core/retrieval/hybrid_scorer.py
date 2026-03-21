@@ -44,8 +44,7 @@ class HybridScorer:
 
         # Initialize the embedding model
         self.model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2",
-            cache_folder=".agent_corex_models"
+            "sentence-transformers/all-MiniLM-L6-v2", cache_folder=".agent_corex_models"
         )
 
     def score(self, query: str, tool: Dict[str, Any]) -> float:
@@ -76,10 +75,7 @@ class HybridScorer:
         embedding_score = (similarity + 1) / 2
 
         # Combine scores
-        hybrid_score = (
-            self.keyword_weight * kw_score +
-            self.embedding_weight * embedding_score
-        )
+        hybrid_score = self.keyword_weight * kw_score + self.embedding_weight * embedding_score
 
         return hybrid_score
 

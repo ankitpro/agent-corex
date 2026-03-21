@@ -18,11 +18,7 @@ class MCPLoader:
 
         for name, server in config["mcpServers"].items():
             try:
-                client = MCPClient(
-                    name,
-                    server["command"],
-                    server["args"]
-                )
+                client = MCPClient(name, server["command"], server["args"])
 
                 client.start()
                 client.initialize()
