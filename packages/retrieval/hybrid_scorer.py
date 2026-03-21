@@ -45,7 +45,7 @@ class HybridScorer:
         # Initialize the embedding model
         self.model = SentenceTransformer(
             "sentence-transformers/all-MiniLM-L6-v2",
-            cache_folder=".agent_core_models"
+            cache_folder=".agent_corex_models"
         )
 
     def score(self, query: str, tool: Dict[str, Any]) -> float:

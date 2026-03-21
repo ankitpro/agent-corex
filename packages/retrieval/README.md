@@ -113,7 +113,7 @@ score = scorer.score(query, tool)
 The embedding model (`sentence-transformers/all-MiniLM-L6-v2`) is cached at the class level:
 - ✅ Loaded once per process
 - ✅ Shared across instances
-- ✅ Stored in `.agent_core_models/`
+- ✅ Stored in `.agent_corex_models/`
 
 ## Performance Notes
 

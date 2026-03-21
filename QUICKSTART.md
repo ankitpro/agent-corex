@@ -180,13 +180,13 @@ The retrieval engine uses `sentence-transformers/all-MiniLM-L6-v2`:
 - Small (~80MB)
 - Fast
 - Good quality
-- Auto-cached in `.agent_core_models/`
+- Auto-cached in `.agent_corex_models/`
 
 To use a different model, edit `packages/retrieval/embeddings.py`:
 ```python
 self.model = SentenceTransformer(
     "sentence-transformers/all-mpnet-base-v2",  # Change here
-    cache_folder=".agent_core_models"
+    cache_folder=".agent_corex_models"
 )
 ```
 

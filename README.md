@@ -379,14 +379,14 @@ The retrieval engine uses `sentence-transformers/all-MiniLM-L6-v2`:
 - Small (~80MB)
 - Fast
 - Good quality
-- Cached locally in `.agent_core_models/`
+- Cached locally in `.agent_corex_models/`
 
 To use a different model, modify `embeddings.py`:
 
 ```python
 self.model = SentenceTransformer(
     "sentence-transformers/all-mpnet-base-v2",  # Change here
-    cache_folder=".agent_core_models"
+    cache_folder=".agent_corex_models"
 )
 ```
 

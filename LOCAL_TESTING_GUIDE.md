@@ -386,7 +386,7 @@ First time you run embedding-based ranking, the model is downloaded (~80MB):
 results = rank_tools(query, tools, method="embedding")
 ```
 
-It's cached in `.agent_core_models/` after first run.
+It's cached in `.agent_corex_models/` after first run.
 
 ### Issue: MCP servers not connecting
 
