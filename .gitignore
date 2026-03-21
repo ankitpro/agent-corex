@@ -64,3 +64,4 @@ config/mcp.local.json
 agent-core.code-workspace
 CLAUDE.md
 complete_project_context.md
+.claude
