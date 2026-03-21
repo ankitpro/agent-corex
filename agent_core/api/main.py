@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from packages.tools.registry import ToolRegistry
-from packages.retrieval.ranker import rank_tools
+from agent_core.tools.registry import ToolRegistry
+from agent_core.retrieval.ranker import rank_tools
 
 app = FastAPI(title="Agent-Corex", version="1.0.3")
 
@@ -61,7 +61,7 @@ def health():
     """
     return {
         "status": "ok",
-        "version": "1.0.2",
+        "version": "1.0.3",
         "tools_loaded": len(tool_registry.get_all_tools()),
         "message": "Agent-Corex API is running"
     }

@@ -9,11 +9,11 @@ Tests cover:
 """
 
 import pytest
-from packages.retrieval.ranker import rank_tools
-from packages.retrieval.scorer import score
-from packages.retrieval.hybrid_scorer import HybridScorer
-from packages.retrieval.embeddings import EmbeddingIndexer
-from packages.tools.registry import ToolRegistry
+from agent_core.retrieval.ranker import rank_tools
+from agent_core.retrieval.scorer import score
+from agent_core.retrieval.hybrid_scorer import HybridScorer
+from agent_core.retrieval.embeddings import EmbeddingIndexer
+from agent_core.tools.registry import ToolRegistry
 
 # Test data
 SAMPLE_TOOLS = [

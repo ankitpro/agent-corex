@@ -2,9 +2,9 @@ import os
 import json
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from packages.tools.registry import ToolRegistry
-from packages.tools.mcp.mcp_loader import MCPLoader
-from packages.retrieval.ranker import rank_tools
+from agent_core.tools.registry import ToolRegistry
+from agent_core.tools.mcp.mcp_loader import MCPLoader
+from agent_core.retrieval.ranker import rank_tools
 
 app = FastAPI(
     title="Agent-CoreX",

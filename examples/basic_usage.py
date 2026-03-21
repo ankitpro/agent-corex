@@ -11,8 +11,8 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from packages.retrieval.ranker import rank_tools
-from packages.tools.registry import ToolRegistry
+from agent_core.retrieval.ranker import rank_tools
+from agent_core.tools.registry import ToolRegistry
 
 # Create a tool registry and register some example tools
 registry = ToolRegistry()

@@ -3,8 +3,8 @@ Tests for MCP (Model Context Protocol) integration.
 """
 
 import pytest
-from packages.tools.mcp.mcp_manager import MCPManager
-from packages.tools.mcp.mcp_client import MCPClient
+from agent_core.tools.mcp.mcp_manager import MCPManager
+from agent_core.tools.mcp.mcp_client import MCPClient
 
 
 class TestMCPManager:
