@@ -1,24 +1,18 @@
 // Dashboard Tab Switching
 function switchDashboardTab(tabName) {
-    // Map tab names to element IDs (query tab is now queryTab)
-    const tabIdMap = {
-        'setup': 'setup',
-        'connection': 'connection',
-        'query': 'queryTab'  // Renamed from 'query' to avoid conflict with input id
-    };
-
-    const tabId = tabIdMap[tabName] || tabName;
+    console.log(`switchDashboardTab called with: ${tabName}`);
 
     document.querySelectorAll('.dashboard-tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.dashboard-tab-button').forEach(b => b.classList.remove('active'));
 
-    const tabElement = document.getElementById(tabId);
-    if (tabElement) {
-        tabElement.classList.add('active');
-    } else {
-        console.error(`Tab element not found for tabName: ${tabName}, tabId: ${tabId}`);
+    const tabElement = document.getElementById(tabName);
+    if (!tabElement) {
+        console.error(`Tab element not found for: ${tabName}`);
         return;
     }
+
+    tabElement.classList.add('active');
+    console.log(`Tab ${tabName} activated`);
 
     // Find and activate the corresponding button
     document.querySelectorAll('.dashboard-tab-button').forEach(b => {
@@ -36,12 +30,6 @@ function switchDashboardTab(tabName) {
 
         document.getElementById('queryCard').style.display = connected ? 'block' : 'none';
         document.getElementById('notConnectedMsg').style.display = connected ? 'none' : 'block';
-
-        // Ensure queryTab is visible
-        const queryTab = document.getElementById('queryTab');
-        if (queryTab) {
-            queryTab.style.display = 'block';
-        }
 
         // Show connected info if connected
         const connectedInfo = document.getElementById('connectedInfo');
@@ -170,7 +158,7 @@ async function testConnection() {
 // Search Tools
 async function searchTools() {
     // Validate elements exist
-    const queryElem = document.getElementById('query');
+    const queryElem = document.getElementById('queryInput');  // Changed from 'query' to 'queryInput'
     const topKElem = document.getElementById('topK');
     const methodElem = document.getElementById('method');
 
@@ -181,7 +169,7 @@ async function searchTools() {
 
     if (!queryElem) {
         alert('Error: Query input not found. Please refresh the page.');
-        console.error('Element with id="query" not found');
+        console.error('Element with id="queryInput" not found');
         return;
     }
 

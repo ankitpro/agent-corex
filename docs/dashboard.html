@@ -100,7 +100,7 @@ venv\Scripts\activate</code></div>
 </div>
 
 <!-- Query Tab -->
-<div id="queryTab" class="dashboard-tab-content">
+<div id="query" class="dashboard-tab-content">
     <div id="notConnectedMsg" class="info-box" style="display:block; background-color: #FFF3E0; border-left-color: #F39C12; color: #E65100;">
         <strong>⚠️ Backend Not Connected</strong><br>
         To use Query Tools, you need to:<br>
@@ -126,8 +126,8 @@ venv\Scripts\activate</code></div>
         </div>
 
         <div class="form-group">
-            <label for="query">Search Query</label>
-            <input type="text" id="query" placeholder="e.g., edit a file, run tests" onkeypress="if(event.key==='Enter') searchTools()">
+            <label for="queryInput">Search Query</label>
+            <input type="text" id="queryInput" placeholder="e.g., edit a file, run tests" onkeypress="if(event.key==='Enter') searchTools()">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 15px; align-items: flex-end;">
