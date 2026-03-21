@@ -21,6 +21,12 @@ function switchDashboardTab(tabName) {
         document.getElementById('queryCard').style.display = connected ? 'block' : 'none';
         document.getElementById('notConnectedMsg').style.display = connected ? 'none' : 'block';
 
+        // Ensure queryTab is visible
+        const queryTab = document.getElementById('queryTab');
+        if (queryTab) {
+            queryTab.style.display = 'block';
+        }
+
         // Show connected info if connected
         const connectedInfo = document.getElementById('connectedInfo');
         if (connected) {
@@ -148,6 +154,11 @@ async function searchTools() {
     const topKElem = document.getElementById('topK');
     const methodElem = document.getElementById('method');
 
+    console.log('searchTools() called');
+    console.log('queryElem found:', !!queryElem);
+    console.log('queryElem.value:', queryElem?.value);
+    console.log('queryCard visible:', document.getElementById('queryCard')?.style.display);
+
     if (!queryElem) {
         alert('Error: Query input not found. Please refresh the page.');
         console.error('Element with id="query" not found');
@@ -155,11 +166,19 @@ async function searchTools() {
     }
 
     const baseUrl = Storage.getBaseUrl();
-    const query = (queryElem.value || '').trim();
+    const rawQuery = queryElem.value || '';
+    const query = rawQuery.trim();
+
+    console.log('rawQuery:', `"${rawQuery}"`);
+    console.log('trimmed query:', `"${query}"`);
+
     const topK = parseInt(topKElem?.value || 5) || 5;
     const method = methodElem?.value || 'hybrid';
 
-    if (!query) return alert('Enter search query');
+    if (!query) {
+        console.warn('Query is empty!');
+        return alert('Please enter a search query');
+    }
 
     console.log(`🔍 Searching with baseUrl: ${baseUrl}, query: ${query}, method: ${method}`);
 
