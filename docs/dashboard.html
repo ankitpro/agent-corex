@@ -444,7 +444,8 @@ venv\Scripts\activate</code></div>
         1. Go to <strong>Connection</strong> tab<br>
         2. Enter your backend URL (e.g., http://localhost:8000)<br>
         3. Click "Test Connection" to verify it works<br>
-        4. Come back here to search tools
+        4. Come back here to search tools<br><br>
+        <a href="#connection" class="btn-primary" style="display: inline-block; margin-top: 10px; padding: 10px 20px; text-decoration: none; color: white; background-color: #F39C12; border-radius: 4px;">→ Go to Connection Tab</a>
     </div>
 
     <div id="queryCard" style="display:none;">
@@ -619,6 +620,8 @@ venv\Scripts\activate</code></div>
 
         if (!query) return alert('Enter search query');
 
+        console.log(`🔍 Searching with baseUrl: ${baseUrl}, query: ${query}, method: ${method}`);
+
         const client = new AgentCorexClient(baseUrl);
         document.getElementById('errorContainer').innerHTML = '';
         document.getElementById('resultsContainer').style.display = 'none';
@@ -629,7 +632,9 @@ venv\Scripts\activate</code></div>
         document.getElementById('resultsContainer').style.display = 'block';
 
         try {
+            console.log(`📡 Making API call to: ${baseUrl}/retrieve_tools?query=${query}&top_k=${topK}&method=${method}`);
             const results = await client.retrieveTools(query, topK, method);
+            console.log('✅ Got results:', results);
             const resultsHtml = (results || []).map(tool => `
                 <div class="result-item">
                     <div class="result-name">${tool.name}</div>
@@ -665,6 +670,9 @@ venv\Scripts\activate</code></div>
         const storedUrl = Storage.getBaseUrl();
         document.getElementById('baseUrl').value = storedUrl;
 
+        console.log('Dashboard initialized. Stored URL:', storedUrl);
+        console.log('Connection status dot:', document.getElementById('statusDot').className);
+
         // Load tab from URL hash
         loadTabFromHash();
     });
@@ -672,14 +680,6 @@ venv\Scripts\activate</code></div>
 
 <hr style="margin: 40px 0;">
 
-<div style="text-align: center; margin: 40px 0;">
-
 ## 🔗 Quick Links
 
-<a href="/" class="btn">🏠 Home</a>
-<a href="/quickstart" class="btn secondary">⚡ Quick Start</a>
-<a href="/api" class="btn secondary">🔌 API Reference</a>
-<a href="/installation" class="btn secondary">📦 Installation</a>
-<a href="https://github.com/ankitpro/agent-corex" class="btn secondary">⭐ GitHub</a>
-
-</div>
+🏠 [Home](/) | ⚡ [Quick Start](/quickstart) | 🔌 [API Reference](/api) | 📦 [Installation](/installation) | ⭐ [GitHub](https://github.com/ankitpro/agent-corex)
