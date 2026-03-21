@@ -1,0 +1,672 @@
+---
+layout: default
+title: Agent-Corex Dashboard
+description: Connect to and test your local Agent-Corex backend
+permalink: /dashboard/
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent-Corex Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1A5276 0%, #0B1C2B 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            border: none;
+            padding: 0;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #E0E0E0;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #1A5276;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-left: 4px solid #27AE60;
+            padding-left: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #DDD;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #27AE60;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+        }
+
+        .input-hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background-color: #27AE60;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background-color: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background-color: #BDC3C7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #1A5276;
+            border: 2px solid #1A5276;
+        }
+
+        .btn-secondary:hover {
+            background-color: #1A5276;
+            color: white;
+        }
+
+        .status-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #EEE;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background-color: #F5F5F5;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background-color: #27AE60;
+        }
+
+        .status-dot.disconnected {
+            background-color: #E74C3C;
+            animation: none;
+        }
+
+        .status-dot.testing {
+            background-color: #F39C12;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .status-message {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .status-details {
+            background-color: #F9F9F9;
+            border: 1px solid #EEE;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .query-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #EEE;
+        }
+
+        .query-form {
+            display: grid;
+            gap: 15px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .results-section {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            background-color: #F9F9F9;
+            border-left: 4px solid #27AE60;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .result-name {
+            font-weight: 600;
+            color: #1A5276;
+            margin-bottom: 4px;
+        }
+
+        .result-description {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .result-score {
+            color: #27AE60;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background-color: #FFEBEE;
+            border-left: 4px solid #E74C3C;
+            color: #B71C1C;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .success-message {
+            background-color: #E8F5E9;
+            border-left: 4px solid #27AE60;
+            color: #1B5E20;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .info-box {
+            background-color: #E3F2FD;
+            border-left: 4px solid #1976D2;
+            color: #0D47A1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .info-box code {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #27AE60;
+            margin-left: 6px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Agent-Corex Dashboard</h1>
+            <p>Connect to your local backend and test tool retrieval</p>
+        </div>
+
+        <!-- Connection Settings Card -->
+        <div class="card">
+            <h2>⚙️ Connection Settings</h2>
+
+            <div class="info-box">
+                <p>
+                    To use this dashboard, start the Agent-Corex backend locally:<br>
+                    <code>uvicorn agent_core.api.main:app --reload</code>
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="baseUrl">Backend Base URL</label>
+                <div class="form-row">
+                    <div>
+                        <input
+                            type="text"
+                            id="baseUrl"
+                            placeholder="http://localhost:8000"
+                            value="http://localhost:8000"
+                        >
+                        <div class="input-hint">Default: http://localhost:8000</div>
+                    </div>
+                    <button class="btn-primary" onclick="testConnection()">
+                        Test Connection
+                    </button>
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="status-section">
+                <div class="status-indicator">
+                    <div class="status-dot disconnected" id="statusDot"></div>
+                    <div class="status-text">
+                        <div class="status-label">Status: <span id="statusLabel">Disconnected</span></div>
+                        <div class="status-message" id="statusMessage">Not connected to backend</div>
+                    </div>
+                </div>
+
+                <div class="status-details" id="statusDetails" style="display:none;">
+                    <div id="connectionInfo"></div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
+            </div>
+        </div>
+
+        <!-- Query Tools Card -->
+        <div class="card" id="queryCard" style="display:none;">
+            <h2>🔍 Query Tools</h2>
+
+            <div class="query-form">
+                <div class="form-group">
+                    <label for="query">Search Query</label>
+                    <input
+                        type="text"
+                        id="query"
+                        placeholder="e.g., edit a file, run tests"
+                        onkeypress="if(event.key==='Enter') searchTools()"
+                    >
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="topK">Top K Results</label>
+                        <input type="number" id="topK" value="5" min="1" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="method">Ranking Method</label>
+                        <select id="method" style="padding:12px; border:1px solid #DDD; border-radius:4px; font-size:14px;">
+                            <option value="keyword">Keyword</option>
+                            <option value="hybrid" selected>Hybrid</option>
+                            <option value="embedding">Embedding</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="searchTools()">Search</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="results-section" id="resultsContainer" style="display:none;">
+                <h3 style="color:#1A5276; margin-bottom:15px;">Results</h3>
+                <div id="results"></div>
+            </div>
+
+            <div id="errorContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // API Client
+        class AgentCorexClient {
+            constructor(baseUrl) {
+                this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+            }
+
+            async request(endpoint, options = {}) {
+                const url = `${this.baseUrl}${endpoint}`;
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...options.headers
+                        },
+                        ...options
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    throw {
+                        message: error.message,
+                        type: error instanceof TypeError ? 'NETWORK_ERROR' : 'HTTP_ERROR'
+                    };
+                }
+            }
+
+            async health() {
+                return this.request('/health');
+            }
+
+            async retrieveTools(query, topK = 5, method = 'hybrid') {
+                const params = new URLSearchParams({
+                    q: query,
+                    top_k: topK,
+                    method: method
+                });
+                return this.request(`/retrieve_tools?${params}`);
+            }
+        }
+
+        // Storage Manager
+        const Storage = {
+            setBaseUrl(url) {
+                localStorage.setItem('agent_corex_base_url', url);
+            },
+            getBaseUrl() {
+                return localStorage.getItem('agent_corex_base_url') || 'http://localhost:8000';
+            },
+            clear() {
+                localStorage.removeItem('agent_corex_base_url');
+            }
+        };
+
+        // UI Manager
+        const UI = {
+            setStatus(status, message, details) {
+                const dot = document.getElementById('statusDot');
+                const label = document.getElementById('statusLabel');
+                const msg = document.getElementById('statusMessage');
+                const detailsDiv = document.getElementById('statusDetails');
+                const connectionInfo = document.getElementById('connectionInfo');
+
+                dot.className = `status-dot ${status}`;
+                label.textContent = status === 'connected' ? 'Connected' :
+                                   status === 'testing' ? 'Testing...' : 'Disconnected';
+                msg.textContent = message;
+
+                if (details) {
+                    connectionInfo.innerHTML = `<pre>${JSON.stringify(details, null, 2)}</pre>`;
+                    detailsDiv.style.display = 'block';
+                } else {
+                    detailsDiv.style.display = 'none';
+                }
+
+                // Show/hide query card based on connection
+                document.getElementById('queryCard').style.display =
+                    status === 'connected' ? 'block' : 'none';
+            },
+
+            showError(message) {
+                const container = document.getElementById('errorContainer');
+                container.innerHTML = `<div class="error-message">${message}</div>`;
+            },
+
+            clearError() {
+                document.getElementById('errorContainer').innerHTML = '';
+            },
+
+            showResults(results) {
+                const container = document.getElementById('resultsContainer');
+                const resultsDiv = document.getElementById('results');
+
+                if (!results || results.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color:#999;">No results found</p>';
+                } else {
+                    resultsDiv.innerHTML = results.map(tool => `
+                        <div class="result-item">
+                            <div class="result-name">${escapeHtml(tool.name)}</div>
+                            <div class="result-description">${escapeHtml(tool.description)}</div>
+                            <div class="result-score">Score: ${(tool.score || 0).toFixed(4)}</div>
+                        </div>
+                    `).join('');
+                }
+
+                container.style.display = 'block';
+            }
+        };
+
+        // Helper functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Connection Test
+        async function testConnection() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+
+            if (!baseUrl) {
+                UI.showError('Please enter a valid base URL');
+                return;
+            }
+
+            // Validate URL
+            try {
+                new URL(baseUrl);
+            } catch {
+                UI.showError('Invalid URL format. Please use format: http://localhost:8000');
+                return;
+            }
+
+            UI.setStatus('testing', 'Testing connection...');
+            UI.clearError();
+
+            const client = new AgentCorexClient(baseUrl);
+
+            try {
+                const health = await client.health();
+                Storage.setBaseUrl(baseUrl);
+                UI.setStatus('connected', 'Connected to backend', health);
+            } catch (error) {
+                let errorMsg = 'Connection failed';
+
+                if (error.type === 'NETWORK_ERROR') {
+                    errorMsg = `Network Error: Make sure the backend is running at ${baseUrl}`;
+                } else if (error.message.includes('CORS')) {
+                    errorMsg = 'CORS Error: Backend doesn\'t allow connections from this origin';
+                } else {
+                    errorMsg = `Error: ${error.message}`;
+                }
+
+                UI.setStatus('disconnected', errorMsg);
+                UI.showError(`
+                    <strong>Connection Failed</strong><br>
+                    ${errorMsg}<br><br>
+                    <strong>To start the backend:</strong><br>
+                    <code>uvicorn agent_core.api.main:app --reload</code>
+                `);
+            }
+        }
+
+        // Search Tools
+        async function searchTools() {
+            const baseUrl = Storage.getBaseUrl();
+            const query = document.getElementById('query').value.trim();
+            const topK = parseInt(document.getElementById('topK').value) || 5;
+            const method = document.getElementById('method').value;
+
+            if (!query) {
+                UI.showError('Please enter a search query');
+                return;
+            }
+
+            UI.clearError();
+            const client = new AgentCorexClient(baseUrl);
+
+            try {
+                const results = await client.retrieveTools(query, topK, method);
+                UI.showResults(results);
+            } catch (error) {
+                UI.showError(`Search failed: ${error.message}`);
+            }
+        }
+
+        // Clear Settings
+        function clearSettings() {
+            Storage.clear();
+            document.getElementById('baseUrl').value = 'http://localhost:8000';
+            UI.setStatus('disconnected', 'Settings cleared');
+            document.getElementById('queryCard').style.display = 'none';
+        }
+
+        // Initialize
+        function init() {
+            const savedUrl = Storage.getBaseUrl();
+            document.getElementById('baseUrl').value = savedUrl;
+
+            // Try to restore connection
+            if (savedUrl !== 'http://localhost:8000') {
+                testConnection();
+            }
+        }
+
+        // Run on load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

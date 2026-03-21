@@ -1,8 +1,18 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from packages.tools.registry import ToolRegistry
 from packages.retrieval.ranker import rank_tools
 
-app = FastAPI()
+app = FastAPI(title="Agent-Corex", version="1.0.3")
+
+# Enable CORS for local development and GitHub Pages
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 tool_registry = ToolRegistry()
 
@@ -43,4 +53,15 @@ def retrieve_tools(query: str, top_k: int = 5, method: str = "hybrid"):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    """
+    Health check endpoint for connection testing.
+
+    Returns:
+        Health status with server info and available tools
+    """
+    return {
+        "status": "ok",
+        "version": "1.0.2",
+        "tools_loaded": len(tool_registry.get_all_tools()),
+        "message": "Agent-Corex API is running"
+    }
