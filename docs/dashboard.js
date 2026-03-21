@@ -1,8 +1,24 @@
 // Dashboard Tab Switching
 function switchDashboardTab(tabName) {
+    // Map tab names to element IDs (query tab is now queryTab)
+    const tabIdMap = {
+        'setup': 'setup',
+        'connection': 'connection',
+        'query': 'queryTab'  // Renamed from 'query' to avoid conflict with input id
+    };
+
+    const tabId = tabIdMap[tabName] || tabName;
+
     document.querySelectorAll('.dashboard-tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.dashboard-tab-button').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
+
+    const tabElement = document.getElementById(tabId);
+    if (tabElement) {
+        tabElement.classList.add('active');
+    } else {
+        console.error(`Tab element not found for tabName: ${tabName}, tabId: ${tabId}`);
+        return;
+    }
 
     // Find and activate the corresponding button
     document.querySelectorAll('.dashboard-tab-button').forEach(b => {
@@ -41,8 +57,12 @@ function switchDashboardTab(tabName) {
 // Handle hash changes and page load
 function loadTabFromHash() {
     const hash = window.location.hash.substring(1) || 'setup';
-    if (['setup', 'connection', 'query'].includes(hash)) {
+    const validTabs = ['setup', 'connection', 'query'];
+    if (validTabs.includes(hash)) {
         switchDashboardTab(hash);
+    } else if (hash) {
+        console.warn(`Unknown tab hash: ${hash}, loading setup`);
+        switchDashboardTab('setup');
     }
 }
 
