@@ -639,4 +639,30 @@ venv\Scripts\activate</code></div>
     }
 
     document.getElementById('baseUrl').value = Storage.getBaseUrl();
+
+    // Initialize with connection status on page load
+    window.addEventListener('load', () => {
+        const storedUrl = Storage.getBaseUrl();
+        document.getElementById('baseUrl').value = storedUrl;
+        if (storedUrl !== 'http://localhost:8000') {
+            // Auto test connection if custom URL is stored
+            setTimeout(() => {
+                // Can optionally auto-test, but don't auto-run as it may fail
+            }, 100);
+        }
+    });
 </script>
+
+<hr style="margin: 40px 0;">
+
+<div style="text-align: center; margin: 40px 0;">
+
+## 🔗 Quick Links
+
+<a href="/" class="btn">🏠 Home</a>
+<a href="/quickstart" class="btn secondary">⚡ Quick Start</a>
+<a href="/api" class="btn secondary">🔌 API Reference</a>
+<a href="/installation" class="btn secondary">📦 Installation</a>
+<a href="https://github.com/ankitpro/agent-corex" class="btn secondary">⭐ GitHub</a>
+
+</div>
