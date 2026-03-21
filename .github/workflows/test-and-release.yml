@@ -20,7 +20,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -49,7 +49,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -83,7 +83,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -92,42 +92,12 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "RELEASE_NAME=Agent-Core $VERSION" >> $GITHUB_OUTPUT
-
-    - name: Get changelog
-      id: changelog
-      run: |
-        python3 << 'EOF'
-        import re
-        
-        version = "${{ steps.version.outputs.VERSION }}"
-        
-        try:
-            with open("RELEASE_NOTES.md", "r") as f:
-                content = f.read()
-            
-            # Find the section for this version
-            pattern = rf"## {re.escape(version)}.*?(?=## |$)"
-            match = re.search(pattern, content, re.DOTALL)
-            
-            if match:
-                changelog = match.group(0).strip()
-            else:
-                changelog = f"Release {version}\n\nSee RELEASE_NOTES.md for full details."
-        except Exception as e:
-            changelog = f"Release {version}"
-        
-        # Write to file for next step
-        with open("/tmp/changelog.txt", "w") as f:
-            f.write(changelog)
-        EOF
-        cat /tmp/changelog.txt >> $GITHUB_OUTPUT
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.version.outputs.VERSION }}
-        name: ${{ steps.version.outputs.RELEASE_NAME }}
+        name: Agent-Core ${{ steps.version.outputs.VERSION }}
         draft: false
         prerelease: ${{ contains(steps.version.outputs.VERSION, 'rc') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'alpha') }}
         generate_release_notes: true
@@ -138,11 +108,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist/
@@ -167,27 +134,12 @@ jobs:
     - name: Verify PyPI publication
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
+        echo "✅ Successfully published to PyPI!"
         echo "📦 Package: agent-corex"
         echo "📌 Version: $VERSION"
         echo "🔗 PyPI: https://pypi.org/project/agent-corex/$VERSION/"
         echo ""
         echo "⏳ It may take a few minutes for the package to appear on PyPI."
-        echo ""
-        echo "If you see an error about PYPI_API_TOKEN:"
-        echo "1. Go to: https://github.com/ankitpro/agent-corex/settings/secrets/actions"
-        echo "2. Click 'New repository secret'"
-        echo "3. Name: PYPI_API_TOKEN"
-        echo "4. Value: Your token from https://pypi.org/manage/account/token/"
-
-    - name: Extract version
-      id: version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-    - name: Verify PyPI publication
-      run: |
-        echo "✅ Successfully published to PyPI!"
-        echo "Version: ${{ steps.version.outputs.VERSION }}"
-        echo "Package URL: https://pypi.org/project/agent-corex/${{ steps.version.outputs.VERSION }}/"
 
   notify:
     name: Send Notifications
