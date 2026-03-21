@@ -109,11 +109,32 @@ social:
 google_analytics_id: ""
 
 # ============================================
-# SEO
+# SEO & OpenGraph
 # ============================================
-og_image: "/agent-corex/assets/images/og-image.png"
+og_image: "https://ankitpro.github.io/agent-corex/assets/images/og-image.png"
 og_type: "website"
 og_locale: "en_US"
+
+# Canonical URL (prevents duplicate content)
+canonical: "https://ankitpro.github.io/agent-corex"
+
+# Twitter Card
+twitter:
+  username: ankitpro
+
+# JSON-LD Schema
+schema:
+  type: "SoftwareApplication"
+  applicationCategory: "DeveloperApplication"
+  operatingSystem: "Any"
+
+# Sitemap configuration
+sitemap:
+  priority: 0.5
+
+# Search engines
+noindex: false
+nofollow: false
 
 # ============================================
 # Build Settings

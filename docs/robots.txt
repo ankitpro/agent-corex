@@ -1,0 +1,20 @@
+# Robots.txt for Agent-Corex Documentation
+# https://ankitpro.github.io/agent-corex/
+
+# Allow all bots to crawl the site
+User-agent: *
+Allow: /agent-corex/
+
+# Disallow sensitive paths
+Disallow: /agent-corex/.git/
+Disallow: /agent-corex/vendor/
+Disallow: /agent-corex/node_modules/
+
+# Point to sitemap
+Sitemap: https://ankitpro.github.io/agent-corex/sitemap.xml
+
+# Crawl delay (optional, helps with server load)
+Crawl-delay: 1
+
+# Request rate limit
+Request-rate: 30/60

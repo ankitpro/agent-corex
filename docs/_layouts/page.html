@@ -2,6 +2,20 @@
 layout: default
 ---
 
+<!-- Breadcrumb Navigation -->
+{% if page.url != '/' %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb-list">
+        <li class="breadcrumb-item">
+            <a href="{{ '/' | relative_url }}">Home</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ page.title | strip_html }}
+        </li>
+    </ol>
+</nav>
+{% endif %}
+
 <div class="page-container">
     <aside class="sidebar">
         {% include sidebar.html %}
@@ -23,6 +37,54 @@ layout: default
 </div>
 
 <style>
+/* Breadcrumb Navigation */
+.breadcrumb {
+    max-width: 1200px;
+    margin: 20px auto 0;
+    padding: 10px 20px;
+    background: transparent;
+}
+
+.breadcrumb-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.breadcrumb-item:not(:last-child)::after {
+    content: "/";
+    margin: 0 8px;
+    color: #999;
+}
+
+.breadcrumb-item a {
+    color: #27AE60 !important;
+    text-decoration: none !important;
+    border: none !important;
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #E67E22 !important;
+}
+
+.breadcrumb-item.active {
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Page Container */
 .page-container {
     display: grid;
     grid-template-columns: 250px 1fr;
@@ -50,6 +112,10 @@ layout: default
 }
 
 @media (max-width: 768px) {
+    .breadcrumb {
+        padding: 10px;
+    }
+
     .page-container {
         grid-template-columns: 1fr;
         gap: 20px;

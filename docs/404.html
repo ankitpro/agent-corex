@@ -1,0 +1,105 @@
+---
+layout: default
+permalink: /404.html
+title: Page Not Found
+---
+
+<style>
+.error-page {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-code {
+    font-size: 120px;
+    font-weight: bold;
+    color: #E67E22;
+    margin: 0;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 36px;
+    color: #1A5276;
+    margin: 20px 0;
+}
+
+.error-description {
+    color: #666;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.error-links {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #27AE60;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 4px;
+    border: 2px solid #27AE60;
+    transition: all 0.3s ease;
+}
+
+.error-btn:hover {
+    background-color: transparent;
+    color: #27AE60 !important;
+}
+
+.error-btn.secondary {
+    background-color: transparent;
+    color: #1A5276 !important;
+    border-color: #1A5276;
+}
+
+.error-btn.secondary:hover {
+    background-color: #1A5276;
+    color: white !important;
+}
+</style>
+
+<div class="error-page">
+    <h1 class="error-code">404</h1>
+    <h2 class="error-title">Page Not Found</h2>
+
+    <p class="error-description">
+        Sorry, the page you're looking for doesn't exist. It might have been moved or deleted.
+    </p>
+
+    <div class="error-links">
+        <a href="{{ '/' | relative_url }}" class="error-btn">← Back to Home</a>
+        <a href="{{ '/quickstart' | relative_url }}" class="error-btn secondary">Quick Start</a>
+        <a href="https://github.com/ankitpro/agent-corex/issues" class="error-btn secondary" target="_blank">Report Issue</a>
+    </div>
+
+    <hr style="margin: 50px 0; border: 1px solid #DDD;">
+
+    <h3 style="color: #1A5276; margin-bottom: 20px;">Popular Pages</h3>
+    <ul style="list-style: none; padding: 0; text-align: left;">
+        <li style="margin: 10px 0;">
+            <a href="{{ '/' | relative_url }}" style="color: #27AE60; text-decoration: none;">🏠 Home - Overview and features</a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="{{ '/quickstart' | relative_url }}" style="color: #27AE60; text-decoration: none;">⚡ Quick Start - Get started in 5 minutes</a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="{{ '/installation' | relative_url }}" style="color: #27AE60; text-decoration: none;">📦 Installation - Setup instructions</a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="{{ '/api' | relative_url }}" style="color: #27AE60; text-decoration: none;">🔌 API Reference - Complete documentation</a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="{{ '/deployment' | relative_url }}" style="color: #27AE60; text-decoration: none;">🚀 Deployment - Production setup</a>
+        </li>
+    </ul>
+</div>
