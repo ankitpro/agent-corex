@@ -448,6 +448,15 @@ venv\Scripts\activate</code></div>
         <a href="#connection" class="btn-primary" style="display: inline-block; margin-top: 10px; padding: 10px 20px; text-decoration: none; color: white; background-color: #F39C12; border-radius: 4px;">→ Go to Connection Tab</a>
     </div>
 
+    <div class="info-box" style="background-color: #E3F2FD; border-left-color: #1976D2; color: #0D47A1; display:none;" id="connectedInfo">
+        <strong>📡 Backend Information</strong><br>
+        Your backend is running locally at: <code style="background: #FFF; padding: 2px 6px; border-radius: 3px;" id="connectedUrl">http://localhost:8000</code><br><br>
+        To start the backend if not running:
+        <div style="background: #1A1A1A; color: #00FF00; padding: 10px; border-radius: 4px; margin-top: 10px; font-family: monospace; font-size: 12px;">
+            uvicorn agent_core.api.main:app --reload
+        </div>
+    </div>
+
     <div id="queryCard" style="display:none;">
         <div class="info-box" style="background-color: #E8F5E9; border-left-color: #27AE60; color: #1B5E20;">
             <strong>💡 First Run Note:</strong> The first search will take 30-60 seconds as it downloads AI models from Hugging Face. Subsequent searches are fast!
@@ -501,8 +510,19 @@ venv\Scripts\activate</code></div>
 
         if (tabName === 'query') {
             const connected = document.getElementById('statusDot').classList.contains('connected');
+            const baseUrl = Storage.getBaseUrl();
+
             document.getElementById('queryCard').style.display = connected ? 'block' : 'none';
             document.getElementById('notConnectedMsg').style.display = connected ? 'none' : 'block';
+
+            // Show connected info if connected
+            const connectedInfo = document.getElementById('connectedInfo');
+            if (connected) {
+                document.getElementById('connectedUrl').textContent = baseUrl;
+                connectedInfo.style.display = 'block';
+            } else {
+                connectedInfo.style.display = 'none';
+            }
         }
     }
 
