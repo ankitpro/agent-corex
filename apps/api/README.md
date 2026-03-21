@@ -290,8 +290,8 @@ gunicorn apps.api.main:app -w 4 -b 0.0.0.0:8000
 ### Docker
 
 ```bash
-docker build -t agent-core .
-docker run -p 8000:8000 agent-core
+docker build -t agent-corex .
+docker run -p 8000:8000 agent-corex
 ```
 
 ---

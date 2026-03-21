@@ -1,8 +1,8 @@
-# Agent-Core
+# Agent-CoreX
 
 🚀 **Production-ready MCP tool retrieval engine for LLMs**
 
-Agent-Core solves a critical problem in LLM systems:
+Agent-CoreX solves a critical problem in LLM systems:
 
 > When you have hundreds of tools, how do you select the *right few* without blowing up the context window?
 
@@ -69,32 +69,32 @@ tools = rank_tools("edit a file", all_tools, top_k=5)
 
 **macOS/Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-curl.sh | bash
+curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
 ```
 
 **Windows:**
 ```cmd
-pip install agent-core
+pip install agent-corex
 ```
 
 ### pip (PyPI)
 
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 With optional dependencies:
 ```bash
-pip install agent-core[redis]      # Redis support
-pip install agent-core[dev]        # Dev tools
-pip install agent-core[dev,redis]  # Everything
+pip install agent-corex[redis]      # Redis support
+pip install agent-corex[dev]        # Dev tools
+pip install agent-corex[dev,redis]  # Everything
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
 pip install -e .
 ```
 
@@ -214,7 +214,7 @@ results = rank_tools(query, tools, method="embedding")
 ## 🏗️ Architecture
 
 ```
-agent-core/
+agent-corex/
 ├── apps/
 │   └── api/
 │       └── main.py              # FastAPI server
@@ -455,8 +455,8 @@ MIT - See LICENSE file
 ## 🚀 Get Started Now
 
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
 pip install -r requirements.txt
 uvicorn apps.api.main:app --reload
 curl "http://localhost:8000/retrieve_tools?query=your query"

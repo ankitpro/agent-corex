@@ -6,19 +6,19 @@ Get up and running with Agent-Core in 2 minutes! 🚀
 
 ### Option 1: From PyPI (Recommended)
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 ### Option 2: From Source
 ```bash
-git clone https://github.com/ankitpro/agent-core
-cd agent-core
+git clone https://github.com/ankitpro/agent-corex
+cd agent-corex
 pip install -e .
 ```
 
 ### Option 3: Docker (Coming Soon)
 ```bash
-docker run -p 8000:8000 agent-core:latest
+docker run -p 8000:8000 agent-corex:latest
 ```
 
 ---
@@ -28,22 +28,22 @@ docker run -p 8000:8000 agent-core:latest
 ### 1. Command Line (Fastest)
 ```bash
 # Retrieve tools for a query
-agent-core retrieve "edit a file" --top-k 5 --method hybrid
+agent-corex retrieve "edit a file" --top-k 5 --method hybrid
 
 # Start the API server
-agent-core start --host 0.0.0.0 --port 8000
+agent-corex start --host 0.0.0.0 --port 8000
 
 # Check version
-agent-core version
+agent-corex version
 
 # Check API health
-agent-core health
+agent-corex health
 ```
 
 ### 2. REST API
 ```bash
 # Start the server
-agent-core start
+agent-corex start
 
 # In another terminal, query it
 curl "http://localhost:8000/retrieve_tools?query=edit file&top_k=5&method=hybrid"
@@ -143,7 +143,7 @@ file_tools = rank_tools("file operations", tools, top_k=10)
 ### Example 3: API Server
 ```bash
 # Terminal 1: Start server
-agent-core start --host 0.0.0.0 --port 8000
+agent-corex start --host 0.0.0.0 --port 8000
 
 # Terminal 2: Query it
 for query in "edit file" "run tests" "deploy service"; do
@@ -196,9 +196,9 @@ self.model = SentenceTransformer(
 
 ```bash
 # Install with optional dependencies
-pip install agent-core[redis]        # Redis support
-pip install agent-core[dev]          # Development tools
-pip install agent-core[dev,redis]    # Everything
+pip install agent-corex[redis]        # Redis support
+pip install agent-corex[dev]          # Development tools
+pip install agent-corex[dev,redis]    # Everything
 
 # Run tests
 pytest tests/
@@ -226,7 +226,7 @@ mypy agent_core/
 pip install -e .
 
 # Or install from PyPI
-pip install agent-core
+pip install agent-corex
 ```
 
 ### Embedding model download fails
@@ -242,7 +242,7 @@ lsof -i :8000  # macOS/Linux
 netstat -ano | findstr :8000  # Windows
 
 # Use different port
-agent-core start --port 8001
+agent-corex start --port 8001
 ```
 
 ### Tests fail
@@ -286,8 +286,8 @@ Throughput: **50+ requests/second** with single instance
 ## Support
 
 - 📖 [Full Documentation](README.md)
-- 🐛 [GitHub Issues](https://github.com/ankitpro/agent-core/issues)
-- 💬 [Discussions](https://github.com/ankitpro/agent-core/discussions)
+- 🐛 [GitHub Issues](https://github.com/ankitpro/agent-corex/issues)
+- 💬 [Discussions](https://github.com/ankitpro/agent-corex/discussions)
 
 ---
 

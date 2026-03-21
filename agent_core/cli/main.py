@@ -9,7 +9,7 @@ from typing import Optional
 import json
 
 app = typer.Typer(
-    name="agent-core",
+    name="agent-corex",
     help="Fast, accurate MCP tool retrieval engine for LLMs",
     no_args_is_help=True
 )
@@ -26,7 +26,7 @@ def retrieve(
     Retrieve the most relevant tools for a given query.
 
     Example:
-        agent-core retrieve "edit a file" --top-k 5 --method hybrid
+        agent-corex retrieve "edit a file" --top-k 5 --method hybrid
     """
     try:
         from agent_core.retrieval.ranker import rank_tools
@@ -87,7 +87,7 @@ def start(
     Start the Agent-Core API server.
 
     Example:
-        agent-core start --host 0.0.0.0 --port 8000
+        agent-corex start --host 0.0.0.0 --port 8000
     """
     import uvicorn
     import os

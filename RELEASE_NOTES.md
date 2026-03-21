@@ -122,8 +122,8 @@ New documentation files:
 ### Installation
 
 ```bash
-git clone https://github.com/your-org/agent-core.git
-cd agent-core
+git clone https://github.com/your-org/agent-corex.git
+cd agent-corex
 pip install -r requirements.txt
 ```
 
@@ -296,7 +296,7 @@ Phase 2 (Hosted API) is already in progress:
 - Rate limiting and quotas
 - Usage analytics dashboard
 - Pre-computed tool indices
-- Managed hosting at agent-core.ai
+- Managed hosting at agent-corex.ai
 
 Beta signup: [link]
 

@@ -13,8 +13,8 @@ Thank you for your interest in contributing to Agent-Core! This document provide
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/agent-core.git
-cd agent-core
+git clone https://github.com/your-org/agent-corex.git
+cd agent-corex
 
 # Create virtual environment
 python -m venv venv

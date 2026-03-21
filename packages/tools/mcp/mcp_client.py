@@ -25,7 +25,7 @@ class MCPClient:
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
                 "clientInfo": {
-                    "name": "agent-core",
+                    "name": "agent-corex",
                     "version": "1.0"
                 }
             }

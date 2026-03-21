@@ -7,17 +7,17 @@ Agent-Core can be installed using multiple methods. Choose the one that best fit
 ### macOS / Linux with curl
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-curl.sh | bash
+curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
 ```
 
 ### Windows
 
 ```powershell
 # Via PowerShell
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/your-org/agent-core/main/install.bat'))
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/your-org/agent-corex/main/install.bat'))
 
 # Or download and run
-curl https://raw.githubusercontent.com/your-org/agent-core/main/install.bat -o install.bat
+curl https://raw.githubusercontent.com/your-org/agent-corex/main/install.bat -o install.bat
 .\install.bat
 ```
 
@@ -30,32 +30,32 @@ The easiest way to install Agent-Core is via pip:
 ### Basic Installation
 
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 ### With Optional Dependencies
 
 ```bash
 # For Redis caching support
-pip install agent-core[redis]
+pip install agent-corex[redis]
 
 # For development tools (testing, formatting, linting)
-pip install agent-core[dev]
+pip install agent-corex[dev]
 
 # With everything
-pip install agent-core[dev,redis]
+pip install agent-corex[dev,redis]
 ```
 
 ### Upgrade
 
 ```bash
-pip install --upgrade agent-core
+pip install --upgrade agent-corex
 ```
 
 ### Uninstall
 
 ```bash
-pip uninstall agent-core
+pip uninstall agent-corex
 ```
 
 ---
@@ -65,17 +65,17 @@ pip uninstall agent-core
 ### From GitHub
 
 ```bash
-git clone https://github.com/your-org/agent-core.git
-cd agent-core
+git clone https://github.com/your-org/agent-corex.git
+cd agent-corex
 pip install -e .
 ```
 
 ### From Tarball
 
 ```bash
-curl -L https://github.com/your-org/agent-core/archive/refs/tags/v1.0.0.tar.gz -o agent-core.tar.gz
-tar xzf agent-core.tar.gz
-cd agent-core-1.0.0
+curl -L https://github.com/your-org/agent-corex/archive/refs/tags/v1.0.0.tar.gz -o agent-corex.tar.gz
+tar xzf agent-corex.tar.gz
+cd agent-corex-1.0.0
 pip install -e .
 ```
 
@@ -87,10 +87,10 @@ pip install -e .
 
 ```bash
 # Using Homebrew (if we add brew support)
-brew install agent-core
+brew install agent-corex
 
 # Or via pip
-python3 -m pip install agent-core
+python3 -m pip install agent-corex
 ```
 
 ### Ubuntu / Debian
@@ -103,7 +103,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install Agent-Core
-pip install agent-core
+pip install agent-corex
 ```
 
 ### Windows
@@ -116,7 +116,7 @@ python -m venv venv
 venv\Scripts\activate
 
 # Install Agent-Core
-pip install agent-core
+pip install agent-corex
 ```
 
 ### Docker
@@ -126,17 +126,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install agent-core
+RUN pip install agent-corex
 
 EXPOSE 8000
 
-CMD ["agent-core", "start", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["agent-corex", "start", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 Build and run:
 ```bash
-docker build -t agent-core .
-docker run -p 8000:8000 agent-core
+docker build -t agent-corex .
+docker run -p 8000:8000 agent-corex
 ```
 
 ---
@@ -147,13 +147,13 @@ After installation, verify it works:
 
 ```bash
 # Check version
-agent-core version
+agent-corex version
 
 # Check configuration
-agent-core config
+agent-corex config
 
 # Check API health (if running)
-agent-core health
+agent-corex health
 ```
 
 ---
@@ -163,7 +163,7 @@ agent-core health
 ### 1. Start the API Server
 
 ```bash
-agent-core start
+agent-corex start
 ```
 
 Server runs at `http://127.0.0.1:8000`
@@ -171,7 +171,7 @@ Server runs at `http://127.0.0.1:8000`
 ### 2. Retrieve Tools (in another terminal)
 
 ```bash
-agent-core retrieve "edit a file" --top-k 5
+agent-corex retrieve "edit a file" --top-k 5
 ```
 
 ### 3. Visit Interactive API Docs
@@ -199,7 +199,7 @@ venv\Scripts\activate
 ### Install in Virtual Environment
 
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 ### Deactivate When Done
@@ -228,7 +228,7 @@ Error: pip: command not found
 
 **Solution:**
 ```bash
-python -m pip install agent-core
+python -m pip install agent-corex
 ```
 
 ### Permission Denied
@@ -241,12 +241,12 @@ Error: [Errno 13] Permission denied
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install agent-core
+pip install agent-corex
 ```
 
 **Solution 2:** Install for user only
 ```bash
-pip install --user agent-core
+pip install --user agent-corex
 ```
 
 ### Sentence Transformers Model Download Fails
@@ -270,7 +270,7 @@ Error: Address already in use
 
 **Solution:** Use a different port
 ```bash
-agent-core start --port 8001
+agent-corex start --port 8001
 ```
 
 ### Module Not Found After Install
@@ -281,14 +281,14 @@ ModuleNotFoundError: No module named 'agent_core'
 
 **Solution:** Verify installation
 ```bash
-pip show agent-core
+pip show agent-corex
 python -c "import agent_core; print(agent_core.__version__)"
 ```
 
 If not found, reinstall:
 ```bash
-pip uninstall agent-core
-pip install agent-core
+pip uninstall agent-corex
+pip install agent-corex
 ```
 
 ---
@@ -302,7 +302,7 @@ pip install agent-core
 
 ### Optional
 
-- **Redis:** For caching support (install with `agent-core[redis]`)
+- **Redis:** For caching support (install with `agent-corex[redis]`)
 - **Node.js:** For MCP servers that use npm (e.g., filesystem, memory)
 
 ---
@@ -312,8 +312,8 @@ pip install agent-core
 For contributing to Agent-Core:
 
 ```bash
-git clone https://github.com/your-org/agent-core.git
-cd agent-core
+git clone https://github.com/your-org/agent-corex.git
+cd agent-corex
 
 # Create virtual environment
 python -m venv venv
@@ -339,17 +339,17 @@ mypy agent_core
 ### Using Official Image
 
 ```bash
-docker pull agent-core:latest
-docker run -p 8000:8000 agent-core:latest
+docker pull agent-corex:latest
+docker run -p 8000:8000 agent-corex:latest
 ```
 
 ### Building Locally
 
 ```bash
-git clone https://github.com/your-org/agent-core.git
-cd agent-core
-docker build -t agent-core:latest .
-docker run -p 8000:8000 agent-core:latest
+git clone https://github.com/your-org/agent-corex.git
+cd agent-corex
+docker build -t agent-corex:latest .
+docker run -p 8000:8000 agent-corex:latest
 ```
 
 ### Docker Compose
@@ -357,8 +357,8 @@ docker run -p 8000:8000 agent-core:latest
 ```yaml
 version: '3.8'
 services:
-  agent-core:
-    image: agent-core:latest
+  agent-corex:
+    image: agent-corex:latest
     ports:
       - "8000:8000"
     environment:
@@ -379,13 +379,13 @@ docker-compose up
 - [Read the Documentation](README.md)
 - [View Examples](examples/)
 - [Contribute](CONTRIBUTING.md)
-- [View Issues](https://github.com/your-org/agent-core/issues)
+- [View Issues](https://github.com/your-org/agent-corex/issues)
 
 ---
 
 ## Getting Help
 
 - 📖 [Documentation](README.md)
-- 🐛 [Report Issues](https://github.com/your-org/agent-core/issues)
-- 💬 [Discussions](https://github.com/your-org/agent-core/discussions)
-- 📧 Email: hello@agent-core.ai
+- 🐛 [Report Issues](https://github.com/your-org/agent-corex/issues)
+- 💬 [Discussions](https://github.com/your-org/agent-corex/discussions)
+- 📧 Email: hello@agent-corex.ai

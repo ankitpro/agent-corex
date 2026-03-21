@@ -1,11 +1,11 @@
 #!/bin/bash
 # Agent-Core Quick Install via curl
-# Usage: curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-curl.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
 
 set -e
 
 VERSION="1.0.0"
-REPO_URL="https://github.com/your-org/agent-core"
+REPO_URL="https://github.com/your-org/agent-corex"
 
 # Colors
 RED='\033[0;31m'
@@ -48,7 +48,7 @@ main() {
     # Install
     print_info "Installing Agent-Core..."
     pip install --upgrade pip setuptools wheel
-    pip install agent-core
+    pip install agent-corex
 
     # Verify
     print_info "Verifying installation..."
@@ -65,10 +65,10 @@ main() {
     echo -e "${BLUE}╚════════════════════════════════════════╝${NC}\n"
 
     echo "1. Start the API server:"
-    echo "   ${YELLOW}agent-core start${NC}\n"
+    echo "   ${YELLOW}agent-corex start${NC}\n"
 
     echo "2. Retrieve tools (in another terminal):"
-    echo "   ${YELLOW}agent-core retrieve 'edit a file'${NC}\n"
+    echo "   ${YELLOW}agent-corex retrieve 'edit a file'${NC}\n"
 
     echo "3. Visit API docs:"
     echo "   ${BLUE}http://localhost:8000/docs${NC}\n"

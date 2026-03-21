@@ -5,7 +5,7 @@
 set -e
 
 VERSION="1.0.0"
-REPO_URL="https://github.com/your-org/agent-core"
+REPO_URL="https://github.com/your-org/agent-corex"
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,7 +50,7 @@ check_python() {
 install_from_pypi() {
     print_info "Installing Agent-Core from PyPI..."
     pip install --upgrade pip setuptools wheel
-    pip install agent-core
+    pip install agent-corex
     print_success "Agent-Core installed from PyPI"
 }
 
@@ -68,13 +68,13 @@ install_with_optional() {
     print_info "Installing Agent-Core with optional dependencies..."
 
     if [ "$1" = "redis" ]; then
-        pip install agent-core[redis]
+        pip install agent-corex[redis]
         print_success "Agent-Core with Redis support installed"
     elif [ "$1" = "dev" ]; then
-        pip install agent-core[dev]
+        pip install agent-corex[dev]
         print_success "Agent-Core with development tools installed"
     else
-        pip install agent-core[dev,redis]
+        pip install agent-corex[dev,redis]
         print_success "Agent-Core with all optional dependencies installed"
     fi
 }
@@ -96,13 +96,13 @@ show_next_steps() {
     echo -e "${BLUE}╚════════════════════════════════════════╝${NC}\n"
 
     echo "1. Check version:"
-    echo "   agent-core version\n"
+    echo "   agent-corex version\n"
 
     echo "2. Start the API server:"
-    echo "   agent-core start --host 0.0.0.0 --port 8000\n"
+    echo "   agent-corex start --host 0.0.0.0 --port 8000\n"
 
     echo "3. Retrieve tools (in another terminal):"
-    echo "   agent-core retrieve 'edit a file' --top-k 5\n"
+    echo "   agent-corex retrieve 'edit a file' --top-k 5\n"
 
     echo "4. Visit API docs:"
     echo "   http://localhost:8000/docs\n"

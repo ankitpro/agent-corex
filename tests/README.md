@@ -174,7 +174,7 @@ ModuleNotFoundError: No module named 'packages'
 
 Solution: Run tests from project root:
 ```bash
-cd agent-core
+cd agent-corex
 pytest tests/
 ```
 

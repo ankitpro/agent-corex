@@ -5,7 +5,7 @@ REM Installs Agent-Core from PyPI
 setlocal enabledelayedexpansion
 
 set VERSION=1.0.0
-set REPO_URL=https://github.com/your-org/agent-core
+set REPO_URL=https://github.com/your-org/agent-corex
 
 echo.
 echo ╔════════════════════════════════════════╗
@@ -33,7 +33,7 @@ if "%INSTALL_TYPE%"=="" set INSTALL_TYPE=pypi
 
 echo Installing Agent-Core from PyPI...
 pip install --upgrade pip setuptools wheel
-pip install agent-core
+pip install agent-corex
 
 if %errorlevel% neq 0 (
     echo Error: Installation failed
@@ -44,13 +44,13 @@ if %errorlevel% neq 0 (
 REM Handle optional dependencies
 if "%INSTALL_TYPE%"=="redis" (
     echo Installing Redis support...
-    pip install agent-core[redis]
+    pip install agent-corex[redis]
 ) else if "%INSTALL_TYPE%"=="dev" (
     echo Installing development tools...
-    pip install agent-core[dev]
+    pip install agent-corex[dev]
 ) else if "%INSTALL_TYPE%"=="all" (
     echo Installing all optional dependencies...
-    pip install agent-core[dev,redis]
+    pip install agent-corex[dev,redis]
 )
 
 REM Verify installation
@@ -70,13 +70,13 @@ echo ║          Next Steps                    ║
 echo ╚════════════════════════════════════════╝
 echo.
 echo 1. Check version:
-echo    agent-core version
+echo    agent-corex version
 echo.
 echo 2. Start the API server:
-echo    agent-core start --host 0.0.0.0 --port 8000
+echo    agent-corex start --host 0.0.0.0 --port 8000
 echo.
 echo 3. Retrieve tools (in another terminal):
-echo    agent-core retrieve "edit a file" --top-k 5
+echo    agent-corex retrieve "edit a file" --top-k 5
 echo.
 echo 4. Visit API docs:
 echo    http://localhost:8000/docs

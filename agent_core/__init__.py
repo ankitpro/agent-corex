@@ -5,8 +5,8 @@ Provides multiple ranking methods for selecting the most relevant tools from lar
 """
 
 __version__ = "1.0.0"
-__author__ = "Agent-Core Team"
-__email__ = "hello@agent-core.ai"
+__author__ = "Ankit Agarwal"
+__email__ = "ankitagarwalpro@gmail.com"
 
 from agent_core.retrieval.ranker import rank_tools
 from agent_core.tools.registry import ToolRegistry

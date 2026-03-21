@@ -3,14 +3,14 @@ requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-core"
+name = "agent-corex"
 version = "1.0.0"
 description = "Fast, accurate MCP tool retrieval engine for LLMs with semantic search"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Agent-Core Team", email = "hello@agent-core.ai"}
+    {name = "Ankit Agarwal", email = "ankitagarwalpro@gmail.com"}
 ]
 keywords = [
     "mcp",
@@ -64,14 +64,14 @@ redis = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/agent-core"
-Documentation = "https://github.com/your-org/agent-core#readme"
-Repository = "https://github.com/your-org/agent-core.git"
-"Bug Tracker" = "https://github.com/your-org/agent-core/issues"
-Changelog = "https://github.com/your-org/agent-core/releases"
+Homepage = "https://github.com/your-org/agent-corex"
+Documentation = "https://github.com/your-org/agent-corex#readme"
+Repository = "https://github.com/your-org/agent-corex.git"
+"Bug Tracker" = "https://github.com/your-org/agent-corex/issues"
+Changelog = "https://github.com/your-org/agent-corex/releases"
 
 [project.scripts]
-agent-core = "agent_core.cli.main:app"
+agent-corex = "agent_core.cli.main:app"
 
 [tool.setuptools]
 packages = ["agent_core"]

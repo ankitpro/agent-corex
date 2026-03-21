@@ -36,7 +36,7 @@ gh release create v1.0.0 \
 
 **That's it!** Users can now install:
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 ### 2. Manual Publishing
@@ -60,7 +60,7 @@ twine check dist/*
 twine upload --repository testpypi dist/*
 
 # Test installation:
-pip install --index-url https://test.pypi.org/simple/ agent-core
+pip install --index-url https://test.pypi.org/simple/ agent-corex
 
 # 4. Upload to PyPI (production)
 twine upload dist/*
@@ -73,22 +73,22 @@ twine upload dist/*
 ### PyPI (Official Python Package Index)
 
 **Status:** Ready
-**Users install:** `pip install agent-core`
+**Users install:** `pip install agent-corex`
 
 ```bash
 # After publishing to PyPI, users can:
-pip install agent-core                    # Latest version
-pip install agent-core==1.0.0             # Specific version
-pip install agent-core>=1.0.0             # Version constraint
-pip install agent-core[redis]             # With optional deps
-pip install agent-core[dev]               # With dev tools
+pip install agent-corex                    # Latest version
+pip install agent-corex==1.0.0             # Specific version
+pip install agent-corex>=1.0.0             # Version constraint
+pip install agent-corex[redis]             # With optional deps
+pip install agent-corex[dev]               # With dev tools
 ```
 
 **PyPI Package Info:**
-- Name: `agent-core`
-- Home Page: https://github.com/your-org/agent-core
-- Documentation: https://github.com/your-org/agent-core#readme
-- Source: https://github.com/your-org/agent-core
+- Name: `agent-corex`
+- Home Page: https://github.com/your-org/agent-corex
+- Documentation: https://github.com/your-org/agent-corex#readme
+- Source: https://github.com/your-org/agent-corex
 - License: MIT
 
 ### Installation Scripts
@@ -96,7 +96,7 @@ pip install agent-core[dev]               # With dev tools
 **Instant Install (curl):**
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-curl.sh | bash
+curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
 
 # Windows (PowerShell)
 iex ((New-Object System.Net.WebClient).DownloadString('https://...install.bat'))
@@ -112,35 +112,35 @@ These scripts:
 ### GitHub Releases
 
 **Download Executable Packages:**
-- `agent-core-1.0.0.whl` - Wheel distribution
-- `agent-core-1.0.0.tar.gz` - Source distribution
-- `agent-core-1.0.0.zip` - Windows package
+- `agent-corex-1.0.0.whl` - Wheel distribution
+- `agent-corex-1.0.0.tar.gz` - Source distribution
+- `agent-corex-1.0.0.zip` - Windows package
 
 Users can also install directly:
 ```bash
-pip install https://github.com/your-org/agent-core/releases/download/v1.0.0/agent_core-1.0.0-py3-none-any.whl
+pip install https://github.com/your-org/agent-corex/releases/download/v1.0.0/agent_core-1.0.0-py3-none-any.whl
 ```
 
 ### Docker
 
 **Official Docker Image (coming):**
 ```bash
-docker pull agent-core:latest
-docker run -p 8000:8000 agent-core:latest
+docker pull agent-corex:latest
+docker run -p 8000:8000 agent-corex:latest
 ```
 
 **Build locally:**
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
-docker build -t agent-core:latest .
-docker run -p 8000:8000 agent-core:latest
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
+docker build -t agent-corex:latest .
+docker run -p 8000:8000 agent-corex:latest
 ```
 
 ### Homebrew (Coming)
 
 ```bash
-brew install agent-core
+brew install agent-corex
 ```
 
 Add this to your Homebrew tap once available.
@@ -217,10 +217,10 @@ twine check dist/*
 
 # 5. Test installation
 pip install dist/agent_core-*.whl
-agent-core version
+agent-corex version
 
 # 6. Test CLI
-agent-core retrieve "test" --help
+agent-corex retrieve "test" --help
 ```
 
 ---
@@ -234,13 +234,13 @@ For organizations with internal PyPI:
 **Option 1: Internal PyPI Proxy**
 ```bash
 # Configure pip to use internal registry
-pip install -i https://internal-pypi.company.com/simple/ agent-core
+pip install -i https://internal-pypi.company.com/simple/ agent-corex
 ```
 
 **Option 2: Vendoring (Embed in Your Package)**
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
 pip install -e .
 # Or distribute as submodule/dependency
 ```
@@ -248,11 +248,11 @@ pip install -e .
 **Option 3: Container Registry**
 ```bash
 # Push to Docker Hub or ECR
-docker tag agent-core:latest your-registry.com/agent-core:latest
-docker push your-registry.com/agent-core:latest
+docker tag agent-corex:latest your-registry.com/agent-corex:latest
+docker push your-registry.com/agent-corex:latest
 
 # Users pull from your registry
-docker pull your-registry.com/agent-core:latest
+docker pull your-registry.com/agent-corex:latest
 ```
 
 ---
@@ -301,7 +301,7 @@ Before publishing v2.0.0 or later:
 - [ ] Push: `git push origin main vX.Y.Z`
 - [ ] Create release: `gh release create vX.Y.Z`
 - [ ] Watch GitHub Actions publish to PyPI
-- [ ] Verify on PyPI: https://pypi.org/project/agent-core/
+- [ ] Verify on PyPI: https://pypi.org/project/agent-corex/
 
 ---
 
@@ -310,7 +310,7 @@ Before publishing v2.0.0 or later:
 ### PyPI Stats
 
 Check your package stats:
-- https://pypi.org/project/agent-core/#history
+- https://pypi.org/project/agent-corex/#history
 - Download statistics
 - Version history
 - Release timeline
@@ -319,14 +319,14 @@ Check your package stats:
 
 Monitor release downloads:
 ```bash
-gh api repos/your-org/agent-core/releases -q '.[] | "\(.tag_name): \(.download_count) downloads"'
+gh api repos/your-org/agent-corex/releases -q '.[] | "\(.tag_name): \(.download_count) downloads"'
 ```
 
 ### User Feedback
 
-- GitHub Issues: https://github.com/your-org/agent-core/issues
-- Discussions: https://github.com/your-org/agent-core/discussions
-- Email: hello@agent-core.ai
+- GitHub Issues: https://github.com/your-org/agent-corex/issues
+- Discussions: https://github.com/your-org/agent-corex/discussions
+- Email: hello@agent-corex.ai
 
 ---
 
@@ -336,8 +336,8 @@ gh api repos/your-org/agent-core/releases -q '.[] | "\(.tag_name): \(.download_c
 
 ```bash
 # Check if published
-pip search agent-core  # (deprecated, use pip index)
-pip index versions agent-core
+pip search agent-corex  # (deprecated, use pip index)
+pip index versions agent-corex
 
 # If not found, check GitHub Actions logs
 gh run list -w publish.yml
@@ -348,13 +348,13 @@ gh run view <run_id> --log
 
 ```bash
 # Verbose installation
-pip install -v agent-core
+pip install -v agent-corex
 
 # Force reinstall
-pip install --force-reinstall --no-cache-dir agent-core
+pip install --force-reinstall --no-cache-dir agent-corex
 
 # Check dependencies
-pip show agent-core
+pip show agent-corex
 ```
 
 ### Build Verification Fails

@@ -87,7 +87,7 @@
 ## 📋 Release Steps (NEXT)
 
 ### Step 1: Create GitHub Release
-- [ ] Go to: https://github.com/ankitpro/agent-core/releases
+- [ ] Go to: https://github.com/ankitpro/agent-corex/releases
 - [ ] Click "Create a new release"
 - [ ] Select tag: v1.0.0
 - [ ] Release title: "Agent-Core v1.0.0 - Production Release"
@@ -102,9 +102,9 @@ This will automatically:
 
 ### Step 2: Verify PyPI Publication
 - [ ] Wait for GitHub Actions to complete
-- [ ] Check PyPI: https://pypi.org/project/agent-core/
+- [ ] Check PyPI: https://pypi.org/project/agent-corex/
 - [ ] Verify version 1.0.0 is live
-- [ ] Test: `pip install agent-core`
+- [ ] Test: `pip install agent-corex`
 
 ---
 
@@ -124,11 +124,11 @@ This will automatically:
 
 **Create GitHub Release** → Automatically publishes to PyPI
 
-Visit: https://github.com/ankitpro/agent-core/releases
+Visit: https://github.com/ankitpro/agent-corex/releases
 
 Users will then be able to:
 ```bash
-pip install agent-core
-agent-core retrieve "edit a file"
-agent-core start
+pip install agent-corex
+agent-corex retrieve "edit a file"
+agent-corex start
 ```

@@ -9,7 +9,7 @@
 ### 1. Professional Python Package Structure
 
 ```
-agent-core/
+agent-corex/
 ├── pyproject.toml              # Modern package config (PEP 621)
 ├── setup.py                    # Backward compatibility
 ├── MANIFEST.in                 # Package manifest
@@ -37,13 +37,13 @@ agent-core/
 
 **Method 1: pip (Recommended)**
 ```bash
-pip install agent-core
+pip install agent-corex
 ```
 
 **Method 2: curl (Quick)**
 ```bash
 # macOS/Linux
-curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-curl.sh | bash
+curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
 
 # Windows
 .\install.bat
@@ -51,30 +51,30 @@ curl -fsSL https://raw.githubusercontent.com/your-org/agent-core/main/install-cu
 
 **Method 3: Direct Source**
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
 pip install -e .
 ```
 
 ### 3. CLI Interface (Typer)
 
-Commands available after `pip install agent-core`:
+Commands available after `pip install agent-corex`:
 
 ```bash
 # Retrieve tools
-agent-core retrieve "edit a file" --top-k 5 --method hybrid
+agent-corex retrieve "edit a file" --top-k 5 --method hybrid
 
 # Start API server
-agent-core start --host 0.0.0.0 --port 8000
+agent-corex start --host 0.0.0.0 --port 8000
 
 # Check version
-agent-core version
+agent-corex version
 
 # Check API health
-agent-core health
+agent-corex health
 
 # Show configuration
-agent-core config
+agent-corex config
 ```
 
 ### 4. Automated CI/CD (GitHub Actions)
@@ -109,44 +109,44 @@ agent-core config
 
 ```bash
 # Install
-pip install agent-core
+pip install agent-corex
 
 # Verify
-agent-core version
+agent-corex version
 # Output: Agent-Core 1.0.0
 
 # Start server
-agent-core start
+agent-corex start
 # Output: Starting Agent-Core API server at http://127.0.0.1:8000
 
 # Test (in another terminal)
-agent-core retrieve "edit a file" --top-k 3
+agent-corex retrieve "edit a file" --top-k 3
 ```
 
 ### With Optional Dependencies
 
 ```bash
 # Redis support (for caching in Enterprise)
-pip install agent-core[redis]
+pip install agent-corex[redis]
 
 # Development tools
-pip install agent-core[dev]
+pip install agent-corex[dev]
 
 # All optional dependencies
-pip install agent-core[dev,redis]
+pip install agent-corex[dev,redis]
 ```
 
 ---
 
 ## PyPI Package Metadata
 
-**Package Name**: `agent-core`
+**Package Name**: `agent-corex`
 
-**PyPI URL**: https://pypi.org/project/agent-core/
+**PyPI URL**: https://pypi.org/project/agent-corex/
 
 **Key Metadata**:
 ```toml
-name = "agent-core"
+name = "agent-corex"
 version = "1.0.0"
 description = "Fast, accurate MCP tool retrieval engine for LLMs with semantic search"
 readme = "README.md"
@@ -154,14 +154,14 @@ license = {text = "MIT"}
 requires-python = ">=3.8"
 
 [project.urls]
-Homepage = "https://github.com/your-org/agent-core"
-Documentation = "https://github.com/your-org/agent-core#readme"
-Repository = "https://github.com/your-org/agent-core.git"
-"Bug Tracker" = "https://github.com/your-org/agent-core/issues"
-Changelog = "https://github.com/your-org/agent-core/releases"
+Homepage = "https://github.com/your-org/agent-corex"
+Documentation = "https://github.com/your-org/agent-corex#readme"
+Repository = "https://github.com/your-org/agent-corex.git"
+"Bug Tracker" = "https://github.com/your-org/agent-corex/issues"
+Changelog = "https://github.com/your-org/agent-corex/releases"
 
 [project.scripts]
-agent-core = "agent_core.cli.main:app"
+agent-corex = "agent_core.cli.main:app"
 ```
 
 ---
@@ -202,7 +202,7 @@ twine check dist/*
 twine upload --repository testpypi dist/*
 
 # Verify on TestPyPI
-pip install --index-url https://test.pypi.org/simple/ agent-core
+pip install --index-url https://test.pypi.org/simple/ agent-corex
 
 # Publish to production
 twine upload dist/*
@@ -216,33 +216,33 @@ twine upload dist/*
 
 ```bash
 # 1. Install
-pip install agent-core[dev,redis]
+pip install agent-corex[dev,redis]
 
 # 2. Configure
 mkdir -p config
 cp config/mcp.json.example config/mcp.json
 
 # 3. Run
-agent-core start --host 0.0.0.0 --port 8000
+agent-corex start --host 0.0.0.0 --port 8000
 ```
 
 ### Docker
 
 ```bash
 # Build
-docker build -t agent-core:latest .
+docker build -t agent-corex:latest .
 
 # Run
 docker run -p 8000:8000 \
   -v $(pwd)/config:/app/config \
-  agent-core:latest
+  agent-corex:latest
 ```
 
 ### Internal PyPI Mirror
 
 ```bash
 # Configure pip to use internal registry
-pip install -i https://internal-pypi.company.com/simple/ agent-core
+pip install -i https://internal-pypi.company.com/simple/ agent-corex
 ```
 
 ---
@@ -305,8 +305,8 @@ pip install -i https://internal-pypi.company.com/simple/ agent-core
 ### Clone & Install
 
 ```bash
-git clone https://github.com/your-org/agent-core
-cd agent-core
+git clone https://github.com/your-org/agent-corex
+cd agent-corex
 
 # Create virtual environment
 python -m venv venv
@@ -357,13 +357,13 @@ twine check dist/*
 
 ```bash
 # Verbose install
-pip install -v agent-core
+pip install -v agent-corex
 
 # Force reinstall
-pip install --force-reinstall --no-cache-dir agent-core
+pip install --force-reinstall --no-cache-dir agent-corex
 
 # Check what's installed
-pip show agent-core
+pip show agent-corex
 ```
 
 ### CLI Not Found
@@ -429,7 +429,7 @@ python -c "import agent_core; print(agent_core.__version__)"
 
 Agent-Core is now a **professional, production-ready open-source package** that can be:
 
-1. **Installed easily**: `pip install agent-core`
+1. **Installed easily**: `pip install agent-corex`
 2. **Distributed widely**: PyPI, Docker, Homebrew, curl
 3. **Monetized sustainably**: Free OSS + managed premium tier
 4. **Maintained professionally**: GitHub Actions, comprehensive tests, documentation
