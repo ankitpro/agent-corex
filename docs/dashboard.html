@@ -405,14 +405,6 @@ venv\Scripts\activate</code></div>
     </div>
 
     <div class="success-message">✅ All steps ready! Once your backend is running, test the connection in the next tab.</div>
-
-    <hr style="margin: 30px 0;">
-    <div style="text-align: center; margin: 20px 0;">
-        <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Need help?</p>
-        <a href="/quickstart" class="btn secondary" style="display: inline-block; margin: 0 8px;">⚡ Quick Start</a>
-        <a href="/api" class="btn secondary" style="display: inline-block; margin: 0 8px;">🔌 API Docs</a>
-        <a href="/dashboard-guide/" class="btn secondary" style="display: inline-block; margin: 0 8px;">📖 Dashboard Guide</a>
-    </div>
 </div>
 
 <!-- Connection Tab -->
@@ -442,18 +434,18 @@ venv\Scripts\activate</code></div>
     </div>
 
     <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
-
-    <hr style="margin: 30px 0;">
-    <div style="text-align: center; margin: 20px 0;">
-        <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Ready to search tools?</p>
-        <a href="#query" class="btn-primary" style="display: inline-block; margin: 0 8px; padding: 12px 24px; text-decoration: none; color: white; background-color: #27AE60; border-radius: 4px;">🔍 Go to Query Tools</a>
-        <a href="/dashboard-guide/" class="btn secondary" style="display: inline-block; margin: 0 8px;">📖 Help</a>
-    </div>
 </div>
 
 <!-- Query Tab -->
 <div id="query" class="dashboard-tab-content">
-    <div id="notConnectedMsg" class="info-box" style="display:block;">⚠️ Backend not connected. Go to Connection tab first.</div>
+    <div id="notConnectedMsg" class="info-box" style="display:block; background-color: #FFF3E0; border-left-color: #F39C12; color: #E65100;">
+        <strong>⚠️ Backend Not Connected</strong><br>
+        To use Query Tools, you need to:<br>
+        1. Go to <strong>Connection</strong> tab<br>
+        2. Enter your backend URL (e.g., http://localhost:8000)<br>
+        3. Click "Test Connection" to verify it works<br>
+        4. Come back here to search tools
+    </div>
 
     <div id="queryCard" style="display:none;">
         <div class="form-group">
@@ -483,14 +475,6 @@ venv\Scripts\activate</code></div>
         </div>
 
         <div id="errorContainer"></div>
-    </div>
-
-    <hr style="margin: 30px 0;">
-    <div style="text-align: center; margin: 20px 0;">
-        <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Learn more about tool retrieval</p>
-        <a href="/api" class="btn secondary" style="display: inline-block; margin: 0 8px;">🔌 API Reference</a>
-        <a href="/dashboard-guide/" class="btn secondary" style="display: inline-block; margin: 0 8px;">📖 Dashboard Guide</a>
-        <a href="https://github.com/ankitpro/agent-corex" class="btn secondary" style="display: inline-block; margin: 0 8px;">⭐ GitHub</a>
     </div>
 </div>
 
@@ -629,7 +613,11 @@ venv\Scripts\activate</code></div>
             document.getElementById('results').innerHTML = resultsHtml || '<p style="color:#999;">No results found</p>';
             document.getElementById('resultsContainer').style.display = 'block';
         } catch (error) {
-            document.getElementById('errorContainer').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            let errorMsg = error.message;
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                errorMsg = `Cannot reach backend at ${baseUrl}. Make sure your backend is running and the URL is correct.`;
+            }
+            document.getElementById('errorContainer').innerHTML = `<div class="error-message">❌ Error: ${errorMsg}</div>`;
         }
     }
 
