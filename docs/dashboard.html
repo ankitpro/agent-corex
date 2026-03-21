@@ -448,6 +448,10 @@ venv\Scripts\activate</code></div>
     </div>
 
     <div id="queryCard" style="display:none;">
+        <div class="info-box" style="background-color: #E8F5E9; border-left-color: #27AE60; color: #1B5E20;">
+            <strong>💡 First Run Note:</strong> The first search will take 30-60 seconds as it downloads AI models from Hugging Face. Subsequent searches are fast!
+        </div>
+
         <div class="form-group">
             <label for="query">Search Query</label>
             <input type="text" id="query" placeholder="e.g., edit a file, run tests" onkeypress="if(event.key==='Enter') searchTools()">
@@ -535,16 +539,33 @@ venv\Scripts\activate</code></div>
     class AgentCorexClient {
         constructor(baseUrl) {
             this.baseUrl = baseUrl.replace(/\/$/, '');
+            this.timeout = 60000; // 60 second timeout for model downloads
         }
 
         async request(endpoint, options = {}) {
             const url = `${this.baseUrl}${endpoint}`;
-            const response = await fetch(url, {
-                headers: { 'Content-Type': 'application/json', ...options.headers },
-                ...options
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            return response.json();
+
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    signal: controller.signal,
+                    ...options
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                return response.json();
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout - backend may be downloading models');
+                }
+                throw error;
+            }
         }
 
         async health() { return this.request('/health'); }
@@ -600,6 +621,12 @@ venv\Scripts\activate</code></div>
 
         const client = new AgentCorexClient(baseUrl);
         document.getElementById('errorContainer').innerHTML = '';
+        document.getElementById('resultsContainer').style.display = 'none';
+
+        // Show loading state
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><p style="color: #666;">🔄 Searching tools...</p><p style="font-size: 12px; color: #999;">First search may take longer while models load</p></div>';
+        document.getElementById('resultsContainer').style.display = 'block';
 
         try {
             const results = await client.retrieveTools(query, topK, method);
@@ -610,14 +637,16 @@ venv\Scripts\activate</code></div>
                     <div class="result-score">Score: ${(tool.score || 0).toFixed(4)}</div>
                 </div>
             `).join('');
-            document.getElementById('results').innerHTML = resultsHtml || '<p style="color:#999;">No results found</p>';
-            document.getElementById('resultsContainer').style.display = 'block';
+            resultsDiv.innerHTML = resultsHtml || '<p style="color:#999;">No results found</p>';
         } catch (error) {
+            document.getElementById('resultsContainer').style.display = 'none';
             let errorMsg = error.message;
             if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                 errorMsg = `Cannot reach backend at ${baseUrl}. Make sure your backend is running and the URL is correct.`;
+            } else if (error.message.includes('timeout')) {
+                errorMsg = `Request timeout (${error.message}). Try again - first query downloads AI models which can take 30-60 seconds.`;
             }
-            document.getElementById('errorContainer').innerHTML = `<div class="error-message">❌ Error: ${errorMsg}</div>`;
+            document.getElementById('errorContainer').innerHTML = `<div class="error-message">❌ ${errorMsg}</div>`;
         }
     }
 
