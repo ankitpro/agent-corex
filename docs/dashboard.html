@@ -50,6 +50,45 @@ permalink: /dashboard/
             margin: 0;
         }
 
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: transparent;
+            color: white;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            color: #27AE60;
+            border-bottom-color: #27AE60;
+        }
+
+        .tab-button.active {
+            color: #27AE60;
+            border-bottom-color: #27AE60;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .card {
             background: white;
             border-radius: 8px;
@@ -66,6 +105,12 @@ permalink: /dashboard/
             padding-left: 15px;
         }
 
+        .card h3 {
+            color: #1A5276;
+            font-size: 18px;
+            margin: 20px 0 15px 0;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -79,7 +124,8 @@ permalink: /dashboard/
         }
 
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             width: 100%;
             padding: 12px;
             border: 1px solid #DDD;
@@ -90,7 +136,8 @@ permalink: /dashboard/
         }
 
         input[type="text"]:focus,
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        select:focus {
             outline: none;
             border-color: #27AE60;
             box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
@@ -148,11 +195,34 @@ permalink: /dashboard/
             background-color: transparent;
             color: #1A5276;
             border: 2px solid #1A5276;
+            flex: 0;
         }
 
         .btn-secondary:hover {
             background-color: #1A5276;
             color: white;
+        }
+
+        .btn-copy {
+            background-color: #1A5276;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background-color: #0D2C44;
+        }
+
+        .btn-copy.copied {
+            background-color: #27AE60;
         }
 
         .status-section {
@@ -192,12 +262,8 @@ permalink: /dashboard/
         }
 
         @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .status-text {
@@ -224,6 +290,30 @@ permalink: /dashboard/
             font-family: monospace;
             font-size: 13px;
             color: #333;
+            overflow-x: auto;
+        }
+
+        .command-box {
+            background-color: #1A1A1A;
+            color: #00FF00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 15px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .command-box code {
+            display: block;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .command-container {
+            position: relative;
+            margin: 15px 0;
         }
 
         .query-section {
@@ -304,7 +394,7 @@ permalink: /dashboard/
         }
 
         .info-box p {
-            margin: 0;
+            margin: 10px 0;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -316,23 +406,70 @@ permalink: /dashboard/
             font-family: monospace;
         }
 
-        .loading {
-            display: inline-block;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background-color: #27AE60;
-            margin-left: 6px;
-            animation: blink 1s infinite;
+        .step-container {
+            background-color: #F9F9F9;
+            border-left: 4px solid #1976D2;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
         }
 
-        @keyframes blink {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
+        .step-number {
+            display: inline-block;
+            background-color: #1976D2;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #1A5276;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .os-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .os-btn {
+            padding: 8px 16px;
+            border: 1px solid #DDD;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .os-btn.active {
+            background-color: #1976D2;
+            color: white;
+            border-color: #1976D2;
+        }
+
+        .os-content {
+            display: none;
+        }
+
+        .os-content.active {
+            display: block;
         }
 
         @media (max-width: 768px) {
@@ -355,6 +492,15 @@ permalink: /dashboard/
             .card {
                 padding: 20px;
             }
+
+            .tabs {
+                gap: 5px;
+            }
+
+            .tab-button {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -365,102 +511,320 @@ permalink: /dashboard/
             <p>Connect to your local backend and test tool retrieval</p>
         </div>
 
-        <!-- Connection Settings Card -->
-        <div class="card">
-            <h2>⚙️ Connection Settings</h2>
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('setup')">📖 Setup Guide</button>
+            <button class="tab-button" onclick="switchTab('connection')">🔌 Connection</button>
+            <button class="tab-button" onclick="switchTab('query')">🔍 Query Tools</button>
+        </div>
 
-            <div class="info-box">
-                <p>
-                    To use this dashboard, start the Agent-Corex backend locally:<br>
-                    <code>uvicorn agent_core.api.main:app --reload</code>
-                </p>
-            </div>
+        <!-- Setup Guide Tab -->
+        <div id="setup" class="tab-content active">
+            <div class="card">
+                <h2>📖 Quick Setup Guide</h2>
 
-            <div class="form-group">
-                <label for="baseUrl">Backend Base URL</label>
-                <div class="form-row">
-                    <div>
-                        <input
-                            type="text"
-                            id="baseUrl"
-                            placeholder="http://localhost:8000"
-                            value="http://localhost:8000"
-                        >
-                        <div class="input-hint">Default: http://localhost:8000</div>
+                <div class="info-box">
+                    <p>
+                        Follow these steps to get Agent-Corex running locally and test it with this dashboard.
+                        All commands are ready to copy - click the copy button next to each command!
+                    </p>
+                </div>
+
+                <!-- Step 1: Clone Repository -->
+                <div class="step-container">
+                    <div class="step-title">
+                        <span class="step-number">1</span>
+                        Clone the Repository
                     </div>
-                    <button class="btn-primary" onclick="testConnection()">
-                        Test Connection
+                    <p class="step-description">
+                        First, clone the Agent-Corex repository from GitHub to your local machine.
+                    </p>
+
+                    <div class="command-container">
+                        <div class="command-box">
+                            <code>git clone https://github.com/ankitpro/agent-corex.git
+cd agent-corex</code>
+                        </div>
+                        <button class="btn-copy" onclick="copyCommand('git clone https://github.com/ankitpro/agent-corex.git\ncd agent-corex')">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Create Virtual Environment -->
+                <div class="step-container">
+                    <div class="step-title">
+                        <span class="step-number">2</span>
+                        Create Virtual Environment
+                    </div>
+                    <p class="step-description">
+                        Create a Python virtual environment to keep dependencies isolated.
+                    </p>
+
+                    <div class="os-tabs">
+                        <button class="os-btn active" onclick="switchOS('linux')">🐧 Linux/Mac</button>
+                        <button class="os-btn" onclick="switchOS('windows')">🪟 Windows</button>
+                    </div>
+
+                    <div id="linux-venv" class="os-content active">
+                        <div class="command-container">
+                            <div class="command-box">
+                                <code>python -m venv venv
+source venv/bin/activate</code>
+                            </div>
+                            <button class="btn-copy" onclick="copyCommand('python -m venv venv\nsource venv/bin/activate')">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="windows-venv" class="os-content">
+                        <div class="command-container">
+                            <div class="command-box">
+                                <code>python -m venv venv
+venv\Scripts\activate</code>
+                            </div>
+                            <button class="btn-copy" onclick="copyCommand('python -m venv venv\nvenv\\Scripts\\activate')">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Install Dependencies -->
+                <div class="step-container">
+                    <div class="step-title">
+                        <span class="step-number">3</span>
+                        Install Dependencies
+                    </div>
+                    <p class="step-description">
+                        Install Agent-Corex and all required dependencies using pip.
+                    </p>
+
+                    <div class="command-container">
+                        <div class="command-box">
+                            <code>pip install -e .</code>
+                        </div>
+                        <button class="btn-copy" onclick="copyCommand('pip install -e .')">
+                            📋 Copy
+                        </button>
+                    </div>
+
+                    <p class="step-description" style="margin-top: 15px; color: #666; font-size: 12px;">
+                        ℹ️ This installs Agent-Corex in development mode, so you can test it locally.
+                    </p>
+                </div>
+
+                <!-- Step 4: Start Backend -->
+                <div class="step-container">
+                    <div class="step-title">
+                        <span class="step-number">4</span>
+                        Start the Backend
+                    </div>
+                    <p class="step-description">
+                        Launch the FastAPI server that runs on your local machine.
+                    </p>
+
+                    <div class="command-container">
+                        <div class="command-box">
+                            <code>uvicorn agent_core.api.main:app --reload</code>
+                        </div>
+                        <button class="btn-copy" onclick="copyCommand('uvicorn agent_core.api.main:app --reload')">
+                            📋 Copy
+                        </button>
+                    </div>
+
+                    <p class="step-description" style="margin-top: 15px; color: #666; font-size: 12px;">
+                        ✅ Server should start on <code>http://localhost:8000</code>
+                        <br>
+                        📖 API docs available at <code>http://localhost:8000/docs</code>
+                    </p>
+                </div>
+
+                <!-- Step 5: Connect Dashboard -->
+                <div class="step-container">
+                    <div class="step-title">
+                        <span class="step-number">5</span>
+                        Connect Dashboard
+                    </div>
+                    <p class="step-description">
+                        Go to the "Connection" tab below and click "Test Connection" to verify your backend is running.
+                    </p>
+
+                    <button class="btn-primary" onclick="switchTab('connection')" style="width: auto;">
+                        → Go to Connection Tab
                     </button>
                 </div>
-            </div>
 
-            <!-- Connection Status -->
-            <div class="status-section">
-                <div class="status-indicator">
-                    <div class="status-dot disconnected" id="statusDot"></div>
-                    <div class="status-text">
-                        <div class="status-label">Status: <span id="statusLabel">Disconnected</span></div>
-                        <div class="status-message" id="statusMessage">Not connected to backend</div>
-                    </div>
+                <div class="success-message">
+                    <strong>✅ All set!</strong> Once your backend is running, you'll be able to test tool retrieval in the Connection tab.
                 </div>
-
-                <div class="status-details" id="statusDetails" style="display:none;">
-                    <div id="connectionInfo"></div>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
             </div>
         </div>
 
-        <!-- Query Tools Card -->
-        <div class="card" id="queryCard" style="display:none;">
-            <h2>🔍 Query Tools</h2>
+        <!-- Connection Tab -->
+        <div id="connection" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Connection Settings</h2>
 
-            <div class="query-form">
+                <div class="info-box">
+                    <p>
+                        Make sure your backend is running with:<br>
+                        <code>uvicorn agent_core.api.main:app --reload</code><br>
+                        Then test the connection below.
+                    </p>
+                </div>
+
                 <div class="form-group">
-                    <label for="query">Search Query</label>
-                    <input
-                        type="text"
-                        id="query"
-                        placeholder="e.g., edit a file, run tests"
-                        onkeypress="if(event.key==='Enter') searchTools()"
-                    >
+                    <label for="baseUrl">Backend Base URL</label>
+                    <div class="form-row">
+                        <div>
+                            <input
+                                type="text"
+                                id="baseUrl"
+                                placeholder="http://localhost:8000"
+                                value="http://localhost:8000"
+                            >
+                            <div class="input-hint">Default: http://localhost:8000</div>
+                        </div>
+                        <button class="btn-primary" onclick="testConnection()">
+                            Test Connection
+                        </button>
+                    </div>
                 </div>
 
-                <div class="form-row-3">
-                    <div class="form-group">
-                        <label for="topK">Top K Results</label>
-                        <input type="number" id="topK" value="5" min="1" max="20">
+                <!-- Connection Status -->
+                <div class="status-section">
+                    <div class="status-indicator">
+                        <div class="status-dot disconnected" id="statusDot"></div>
+                        <div class="status-text">
+                            <div class="status-label">Status: <span id="statusLabel">Disconnected</span></div>
+                            <div class="status-message" id="statusMessage">Not connected to backend</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="method">Ranking Method</label>
-                        <select id="method" style="padding:12px; border:1px solid #DDD; border-radius:4px; font-size:14px;">
-                            <option value="keyword">Keyword</option>
-                            <option value="hybrid" selected>Hybrid</option>
-                            <option value="embedding">Embedding</option>
-                        </select>
+
+                    <div class="status-details" id="statusDetails" style="display:none;">
+                        <div id="connectionInfo"></div>
                     </div>
-                    <button class="btn-primary" onclick="searchTools()">Search</button>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Results -->
-            <div class="results-section" id="resultsContainer" style="display:none;">
-                <h3 style="color:#1A5276; margin-bottom:15px;">Results</h3>
-                <div id="results"></div>
+        <!-- Query Tab -->
+        <div id="query" class="tab-content">
+            <div class="card" id="queryCard" style="display:none;">
+                <h2>🔍 Query Tools</h2>
+
+                <div class="query-form">
+                    <div class="form-group">
+                        <label for="query">Search Query</label>
+                        <input
+                            type="text"
+                            id="query"
+                            placeholder="e.g., edit a file, run tests, save document"
+                            onkeypress="if(event.key==='Enter') searchTools()"
+                        >
+                    </div>
+
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="topK">Top K Results</label>
+                            <input type="number" id="topK" value="5" min="1" max="20">
+                        </div>
+                        <div class="form-group">
+                            <label for="method">Ranking Method</label>
+                            <select id="method">
+                                <option value="keyword">⚡ Keyword (Fast)</option>
+                                <option value="hybrid" selected>🎯 Hybrid (Recommended)</option>
+                                <option value="embedding">🧠 Embedding (Accurate)</option>
+                            </select>
+                        </div>
+                        <button class="btn-primary" onclick="searchTools()">Search</button>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="results-section" id="resultsContainer" style="display:none;">
+                    <h3>Results</h3>
+                    <div id="results"></div>
+                </div>
+
+                <div id="errorContainer"></div>
             </div>
 
-            <div id="errorContainer"></div>
+            <div id="notConnectedMessage" class="card">
+                <div class="info-box">
+                    <p>
+                        <strong>⚠️ Backend not connected</strong><br>
+                        Please go to the "Connection" tab and test your backend connection first.
+                    </p>
+                </div>
+                <button class="btn-primary" onclick="switchTab('connection')" style="width: auto;">
+                    → Go to Connection Tab
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Update query card visibility if switching to query tab
+            if (tabName === 'query') {
+                const connected = document.getElementById('statusDot').classList.contains('connected');
+                document.getElementById('queryCard').style.display = connected ? 'block' : 'none';
+                document.getElementById('notConnectedMessage').style.display = connected ? 'none' : 'block';
+            }
+        }
+
+        // OS switching
+        function switchOS(os) {
+            document.querySelectorAll('.os-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.os-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(os + '-venv').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Copy command
+        function copyCommand(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.classList.add('copied');
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
         // API Client
         class AgentCorexClient {
             constructor(baseUrl) {
-                this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+                this.baseUrl = baseUrl.replace(/\/$/, '');
             }
 
             async request(endpoint, options = {}) {
@@ -535,9 +899,11 @@ permalink: /dashboard/
                     detailsDiv.style.display = 'none';
                 }
 
-                // Show/hide query card based on connection
+                // Update query card visibility
                 document.getElementById('queryCard').style.display =
                     status === 'connected' ? 'block' : 'none';
+                document.getElementById('notConnectedMessage').style.display =
+                    status === 'connected' ? 'none' : 'block';
             },
 
             showError(message) {
@@ -585,7 +951,6 @@ permalink: /dashboard/
                 return;
             }
 
-            // Validate URL
             try {
                 new URL(baseUrl);
             } catch {
@@ -659,7 +1024,6 @@ permalink: /dashboard/
             const savedUrl = Storage.getBaseUrl();
             document.getElementById('baseUrl').value = savedUrl;
 
-            // Try to restore connection
             if (savedUrl !== 'http://localhost:8000') {
                 testConnection();
             }

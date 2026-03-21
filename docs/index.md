@@ -87,12 +87,20 @@ agent-corex retrieve "edit file" --top-k 5
 python -c "from agent_core import rank_tools; print(rank_tools('edit file', tools))"
 ```
 
-### Step 3: Read the Docs
+### Step 3: Try the Interactive Dashboard
+
+**Test it instantly** with our browser-based dashboard:
+- **[🎛️ Interactive Dashboard](/dashboard/)** - Connect to local backend and test tool retrieval
+- No configuration needed - runs entirely in your browser
+- See results in real-time as you search
+
+### Step 4: Read the Docs
 
 Start with one of our guides:
 - **[⚡ Quick Start](/quickstart)** - 5-minute setup guide
 - **[📦 Installation](/installation)** - Complete setup instructions
 - **[🔌 API Reference](/api)** - Full API documentation
+- **[🎛️ Dashboard Guide](/dashboard-guide/)** - How to use the interactive dashboard
 
 ---
 
@@ -169,6 +177,12 @@ Faster inference on limited hardware
 
 ### Quick Navigation
 
+- **[🎛️ Interactive Dashboard](/dashboard/)** - Browser-based testing interface
+  - Connect to local or remote backend
+  - Test tool retrieval in real-time
+  - Try different ranking methods
+  - View results with scores
+
 - **[⚡ Quick Start](/quickstart)** - Get up and running in 5 minutes
 - **[📦 Installation](/installation)** - Installation and setup
   - PyPI package
@@ -181,6 +195,12 @@ Faster inference on limited hardware
   - REST API
   - CLI commands
   - Response formats
+
+- **[🎛️ Dashboard Guide](/dashboard-guide/)** - How to use the dashboard
+  - Connection setup
+  - API client implementation
+  - Integration examples (React, Vue)
+  - Troubleshooting
 
 - **[🚀 Deployment](/deployment)** - Production deployment
   - Local server setup
@@ -241,7 +261,8 @@ Faster inference on limited hardware
 
 ### Ready to get started?
 
-<a href="/quickstart" class="btn">⚡ Quick Start Guide</a>
+<a href="/dashboard" class="btn">🎛️ Try Dashboard</a>
+<a href="/quickstart" class="btn secondary">⚡ Quick Start</a>
 <a href="/installation" class="btn secondary">📦 Installation</a>
 <a href="https://github.com/ankitpro/agent-corex" class="btn secondary">⭐ GitHub Repo</a>
 
