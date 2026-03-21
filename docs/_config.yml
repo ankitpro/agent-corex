@@ -1,0 +1,73 @@
+# GitHub Pages Configuration
+
+# Site Settings
+title: Agent-Core
+description: "Intelligence layer for MCP tool selection"
+url: "https://agent-corex.dev"
+baseurl: ""
+
+# Theme
+theme: jekyll-theme-slate
+remote_theme: pages-themes/slate@v0.2.0
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Build Settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+
+# Navigation
+nav:
+  - title: "Home"
+    url: "/"
+  - title: "Quick Start"
+    url: "/quickstart"
+  - title: "Installation"
+    url: "/installation"
+  - title: "API Reference"
+    url: "/api"
+  - title: "Deployment"
+    url: "/deployment"
+  - title: "GitHub"
+    url: "https://github.com/ankitpro/agent-corex"
+
+# Repository
+repository: ankitpro/agent-corex
+github_user: ankitpro
+github_repo: agent-corex
+
+# Social
+twitter_username: ankitpro
+github_username: ankitpro
+
+# Analytics (optional)
+google_analytics_id: "G-XXXXXXXXXX"
+
+# Site Info
+author: Ankit
+email: contact@agent-corex.dev
+license: MIT
+
+# Build Options
+sass:
+  sass_dir: _sass
+  style: compressed
+
+exclude:
+  - .github/
+  - .gitignore
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .env
+  - .venv
