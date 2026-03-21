@@ -664,79 +664,117 @@
 }
 
 .thinking-panel {
-    background-color: white;
-    border: 1px solid #E0E0E0;
-    border-left: 4px solid #9C27B0;
-    border-radius: 4px;
-    padding: 16px;
-    margin-top: 20px;
+    background: linear-gradient(135deg, #FAFBFF 0%, #F5F7FF 100%);
+    border: 1px solid #E8EAFF;
+    border-left: 5px solid #9C27B0;
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 24px;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.08);
+    transition: all 0.3s ease;
+}
+
+.thinking-panel:hover {
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.12);
+    border-left-color: #7B1FA2;
 }
 
 .thinking-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #F0F0F0;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #E8EAFF;
 }
 
 .thinking-icon {
-    font-size: 18px;
+    font-size: 22px;
+    opacity: 0.9;
 }
 
 .thinking-header h3 {
     margin: 0;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     color: #1A5276;
+    letter-spacing: 0.3px;
 }
 
 .thinking-content {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
 .thinking-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 12px 14px;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 5px;
+    border: 1px solid rgba(156, 39, 176, 0.1);
     font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.thinking-item:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(156, 39, 176, 0.2);
 }
 
 .thinking-label {
-    color: #666;
-    font-weight: 600;
+    color: #555;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
 .thinking-value {
     color: #1A5276;
-    font-weight: 600;
-    font-family: monospace;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    padding: 4px 10px;
+    background-color: rgba(156, 39, 176, 0.08);
+    border-radius: 4px;
+    min-width: 80px;
+    text-align: right;
 }
 
 .thinking-reasoning {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #F0F0F0;
-    color: #777;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background-color: rgba(156, 39, 176, 0.05);
+    border-left: 3px solid #9C27B0;
+    border-radius: 4px;
+    color: #666;
     font-size: 12px;
-    font-style: italic;
-    line-height: 1.4;
+    line-height: 1.6;
+    font-style: normal;
 }
 
 .thinking-value.high-confidence {
-    color: #27AE60;
+    color: #1B5E20;
+    background-color: rgba(39, 174, 96, 0.15);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    font-weight: 800;
 }
 
 .thinking-value.medium-confidence {
-    color: #F39C12;
+    color: #E65100;
+    background-color: rgba(243, 156, 18, 0.15);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    font-weight: 800;
 }
 
 .thinking-value.low-confidence {
-    color: #E74C3C;
+    color: #B71C1C;
+    background-color: rgba(231, 76, 60, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    font-weight: 800;
 }
 
 @media (max-width: 768px) {

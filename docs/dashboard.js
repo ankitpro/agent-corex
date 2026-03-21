@@ -308,24 +308,25 @@ function updateThinkingPanel(tools) {
     const selectedTool = tools[0]; // Top result is selected
     const selectedToolName = selectedTool.name;
 
-    // Calculate confidence level
+    // Calculate confidence level with detailed reasoning
     let confidence, confidenceClass, reasoning;
     if (toolCount === 1) {
         confidence = 'High';
         confidenceClass = 'high-confidence';
-        reasoning = '✓ Direct match found. Using the only available tool.';
+        reasoning = 'Only one tool matches your query. High confidence in this selection.';
     } else if (toolCount <= 3) {
         confidence = 'Medium';
         confidenceClass = 'medium-confidence';
-        reasoning = '↳ Multiple tools found. Selecting the most relevant based on query match.';
+        reasoning = `Found ${toolCount} potential matches. Selected the most relevant based on similarity score.`;
     } else {
         confidence = 'Low';
         confidenceClass = 'low-confidence';
-        reasoning = '⚠ Many possible tools found. Consider refining your query for better results.';
+        reasoning = `Found ${toolCount} possible matches. Try refining your query with more specific terms for better results.`;
     }
 
     // Update panel elements
-    toolCountEl.textContent = `${toolCount} tool${toolCount !== 1 ? 's' : ''}`;
+    const toolLabel = toolCount === 1 ? 'tool' : 'tools';
+    toolCountEl.textContent = `${toolCount} ${toolLabel}`;
     selectedToolEl.textContent = selectedToolName;
     confidenceEl.textContent = confidence;
     confidenceEl.className = `thinking-value ${confidenceClass}`;
