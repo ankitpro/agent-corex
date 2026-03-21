@@ -347,6 +347,7 @@ permalink: /dashboard/
 <div class="dashboard-tabs">
     <button class="dashboard-tab-button active" onclick="switchDashboardTab('setup')">📖 Setup Guide</button>
     <button class="dashboard-tab-button" onclick="switchDashboardTab('connection')">🔌 Connection</button>
+    <button class="dashboard-tab-button" onclick="switchDashboardTab('endpoints')">📚 API Endpoints</button>
     <button class="dashboard-tab-button" onclick="switchDashboardTab('query')">🔍 Query Tools</button>
 </div>
 
@@ -436,6 +437,21 @@ venv\Scripts\activate</code></div>
     <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
 </div>
 
+<!-- API Endpoints Tab -->
+<div id="endpoints" class="dashboard-tab-content">
+    <div class="info-box">
+        <p><strong>All available API endpoints</strong>. Click "Load Endpoints" to fetch live documentation from your backend.</p>
+    </div>
+
+    <button class="btn-primary" onclick="loadEndpoints()" style="width: auto; margin-bottom: 20px;">📚 Load Endpoints</button>
+
+    <div id="endpointsContainer" style="display:none;">
+        <div id="endpointsList"></div>
+    </div>
+
+    <div id="endpointsError"></div>
+</div>
+
 <!-- Query Tab -->
 <div id="query" class="dashboard-tab-content">
     <div id="notConnectedMsg" class="info-box" style="display:block;">⚠️ Backend not connected. Go to Connection tab first.</div>
@@ -516,14 +532,18 @@ venv\Scripts\activate</code></div>
                 headers: { 'Content-Type': 'application/json', ...options.headers },
                 ...options
             });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             return response.json();
         }
 
         async health() { return this.request('/health'); }
 
+        async getTools() { return this.request('/tools'); }
+
+        async getEndpoints() { return this.request('/endpoints'); }
+
         async retrieveTools(query, topK = 5, method = 'hybrid') {
-            const params = new URLSearchParams({ q: query, top_k: topK, method });
+            const params = new URLSearchParams({ query, top_k: topK, method });
             return this.request(`/retrieve_tools?${params}`);
         }
     }
@@ -559,6 +579,30 @@ venv\Scripts\activate</code></div>
         }
     }
 
+    async function loadEndpoints() {
+        const baseUrl = Storage.getBaseUrl();
+        const client = new AgentCorexClient(baseUrl);
+        document.getElementById('endpointsError').innerHTML = '';
+
+        try {
+            const data = await client.getEndpoints();
+            const endpointsHtml = (data.endpoints || []).map(ep => `
+                <div class="result-item">
+                    <div class="result-name">${ep.method} ${ep.path}</div>
+                    <div class="result-description"><strong>${ep.name}:</strong> ${ep.description}</div>
+                    ${ep.parameters ? `<div style="margin-top: 8px; padding: 8px; background: #FFF; border-radius: 3px; font-size: 12px;">
+                        <strong>Parameters:</strong><br>
+                        ${Object.entries(ep.parameters).map(([k, v]) => `<code>${k}</code>: ${v}`).join('<br>')}
+                    </div>` : ''}
+                </div>
+            `).join('');
+            document.getElementById('endpointsList').innerHTML = endpointsHtml;
+            document.getElementById('endpointsContainer').style.display = 'block';
+        } catch (error) {
+            document.getElementById('endpointsError').innerHTML = `<div class="error-message">Error loading endpoints: ${error.message}</div>`;
+        }
+    }
+
     async function searchTools() {
         const baseUrl = Storage.getBaseUrl();
         const query = document.getElementById('query').value.trim();
@@ -568,6 +612,8 @@ venv\Scripts\activate</code></div>
         if (!query) return alert('Enter search query');
 
         const client = new AgentCorexClient(baseUrl);
+        document.getElementById('errorContainer').innerHTML = '';
+
         try {
             const results = await client.retrieveTools(query, topK, method);
             const resultsHtml = (results || []).map(tool => `
@@ -577,7 +623,7 @@ venv\Scripts\activate</code></div>
                     <div class="result-score">Score: ${(tool.score || 0).toFixed(4)}</div>
                 </div>
             `).join('');
-            document.getElementById('results').innerHTML = resultsHtml || '<p style="color:#999;">No results</p>';
+            document.getElementById('results').innerHTML = resultsHtml || '<p style="color:#999;">No results found</p>';
             document.getElementById('resultsContainer').style.display = 'block';
         } catch (error) {
             document.getElementById('errorContainer').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
