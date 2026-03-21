@@ -16,7 +16,10 @@ class TestHealthEndpoint:
         """Verify health endpoint returns status ok."""
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert data["status"] == "ok"
+        assert "tools_loaded" in data
+        assert "version" in data
 
 
 class TestRetrieveToolsEndpoint:

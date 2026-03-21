@@ -53,70 +53,111 @@ tools = rank_tools("edit a file", all_tools, top_k=5)
 
 ## 🔥 Key Features
 
-- ✅ **Hybrid ranking** - keyword + semantic (default)
-- ✅ **Multiple ranking methods** - keyword, hybrid, embedding-only
-- ✅ **FAISS indexing** - fast semantic search
-- ✅ **MCP integration** - load tools from MCP servers
-- ✅ **Smart fallback** - degraded gracefully if models unavailable
-- ✅ **FastAPI** - simple REST API
-- ✅ **Comprehensive tests** - 25+ test cases
+- ✅ **Hybrid ranking** - 30% keyword + 70% semantic (default, recommended)
+- ✅ **Three ranking methods** - keyword (fast), hybrid (balanced), embedding (accurate)
+- ✅ **FAISS indexing** - fast semantic search on 1000+ tools
+- ✅ **MCP integration** - load tools from Model Context Protocol servers
+- ✅ **Smart fallback** - gracefully degrades if embedding model unavailable
+- ✅ **FastAPI REST API** - easy integration with any application
+- ✅ **CLI tool** - `agent-corex` command for quick access
+- ✅ **Production-ready** - 45 comprehensive tests, all passing
+- ✅ **Zero dependencies** for basic usage - only load ML models when needed
+- ✅ **MIT licensed** - free for commercial use
 
 ---
 
 ## 📦 Installation
 
-### Quick Install (Recommended)
-
-**macOS/Linux:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/agent-corex/main/install-curl.sh | bash
-```
-
-**Windows:**
-```cmd
-pip install agent-corex
-```
-
-### pip (PyPI)
+### pip (PyPI) - Recommended
 
 ```bash
 pip install agent-corex
 ```
 
-With optional dependencies:
+**That's it!** The package is ready to use immediately.
+
+### Virtual Environment (Recommended)
+
 ```bash
-pip install agent-corex[redis]      # Redis support
-pip install agent-corex[dev]        # Dev tools
-pip install agent-corex[dev,redis]  # Everything
+# Create virtual environment
+python -m venv agent-corex-env
+
+# Activate it
+# On macOS/Linux:
+source agent-corex-env/bin/activate
+# On Windows:
+agent-corex-env\Scripts\activate
+
+# Install
+pip install agent-corex
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/your-org/agent-corex
+git clone https://github.com/ankitpro/agent-corex
 cd agent-corex
 pip install -e .
 ```
 
 **Requirements:**
-- Python 3.8+
-- ~300MB disk (for embedding model cache)
+- Python 3.8 or higher
+- ~300MB disk space (for embedding model cache on first run)
 
-**See [INSTALL.md](INSTALL.md) for detailed installation options.**
+### Verify Installation
+
+```bash
+# Check version
+agent-corex version
+
+# Try a quick command
+agent-corex retrieve "edit file" --top-k 3
+```
+
+**See [GET_STARTED.md](GET_STARTED.md) for a 5-minute quick start.**
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Run the API
+### 1. Use in Python
+
+```python
+from agent_core import rank_tools
+from packages.tools.registry import ToolRegistry
+
+# Create registry and add tools
+registry = ToolRegistry()
+registry.register({
+    "name": "edit_file",
+    "description": "Edit a file with line-based changes"
+})
+registry.register({
+    "name": "write_file",
+    "description": "Create or overwrite a file"
+})
+
+# Retrieve relevant tools
+query = "modify a file"
+results = rank_tools(query, registry.get_all_tools(), top_k=5)
+
+for tool in results:
+    print(f"✓ {tool['name']}: {tool['description']}")
+```
+
+### 2. Run the API Server
 
 ```bash
+# Install uvicorn first
+pip install uvicorn
+
+# Start the server
 uvicorn apps.api.main:app --reload
 ```
 
 API will be available at `http://localhost:8000`
 
-### 2. Retrieve Tools
+### 3. Query the API
 
 ```bash
 # Default hybrid ranking (recommended)
@@ -144,7 +185,7 @@ Response:
 ]
 ```
 
-### 3. Health Check
+### 4. Health Check
 
 ```bash
 curl http://localhost:8000/health
@@ -153,35 +194,32 @@ curl http://localhost:8000/health
 
 ---
 
-## 🧪 Usage in Code
+## 🧪 Advanced Usage
 
-### Basic Python Usage
+### With Custom Ranking Methods
 
 ```python
-from packages.retrieval.ranker import rank_tools
-from packages.tools.registry import ToolRegistry
+from agent_core import rank_tools
 
-# Create registry and add tools
-registry = ToolRegistry()
-registry.register({"name": "edit_file", "description": "Edit files"})
-registry.register({"name": "write_file", "description": "Write files"})
-
-# Retrieve tools
 query = "edit a file"
-results = rank_tools(query, registry.get_all_tools(), top_k=5)
 
-for tool in results:
-    print(f"- {tool['name']}: {tool['description']}")
+# Method 1: Hybrid (recommended for most use cases)
+results = rank_tools(query, tools, method="hybrid", top_k=5)
+
+# Method 2: Keyword-only (fastest, for real-time apps)
+results = rank_tools(query, tools, method="keyword", top_k=5)
+
+# Method 3: Embedding-only (most semantic accuracy)
+results = rank_tools(query, tools, method="embedding", top_k=5)
 ```
 
 ### With MCP Servers
 
 ```python
 from packages.tools.mcp.mcp_loader import MCPLoader
-from packages.tools.mcp.mcp_manager import MCPManager
-from packages.retrieval.ranker import rank_tools
+from agent_core import rank_tools
 
-# Load MCP servers
+# Load MCP servers from config
 loader = MCPLoader("config/mcp.json")
 manager = loader.load()
 
@@ -190,23 +228,31 @@ tools = manager.get_all_tools()
 
 # Retrieve relevant tools
 results = rank_tools("edit a file", tools, top_k=5, method="hybrid")
+
+for tool in results:
+    print(f"✓ {tool['name']}: {tool['description']}")
 ```
 
-### Choosing Ranking Methods
+### Combining Local and MCP Tools
 
 ```python
-from packages.retrieval.ranker import rank_tools
+from packages.tools.registry import ToolRegistry
+from packages.tools.mcp.mcp_loader import MCPLoader
+from agent_core import rank_tools
 
-query = "edit a file"
+# Local tools
+registry = ToolRegistry()
+registry.register({"name": "my_local_tool", "description": "A custom tool"})
 
-# Method 1: Hybrid (recommended for most use cases)
-results = rank_tools(query, tools, method="hybrid")
+# MCP tools
+loader = MCPLoader("config/mcp.json")
+manager = loader.load()
 
-# Method 2: Keyword-only (fastest, for real-time)
-results = rank_tools(query, tools, method="keyword")
+# Combine them
+all_tools = registry.get_all_tools() + manager.get_all_tools()
 
-# Method 3: Embedding-only (most semantic)
-results = rank_tools(query, tools, method="embedding")
+# Retrieve from combined set
+results = rank_tools("query", all_tools, top_k=5)
 ```
 
 ---
@@ -371,11 +417,23 @@ self.model = SentenceTransformer(
 
 ---
 
-## 📚 Documentation
+## 📚 Complete Documentation
 
-- [Retrieval Engine Docs](packages/retrieval/README.md)
-- [Tools Package Docs](packages/tools/README.md)
-- [API Examples](examples/basic_usage.py)
+### Getting Started
+- **[GET_STARTED.md](GET_STARTED.md)** - 5-minute quick start (recommended first step)
+- **[LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md)** - Comprehensive tutorial with examples
+- **[OSS_READY.md](OSS_READY.md)** - Project status and features
+
+### Package Documentation
+- **[Retrieval Engine](packages/retrieval/README.md)** - Scoring, ranking, embeddings
+- **[Tools Package](packages/tools/README.md)** - Tool registry and management
+- **[MCP Integration](packages/tools/mcp/README.md)** - Model Context Protocol servers
+- **[API Server](apps/api/README.md)** - REST endpoints and examples
+
+### Examples & Tests
+- **[Examples](examples/)** - Working code examples
+- **[Tests](tests/README.md)** - How to run and write tests
+- **[Configuration](config/)** - MCP server setup
 
 ---
 
@@ -383,11 +441,20 @@ self.model = SentenceTransformer(
 
 Contributions welcome! Please:
 
-1. Fork the repo
+1. Fork the repo: https://github.com/ankitpro/agent-corex
 2. Create a feature branch
 3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a PR
+4. Ensure all tests pass: `pytest tests/ -v`
+5. Submit a PR with description of changes
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+## 📊 Project Links
+
+- **GitHub**: https://github.com/ankitpro/agent-corex
+- **PyPI**: https://pypi.org/project/agent-corex/
+- **Issues**: https://github.com/ankitpro/agent-corex/issues
+- **Discussions**: https://github.com/ankitpro/agent-corex/discussions
 
 ---
 
@@ -452,12 +519,27 @@ MIT - See LICENSE file
 
 ---
 
-## 🚀 Get Started Now
+## 🚀 Get Started in 5 Minutes
 
-```bash
-git clone https://github.com/your-org/agent-corex
-cd agent-corex
-pip install -r requirements.txt
-uvicorn apps.api.main:app --reload
-curl "http://localhost:8000/retrieve_tools?query=your query"
-```
+1. **Install**
+   ```bash
+   pip install agent-corex
+   ```
+
+2. **Try it**
+   ```bash
+   agent-corex retrieve "edit file" --top-k 3
+   ```
+
+3. **Read the docs**
+   - [GET_STARTED.md](GET_STARTED.md) - 5-minute quick start
+   - [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md) - Complete tutorial
+
+4. **Run the API**
+   ```bash
+   pip install uvicorn
+   uvicorn apps.api.main:app --reload
+   curl "http://localhost:8000/retrieve_tools?query=edit file"
+   ```
+
+That's it! You're ready to use Agent-CoreX! 🎉

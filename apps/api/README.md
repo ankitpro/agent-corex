@@ -4,11 +4,36 @@ FastAPI-based REST API for the Agent-Core retrieval engine.
 
 ## Running the Server
 
+### Basic Usage
+
 ```bash
+# Make sure you're in the project root
+pip install uvicorn
+
+# Start the server
 uvicorn apps.api.main:app --reload
 ```
 
 API will be available at `http://localhost:8000`
+
+**Swagger documentation:** http://localhost:8000/docs
+**ReDoc documentation:** http://localhost:8000/redoc
+
+### With Custom MCP Config
+
+```bash
+# Use a custom MCP configuration file
+export MCP_CONFIG=/path/to/your/mcp.json
+uvicorn apps.api.main:app --reload
+```
+
+### Production Deployment
+
+```bash
+# Use gunicorn for production
+pip install gunicorn
+gunicorn apps.api.main:app -w 4 -b 0.0.0.0:8000
+```
 
 ## Endpoints
 
@@ -16,7 +41,7 @@ API will be available at `http://localhost:8000`
 
 **GET** `/health`
 
-Check if the API is running.
+Check if the API is running and how many tools are loaded.
 
 ```bash
 curl http://localhost:8000/health
@@ -24,7 +49,93 @@ curl http://localhost:8000/health
 
 Response:
 ```json
-{"status": "ok"}
+{
+  "status": "ok",
+  "tools_loaded": 42,
+  "version": "1.0.0"
+}
+```
+
+---
+
+### List All Tools
+
+**GET** `/tools`
+
+Get a list of all available tools.
+
+**Query Parameters:**
+- `limit` (integer, optional, default: 100): Maximum number of tools to return
+
+```bash
+# Get all tools (up to 100)
+curl "http://localhost:8000/tools"
+
+# Get first 10 tools
+curl "http://localhost:8000/tools?limit=10"
+```
+
+Response:
+```json
+[
+  {
+    "name": "edit_file",
+    "description": "Edit a file with line-based changes",
+    "server": "local"
+  },
+  {
+    "name": "write_file",
+    "description": "Create or overwrite a file",
+    "server": "local"
+  }
+]
+```
+
+---
+
+### Get Specific Tool
+
+**GET** `/tools/{tool_name}`
+
+Get details for a specific tool by name.
+
+```bash
+curl "http://localhost:8000/tools/edit_file"
+```
+
+Response:
+```json
+{
+  "name": "edit_file",
+  "description": "Edit a file with line-based changes",
+  "server": "local"
+}
+```
+
+If tool not found:
+```json
+{"detail": "Tool 'nonexistent' not found"}
+```
+
+---
+
+### Reload Tools
+
+**POST** `/reload`
+
+Reload tools from configuration files. Useful after updating `config/mcp.json` or changing `MCP_CONFIG` environment variable.
+
+```bash
+curl -X POST http://localhost:8000/reload
+```
+
+Response:
+```json
+{
+  "status": "reloaded",
+  "tools_loaded": 42,
+  "message": "Successfully loaded 42 tools"
+}
 ```
 
 ---
@@ -222,7 +333,76 @@ Response (500):
 
 ## Configuration
 
-### Environment Variables
+### MCP Servers Configuration
+
+Agent-CoreX automatically loads tools from MCP servers defined in your configuration file.
+
+#### Default Location
+
+By default, Agent-CoreX looks for MCP configuration at `config/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "./workspace"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}
+```
+
+#### Custom Location
+
+Use the `MCP_CONFIG` environment variable to specify a custom config file:
+
+```bash
+export MCP_CONFIG=/path/to/your/mcp.json
+uvicorn apps.api.main:app --reload
+```
+
+#### Adding MCP Servers
+
+Edit your MCP configuration file to add more servers:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": { /* ... */ },
+    "memory": { /* ... */ },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    }
+  }
+}
+```
+
+Then reload the tools:
+
+```bash
+curl -X POST http://localhost:8000/reload
+```
+
+Check what tools were loaded:
+
+```bash
+curl http://localhost:8000/health
+```
+
+### Uvicorn Configuration
 
 ```bash
 # Port
