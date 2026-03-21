@@ -1,5 +1,6 @@
 # GitHub Pages Configuration
 # Site: https://ankitpro.github.io/agent-corex/
+# Last rebuilt: 2026-03-22
 
 # ============================================
 # Site Settings
@@ -48,6 +49,10 @@ nav_main:
   - title: "🏠 Home"
     url: "/"
     description: "Overview and introduction"
+
+  - title: "🎛️ Dashboard"
+    url: "/dashboard"
+    description: "Interactive tool testing dashboard"
 
   - title: "⚡ Quick Start"
     url: "/quickstart"
