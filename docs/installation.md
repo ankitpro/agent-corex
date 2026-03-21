@@ -1,3 +1,10 @@
+---
+layout: page
+title: 📦 Installation Guide
+description: Complete setup instructions for Agent-Corex
+permalink: /installation/
+---
+
 # Installation Guide
 
 Complete setup instructions for Agent-Core.

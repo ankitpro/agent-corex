@@ -1,3 +1,10 @@
+---
+layout: page
+title: ⚡ Quick Start Guide
+description: Get Agent-Corex running in 5 minutes
+permalink: /quickstart/
+---
+
 # Quick Start Guide (5 Minutes)
 
 Get Agent-Core running in 5 minutes!

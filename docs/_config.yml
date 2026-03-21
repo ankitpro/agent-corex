@@ -1,73 +1,161 @@
 # GitHub Pages Configuration
+# Site: https://ankitpro.github.io/agent-corex/
 
+# ============================================
 # Site Settings
-title: Agent-Core
-description: "Intelligence layer for MCP tool selection"
-url: "https://agent-corex.dev"
-baseurl: ""
+# ============================================
+title: "Agent-Corex"
+tagline: "Intelligent Tool Selection for LLMs"
+description: "Fast, accurate MCP tool retrieval engine with hybrid semantic + keyword ranking"
+url: "https://ankitpro.github.io"
+baseurl: "/agent-corex"
+lang: "en"
 
-# Theme
+# ============================================
+# Theme & Styling
+# ============================================
 theme: jekyll-theme-slate
 remote_theme: pages-themes/slate@v0.2.0
 
-# Plugins
-plugins:
-  - jekyll-feed
-  - jekyll-seo-tag
-  - jekyll-sitemap
-
-# Build Settings
-markdown: kramdown
-kramdown:
-  input: GFM
-  hard_wrap: false
-
-# Navigation
-nav:
-  - title: "Home"
-    url: "/"
-  - title: "Quick Start"
-    url: "/quickstart"
-  - title: "Installation"
-    url: "/installation"
-  - title: "API Reference"
-    url: "/api"
-  - title: "Deployment"
-    url: "/deployment"
-  - title: "GitHub"
-    url: "https://github.com/ankitpro/agent-corex"
-
-# Repository
-repository: ankitpro/agent-corex
-github_user: ankitpro
-github_repo: agent-corex
-
-# Social
-twitter_username: ankitpro
-github_username: ankitpro
-
-# Analytics (optional)
-google_analytics_id: "G-XXXXXXXXXX"
-
-# Site Info
-author: Ankit
-email: contact@agent-corex.dev
-license: MIT
-
-# Build Options
+# Custom styling
 sass:
   sass_dir: _sass
   style: compressed
 
+# ============================================
+# Plugins
+# ============================================
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-relative-links
+
+# ============================================
+# Markdown Settings
+# ============================================
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# ============================================
+# Navigation Structure
+# ============================================
+# Main navigation menu
+nav_main:
+  - title: "🏠 Home"
+    url: "/"
+    description: "Overview and introduction"
+
+  - title: "⚡ Quick Start"
+    url: "/quickstart"
+    description: "Get started in 5 minutes"
+
+  - title: "📦 Installation"
+    url: "/installation"
+    description: "Setup and configuration"
+
+  - title: "🔌 API Reference"
+    url: "/api"
+    description: "Complete API documentation"
+
+  - title: "🚀 Deployment"
+    url: "/deployment"
+    description: "Production deployment guides"
+
+# External links
+nav_external:
+  - title: "⭐ GitHub"
+    url: "https://github.com/ankitpro/agent-corex"
+    icon: "github"
+
+  - title: "📦 PyPI"
+    url: "https://pypi.org/project/agent-corex/"
+    icon: "package"
+
+  - title: "🐛 Issues"
+    url: "https://github.com/ankitpro/agent-corex/issues"
+    icon: "issues"
+
+# ============================================
+# Repository Information
+# ============================================
+repository: ankitpro/agent-corex
+github_user: ankitpro
+github_repo: agent-corex
+github_owner: ankitpro
+
+# ============================================
+# Author & Contact
+# ============================================
+author: "Ankit Agarwal"
+author_github: ankitpro
+author_linkedin: ankitagarwal94
+email: "ankitagarwalpro@gmail.com"
+website: "https://ankitpro.github.io/portfolio"
+
+# ============================================
+# Social Media
+# ============================================
+social:
+  github_username: ankitpro
+  linkedin_username: ankitagarwal94
+
+# ============================================
+# Analytics
+# ============================================
+google_analytics_id: ""
+
+# ============================================
+# SEO
+# ============================================
+og_image: "/agent-corex/assets/images/og-image.png"
+og_type: "website"
+og_locale: "en_US"
+
+# ============================================
+# Build Settings
+# ============================================
 exclude:
   - .github/
   - .gitignore
+  - .vscode/
   - Gemfile
   - Gemfile.lock
   - node_modules/
-  - vendor/bundle/
-  - vendor/cache/
-  - vendor/gems/
-  - vendor/ruby/
+  - vendor/
   - .env
   - .venv
+  - README.md
+  - CHANGELOG.md
+
+keep_files:
+  - assets
+  - _includes
+  - _layouts
+
+# ============================================
+# Collections
+# ============================================
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name
+
+# ============================================
+# Defaults
+# ============================================
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+      toc: true
+
+  - scope:
+      path: "docs"
+    values:
+      layout: "page"
+      toc: true

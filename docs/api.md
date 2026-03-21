@@ -1,3 +1,10 @@
+---
+layout: page
+title: 🔌 API Reference
+description: Complete REST API documentation for Agent-Corex
+permalink: /api/
+---
+
 # API Reference
 
 Complete REST API documentation for Agent-Core.

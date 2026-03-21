@@ -1,3 +1,10 @@
+---
+layout: page
+title: 🚀 Deployment Guide
+description: Production deployment instructions for Agent-Corex
+permalink: /deployment/
+---
+
 # Deployment Guide
 
 Production deployment instructions for Agent-Core.

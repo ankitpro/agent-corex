@@ -1,0 +1,113 @@
+<nav class="main-nav">
+    <ul class="nav-menu">
+        {% for item in site.nav_main %}
+        <li>
+            <a href="{{ item.url | relative_url }}"
+               class="nav-link {% if page.url == item.url %}active{% endif %}"
+               title="{{ item.description }}">
+                {{ item.title }}
+            </a>
+        </li>
+        {% endfor %}
+
+        <li class="nav-divider"></li>
+
+        {% for item in site.nav_external %}
+        <li>
+            <a href="{{ item.url }}"
+               class="nav-link external"
+               target="_blank"
+               rel="noopener noreferrer"
+               title="{{ item.description }}">
+                {{ item.title }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+
+<style>
+.main-nav {
+    background: #F5F5F5;
+    border-bottom: 1px solid #DDD;
+    padding: 0;
+    margin: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 20px;
+    margin: 0;
+    gap: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.nav-menu li {
+    margin: 0;
+    position: relative;
+}
+
+.nav-divider {
+    height: 20px;
+    width: 1px;
+    background: #DDD;
+    margin: 0 10px;
+}
+
+.nav-link {
+    color: #1A5276 !important;
+    text-decoration: none !important;
+    border: none !important;
+    padding: 8px 16px;
+    display: inline-block;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.nav-link:hover {
+    background-color: #27AE60;
+    color: white !important;
+    transform: translateY(-2px);
+}
+
+.nav-link.active {
+    color: white !important;
+    background-color: #27AE60;
+    border-bottom: 3px solid #E67E22 !important;
+}
+
+.nav-link.external::after {
+    content: " ↗";
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .nav-menu {
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px;
+    }
+
+    .nav-divider {
+        display: none;
+    }
+
+    .nav-link {
+        display: block;
+        text-align: center;
+        width: 100%;
+        padding: 12px;
+    }
+}
+</style>

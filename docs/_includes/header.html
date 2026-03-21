@@ -1,0 +1,61 @@
+<header>
+    <div class="header-content">
+        <div class="header-brand">
+            <h1>
+                <a href="{{ '/' | relative_url }}">
+                    🚀 {{ site.title }}
+                </a>
+            </h1>
+            <p class="tagline">{{ site.tagline }}</p>
+        </div>
+    </div>
+</header>
+
+<style>
+header {
+    background: linear-gradient(135deg, #1A5276 0%, #0B1C2B 100%);
+    padding: 30px 0;
+    border-bottom: 3px solid #27AE60;
+    position: relative;
+}
+
+header a {
+    color: white !important;
+    text-decoration: none !important;
+    border: none !important;
+}
+
+header a:hover {
+    color: #27AE60 !important;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.header-brand h1 {
+    font-size: 32px;
+    margin-bottom: 5px;
+    color: white;
+    border: none !important;
+    padding-bottom: 0 !important;
+}
+
+.tagline {
+    color: #E0E0E0;
+    font-size: 16px;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 20px 0;
+    }
+
+    .header-brand h1 {
+        font-size: 24px;
+    }
+}
+</style>

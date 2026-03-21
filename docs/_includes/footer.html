@@ -1,0 +1,125 @@
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>{{ site.title }}</h4>
+            <p>{{ site.description }}</p>
+        </div>
+
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                {% for item in site.nav_main %}
+                <li><a href="{{ item.url | relative_url }}">{{ item.title }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Resources</h4>
+            <ul>
+                {% for item in site.nav_external %}
+                <li><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Get In Touch</h4>
+            <ul>
+                <li><a href="https://github.com/ankitpro" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/{{ site.author_linkedin }}" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+                <li><a href="mailto:{{ site.email }}">Email</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; 2026 <a href="{{ site.website }}" target="_blank">{{ site.author }}</a>. Released under the MIT License.</p>
+    </div>
+</footer>
+
+<style>
+footer {
+    background-color: #1A5276;
+    color: white;
+    margin-top: 80px;
+    border-top: 3px solid #27AE60;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 50px 20px 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+}
+
+.footer-section h4 {
+    color: #27AE60;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.footer-section p {
+    color: #E0E0E0;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section li {
+    margin-bottom: 8px;
+}
+
+.footer-section a {
+    color: #27AE60 !important;
+    text-decoration: none !important;
+    border: none !important;
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: #E67E22 !important;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid rgba(39, 174, 96, 0.2);
+    color: #E0E0E0;
+    font-size: 13px;
+}
+
+.footer-bottom p {
+    margin: 0;
+}
+
+.footer-bottom a {
+    color: #27AE60 !important;
+    text-decoration: none !important;
+    border-bottom: 1px dotted #27AE60 !important;
+}
+
+.footer-bottom a:hover {
+    color: #E67E22 !important;
+    border-bottom-color: #E67E22 !important;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding: 30px 20px 20px;
+    }
+}
+</style>

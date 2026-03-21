@@ -1,0 +1,128 @@
+<div class="sidebar-content">
+    <div class="sidebar-section">
+        <h3>📖 Documentation</h3>
+        <ul>
+            {% for item in site.nav_main %}
+            <li>
+                <a href="{{ item.url | relative_url }}"
+                   class="sidebar-link {% if page.url == item.url %}active{% endif %}">
+                    {{ item.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="sidebar-section">
+        <h3>🔗 Resources</h3>
+        <ul>
+            {% for item in site.nav_external %}
+            <li>
+                <a href="{{ item.url }}"
+                   class="sidebar-link external"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    {{ item.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="sidebar-section">
+        <h3>📝 On This Page</h3>
+        <ul class="toc-list">
+            {% for heading in page.headings %}
+            <li>
+                <a href="#{{ heading.id }}" class="toc-link">
+                    {{ heading.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<style>
+.sidebar-content {
+    background: #F5F5F5;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #27AE60;
+}
+
+.sidebar-section {
+    margin-bottom: 25px;
+}
+
+.sidebar-section:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-section h3 {
+    color: #1A5276;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 12px 0;
+}
+
+.sidebar-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-section li {
+    margin: 0;
+}
+
+.sidebar-link {
+    color: #27AE60 !important;
+    text-decoration: none !important;
+    border-bottom: 1px dotted #27AE60 !important;
+    display: block;
+    padding: 6px 0;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-link:hover {
+    color: #E67E22 !important;
+    border-bottom-color: #E67E22 !important;
+    padding-left: 5px;
+}
+
+.sidebar-link.active {
+    color: #1A5276 !important;
+    font-weight: 600;
+    border-bottom-color: #1A5276 !important;
+}
+
+.sidebar-link.external::after {
+    content: " ↗";
+    font-size: 11px;
+}
+
+.toc-list {
+    padding-left: 0;
+}
+
+.toc-link {
+    color: #666 !important;
+    font-size: 13px;
+    padding: 4px 0 !important;
+    border-bottom: none !important;
+}
+
+.toc-link:hover {
+    color: #27AE60 !important;
+}
+
+@media (max-width: 768px) {
+    .sidebar-content {
+        display: none;
+    }
+}
+</style>

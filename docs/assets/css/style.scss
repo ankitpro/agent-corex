@@ -1,0 +1,439 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+// ============================================
+// Custom Styling for Agent-Corex Docs
+// ============================================
+
+// Colors
+$primary-color: #27AE60;
+$secondary-color: #1A5276;
+$accent-color: #E67E22;
+$light-bg: #F5F5F5;
+$border-color: #DDD;
+$text-color: #333;
+
+// ============================================
+// Navigation Styling
+// ============================================
+
+header {
+  background: linear-gradient(135deg, #{$secondary-color} 0%, #0B1C2B 100%);
+  padding: 20px 0;
+  border-bottom: 3px solid #{$primary-color};
+}
+
+header h1 {
+  color: #FFFFFF;
+  font-size: 32px;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+header p {
+  color: #E0E0E0;
+  font-size: 16px;
+  margin: 0;
+}
+
+// Navigation Menu
+nav {
+  background: #F5F5F5;
+  border-bottom: 1px solid #{$border-color};
+  padding: 15px 0;
+  margin-top: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  gap: 30px;
+}
+
+nav li {
+  margin: 0;
+}
+
+nav a {
+  color: #{$secondary-color};
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  &:hover {
+    background-color: #{$primary-color};
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  &.active {
+    color: white;
+    background-color: #{$primary-color};
+    border-bottom: 3px solid #{$accent-color};
+  }
+}
+
+// ============================================
+// Main Content Styling
+// ============================================
+
+main {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  margin-bottom: 40px;
+}
+
+// ============================================
+// Typography
+// ============================================
+
+h1 {
+  color: #{$secondary-color};
+  border-bottom: 3px solid #{$primary-color};
+  padding-bottom: 10px;
+  font-size: 36px;
+  margin-top: 0;
+}
+
+h2 {
+  color: #{$secondary-color};
+  border-left: 4px solid #{$primary-color};
+  padding-left: 15px;
+  font-size: 28px;
+  margin-top: 30px;
+}
+
+h3 {
+  color: #{$text-color};
+  font-size: 22px;
+  margin-top: 25px;
+}
+
+p {
+  line-height: 1.8;
+  color: #{$text-color};
+  font-size: 16px;
+}
+
+a {
+  color: #{$primary-color};
+  text-decoration: none;
+  border-bottom: 1px dotted #{$primary-color};
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #{$accent-color};
+    border-bottom-color: #{$accent-color};
+  }
+}
+
+// ============================================
+// Code Styling
+// ============================================
+
+code {
+  background-color: #F5F5F5;
+  border: 1px solid #{$border-color};
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  color: #C7254E;
+}
+
+pre {
+  background-color: #2B2B2B;
+  color: #F8F8F2;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border-left: 4px solid #{$primary-color};
+  margin: 20px 0;
+  line-height: 1.6;
+
+  code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #F8F8F2;
+  }
+}
+
+// ============================================
+// Tables
+// ============================================
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+thead {
+  background-color: #{$secondary-color};
+  color: white;
+}
+
+th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #{$border-color};
+}
+
+td {
+  padding: 12px 15px;
+  border: 1px solid #{$border-color};
+}
+
+tbody tr {
+  &:nth-child(even) {
+    background-color: #F9F9F9;
+  }
+
+  &:hover {
+    background-color: #F0F8FF;
+  }
+}
+
+// ============================================
+// Blockquotes
+// ============================================
+
+blockquote {
+  border-left: 4px solid #{$primary-color};
+  padding: 15px 20px;
+  margin: 20px 0;
+  background-color: #F5F9FD;
+  border-radius: 4px;
+  font-style: italic;
+  color: #555;
+}
+
+// ============================================
+// Callout Boxes
+// ============================================
+
+.callout {
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border-left: 4px solid;
+
+  &.info {
+    background-color: #E3F2FD;
+    border-left-color: #1976D2;
+    color: #0D47A1;
+  }
+
+  &.success {
+    background-color: #E8F5E9;
+    border-left-color: #{$primary-color};
+    color: #1B5E20;
+  }
+
+  &.warning {
+    background-color: #FFF3E0;
+    border-left-color: #{$accent-color};
+    color: #E65100;
+  }
+
+  &.danger {
+    background-color: #FFEBEE;
+    border-left-color: #C62828;
+    color: #B71C1C;
+  }
+}
+
+// ============================================
+// Sidebar / TOC
+// ============================================
+
+.toc {
+  background-color: #F5F5F5;
+  border-left: 4px solid #{$primary-color};
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+
+  h3 {
+    margin-top: 0;
+    color: #{$secondary-color};
+  }
+
+  ul {
+    list-style: none;
+    padding-left: 0;
+
+    li {
+      margin: 8px 0;
+
+      a {
+        color: #{$primary-color};
+        border-bottom: 1px dotted;
+
+        &:hover {
+          color: #{$accent-color};
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// Buttons
+// ============================================
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #{$primary-color};
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  border: 2px solid #{$primary-color};
+  cursor: pointer;
+
+  &:hover {
+    background-color: transparent;
+    color: #{$primary-color};
+  }
+
+  &.secondary {
+    background-color: transparent;
+    color: #{$secondary-color};
+    border-color: #{$secondary-color};
+
+    &:hover {
+      background-color: #{$secondary-color};
+      color: white;
+    }
+  }
+}
+
+// ============================================
+// Footer
+// ============================================
+
+footer {
+  background-color: #{$secondary-color};
+  color: white;
+  text-align: center;
+  padding: 30px 20px;
+  margin-top: 60px;
+  border-top: 3px solid #{$primary-color};
+
+  p {
+    color: #E0E0E0;
+    margin: 5px 0;
+  }
+
+  a {
+    color: #{$primary-color};
+    border-bottom-color: #{$primary-color};
+
+    &:hover {
+      color: white;
+      border-bottom-color: white;
+    }
+  }
+}
+
+// ============================================
+// Responsive Design
+// ============================================
+
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 24px;
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  nav a {
+    display: block;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  table {
+    font-size: 14px;
+
+    th, td {
+      padding: 8px 10px;
+    }
+  }
+
+  pre {
+    font-size: 12px;
+    padding: 10px;
+  }
+}
+
+// ============================================
+// Utility Classes
+// ============================================
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.p-20 {
+  padding: 20px;
+}
+
+.border-radius {
+  border-radius: 8px;
+}
