@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+typer
+pydantic
+python-dotenv
+pytest
+sentence-transformers
+faiss-cpu
+numpy

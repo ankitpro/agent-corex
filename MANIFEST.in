@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include RELEASE_NOTES.md
+include CONTRIBUTING.md
+include requirements.txt
+include pyproject.toml
+recursive-include agent_core *.py
+recursive-include tests *.py
+recursive-include config *.json
+recursive-include examples *.py
+recursive-include docs *.md
