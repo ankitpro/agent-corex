@@ -52,11 +52,11 @@ jobs:
 
       - name: Publish to PyPI
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.pypi_environment == 'pypi')
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          twine upload dist/* \
-            --username __token__ \
-            --password ${{ secrets.PYPI_API_TOKEN }} \
-            --skip-existing
+          twine upload dist/* --skip-existing
 
       - name: Create GitHub Release Assets
         if: github.event_name == 'release'
