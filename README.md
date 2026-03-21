@@ -8,6 +8,21 @@ Agent-CoreX solves a critical problem in LLM systems:
 
 ---
 
+## 🎉 Featured on Product Hunt!
+
+We're live on Product Hunt! Support us by upvoting and sharing your feedback.
+
+<a href="https://www.producthunt.com/products/agent-corex-intelligent-tool-selection" target="_blank" rel="noopener noreferrer">
+  <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1103833&theme=light" alt="Agent-Corex on Product Hunt" width="250" height="54" />
+</a>
+
+**Quick Links:**
+- 🔗 [Agent-Corex on Product Hunt](https://www.producthunt.com/products/agent-corex-intelligent-tool-selection)
+- 📦 [Install from PyPI](https://pypi.org/project/agent-corex/)
+- 📚 [Documentation](https://ankitpro.github.io/agent-corex/)
+
+---
+
 ## ✨ What's New (Phase 3)
 
 🧠 **Embedding-based semantic search** is now available! The retrieval engine now supports:
