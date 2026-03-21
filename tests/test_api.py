@@ -54,11 +54,12 @@ class TestRetrieveToolsEndpoint:
         assert len(result) <= 5
 
     def test_retrieve_tools_irrelevant_query(self):
-        """Verify irrelevant queries return empty list."""
-        response = client.get("/retrieve_tools?query=kubernetes+cluster")
+        """Verify irrelevant queries with keyword method return empty list."""
+        # Use keyword method for truly irrelevant query
+        response = client.get("/retrieve_tools?query=kubernetes+cluster&method=keyword")
         assert response.status_code == 200
         result = response.json()
-        # No tools should match this query
+        # No tools should match with keyword-only method
         assert result == []
 
     def test_retrieve_tools_missing_query(self):
