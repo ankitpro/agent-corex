@@ -7,6 +7,11 @@ permalink: /dashboard/
 
 <link rel="stylesheet" href="/agent-corex/dashboard.css">
 
+<div id="connectionBanner" class="connection-banner banner-disconnected">
+    <span id="bannerIcon">❌</span>
+    <span id="bannerText">Not Connected</span>
+</div>
+
 <div class="dashboard-tabs">
     <button class="dashboard-tab-button active" onclick="switchDashboardTab('setup')">📖 Setup Guide</button>
     <button class="dashboard-tab-button" onclick="switchDashboardTab('connection')">🔌 Connection</button>
@@ -97,6 +102,31 @@ venv\Scripts\activate</code></div>
     </div>
 
     <button class="btn-secondary" onclick="clearSettings()">Clear Settings</button>
+
+    <details class="what-is-this">
+        <summary>📚 What is Agent-Corex?</summary>
+        <div class="details-content">
+            <p><strong>Agent-Corex</strong> is an advanced framework for building autonomous AI agents with intelligent tool retrieval and execution capabilities.</p>
+
+            <h4>Key Features:</h4>
+            <ul>
+                <li><strong>Smart Tool Retrieval:</strong> Semantic search to find the right tools for any task</li>
+                <li><strong>Multiple Ranking Methods:</strong> Keyword, embedding, and hybrid search strategies</li>
+                <li><strong>Local Deployment:</strong> Run privately on your machine with no external dependencies</li>
+                <li><strong>Extensible Architecture:</strong> Add custom tools and integrate with existing systems</li>
+            </ul>
+
+            <h4>How It Works:</h4>
+            <ol>
+                <li>You describe what you want to do (e.g., "edit a file")</li>
+                <li>Agent-Corex searches its tool registry for relevant tools</li>
+                <li>Tools are ranked by relevance using advanced algorithms</li>
+                <li>The most relevant tools are returned for your use</li>
+            </ol>
+
+            <p><strong>Getting Started:</strong> Follow the Setup Guide tab to get Agent-Corex running locally, then use the Query Tools tab to search for tools.</p>
+        </div>
+    </details>
 </div>
 
 <!-- Query Tab -->
@@ -125,6 +155,15 @@ venv\Scripts\activate</code></div>
             <strong>💡 First Run Note:</strong> The first search will take 30-60 seconds as it downloads AI models from Hugging Face. Subsequent searches are fast!
         </div>
 
+        <div class="examples-section">
+            <div class="examples-label">Try an Example:</div>
+            <div class="examples-row">
+                <button class="btn-example" onclick="runExample('edit a file')">Edit a file</button>
+                <button class="btn-example" onclick="runExample('list files')">List files</button>
+                <button class="btn-example" onclick="runExample('create directory')">Create directory</button>
+            </div>
+        </div>
+
         <div class="form-group">
             <label for="queryInput">Search Query</label>
             <input type="text" id="queryInput" placeholder="e.g., edit a file, run tests" onkeypress="if(event.key==='Enter') searchTools()">
@@ -146,9 +185,20 @@ venv\Scripts\activate</code></div>
             <button class="btn-primary" onclick="searchTools()">Search</button>
         </div>
 
-        <div id="resultsContainer" style="display:none; margin-top:20px; max-height:400px; overflow-y:auto;">
-            <h3>Results</h3>
-            <div id="results"></div>
+        <div class="query-results-layout">
+            <div id="resultsContainer" style="display:none; margin-top:20px; max-height:400px; overflow-y:auto;">
+                <h3>Results <span id="latencyBadge" class="latency-badge" style="display:none;"></span></h3>
+                <div id="results"></div>
+            </div>
+
+            <div id="historyPanel" class="history-panel">
+                <div class="history-header">
+                    <h3>History</h3>
+                    <button class="btn-clear-history" onclick="clearHistory()" title="Clear history">🗑️</button>
+                </div>
+                <div id="historyList" class="history-list"></div>
+                <div class="history-empty" id="historyEmpty">No searches yet</div>
+            </div>
         </div>
 
         <div id="errorContainer"></div>
