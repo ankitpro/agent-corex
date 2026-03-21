@@ -290,6 +290,51 @@ function friendlyError(error, baseUrl) {
     }
 }
 
+// Update Agent Thinking Panel
+function updateThinkingPanel(tools) {
+    const thinkingPanel = document.getElementById('thinkingPanel');
+    const toolCountEl = document.getElementById('thinkingToolCount');
+    const selectedToolEl = document.getElementById('thinkingSelectedTool');
+    const confidenceEl = document.getElementById('thinkingConfidence');
+    const reasoningEl = document.getElementById('thinkingReasoning');
+
+    if (!tools || tools.length === 0) {
+        thinkingPanel.style.display = 'none';
+        return;
+    }
+
+    // Get tool count and selected tool
+    const toolCount = tools.length;
+    const selectedTool = tools[0]; // Top result is selected
+    const selectedToolName = selectedTool.name;
+
+    // Calculate confidence level
+    let confidence, confidenceClass, reasoning;
+    if (toolCount === 1) {
+        confidence = 'High';
+        confidenceClass = 'high-confidence';
+        reasoning = '✓ Direct match found. Using the only available tool.';
+    } else if (toolCount <= 3) {
+        confidence = 'Medium';
+        confidenceClass = 'medium-confidence';
+        reasoning = '↳ Multiple tools found. Selecting the most relevant based on query match.';
+    } else {
+        confidence = 'Low';
+        confidenceClass = 'low-confidence';
+        reasoning = '⚠ Many possible tools found. Consider refining your query for better results.';
+    }
+
+    // Update panel elements
+    toolCountEl.textContent = `${toolCount} tool${toolCount !== 1 ? 's' : ''}`;
+    selectedToolEl.textContent = selectedToolName;
+    confidenceEl.textContent = confidence;
+    confidenceEl.className = `thinking-value ${confidenceClass}`;
+    reasoningEl.textContent = reasoning;
+
+    // Show the panel
+    thinkingPanel.style.display = 'block';
+}
+
 // Render Tool Card
 function renderToolCard(tool, index) {
     return `
@@ -381,11 +426,15 @@ async function searchTools() {
         latencyBadge.textContent = `${client.lastExecuteTime}ms`;
         latencyBadge.style.display = 'inline-block';
 
+        // Update Agent Thinking panel
+        updateThinkingPanel(results);
+
         // Record in history
         const topToolName = (results && results.length > 0) ? results[0].name : 'No results';
         History.add(query, topToolName, 'success');
     } catch (error) {
         document.getElementById('resultsContainer').style.display = 'none';
+        document.getElementById('thinkingPanel').style.display = 'none';
         const errorInfo = friendlyError(error, baseUrl);
         document.getElementById('errorContainer').innerHTML = `
             <div class="error-message">❌ ${errorInfo.text}</div>

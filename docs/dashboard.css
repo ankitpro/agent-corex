@@ -663,6 +663,82 @@
     margin-bottom: 8px;
 }
 
+.thinking-panel {
+    background-color: white;
+    border: 1px solid #E0E0E0;
+    border-left: 4px solid #9C27B0;
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 20px;
+}
+
+.thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.thinking-icon {
+    font-size: 18px;
+}
+
+.thinking-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1A5276;
+}
+
+.thinking-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.thinking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.thinking-label {
+    color: #666;
+    font-weight: 600;
+}
+
+.thinking-value {
+    color: #1A5276;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.thinking-reasoning {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #F0F0F0;
+    color: #777;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.thinking-value.high-confidence {
+    color: #27AE60;
+}
+
+.thinking-value.medium-confidence {
+    color: #F39C12;
+}
+
+.thinking-value.low-confidence {
+    color: #E74C3C;
+}
+
 @media (max-width: 768px) {
     .form-row {
         grid-template-columns: 1fr;
