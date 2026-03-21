@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -43,16 +42,21 @@ jobs:
 
       - name: Publish to TestPyPI
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.pypi_environment == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
+        run: |
+          twine upload dist/* \
+            --repository testpypi \
+            --username __token__ \
+            --password ${{ secrets.TEST_PYPI_API_TOKEN }} \
+            --skip-existing
+        continue-on-error: true
 
       - name: Publish to PyPI
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.pypi_environment == 'pypi')
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          skip-existing: true
+        run: |
+          twine upload dist/* \
+            --username __token__ \
+            --password ${{ secrets.PYPI_API_TOKEN }} \
+            --skip-existing
 
       - name: Create GitHub Release Assets
         if: github.event_name == 'release'
