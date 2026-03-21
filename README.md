@@ -558,3 +558,27 @@ MIT - See LICENSE file
    ```
 
 That's it! You're ready to use Agent-CoreX! 🎉
+
+---
+
+## 🤝 Get in Touch
+
+We'd love to hear from you! Whether you have questions, feedback, or want to discuss potential collaborations:
+
+**Author:** Ankit Agarwal
+- 💼 [LinkedIn Profile](https://www.linkedin.com/in/ankitagarwal94)
+- 🌐 [Portfolio](https://ankitpro.github.io/portfolio)
+- 📧 Email: ankitagarwalpro@gmail.com
+
+**Feedback & Support:**
+- 🐛 [Report Issues](https://github.com/ankitpro/agent-corex/issues)
+- 💬 [Discussions](https://github.com/ankitpro/agent-corex/discussions)
+- ⭐ [Star on GitHub](https://github.com/ankitpro/agent-corex)
+
+---
+
+## 📄 License
+
+Agent-CoreX is MIT licensed - free for personal and commercial use.
+
+See [LICENSE](LICENSE) for details.

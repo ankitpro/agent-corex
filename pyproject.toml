@@ -64,11 +64,13 @@ redis = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/agent-corex"
-Documentation = "https://github.com/your-org/agent-corex#readme"
-Repository = "https://github.com/your-org/agent-corex.git"
-"Bug Tracker" = "https://github.com/your-org/agent-corex/issues"
-Changelog = "https://github.com/your-org/agent-corex/releases"
+Homepage = "https://github.com/ankitpro/agent-corex"
+Documentation = "https://ankitpro.github.io/agent-corex/"
+Repository = "https://github.com/ankitpro/agent-corex.git"
+"Bug Tracker" = "https://github.com/ankitpro/agent-corex/issues"
+Changelog = "https://github.com/ankitpro/agent-corex/releases"
+"Author Portfolio" = "https://ankitpro.github.io/portfolio"
+"Author LinkedIn" = "https://www.linkedin.com/in/ankitagarwal94"
 
 [project.scripts]
 agent-corex = "agent_core.cli.main:app"
