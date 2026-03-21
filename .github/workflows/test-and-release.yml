@@ -139,17 +139,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Download artifacts
       uses: actions/download-artifact@v3
       with:
         name: dist
         path: dist/
 
+    - name: Verify artifacts exist
+      run: |
+        if [ ! -f dist/agent_corex-*.whl ] || [ ! -f dist/agent_corex-*.tar.gz ]; then
+          echo "❌ Distribution artifacts not found!"
+          ls -la dist/
+          exit 1
+        fi
+        echo "✅ Distribution artifacts verified:"
+        ls -lh dist/
+
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         skip-existing: true
+      continue-on-error: true
+
+    - name: Verify PyPI publication
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "📦 Package: agent-corex"
+        echo "📌 Version: $VERSION"
+        echo "🔗 PyPI: https://pypi.org/project/agent-corex/$VERSION/"
+        echo ""
+        echo "⏳ It may take a few minutes for the package to appear on PyPI."
+        echo ""
+        echo "If you see an error about PYPI_API_TOKEN:"
+        echo "1. Go to: https://github.com/ankitpro/agent-corex/settings/secrets/actions"
+        echo "2. Click 'New repository secret'"
+        echo "3. Name: PYPI_API_TOKEN"
+        echo "4. Value: Your token from https://pypi.org/manage/account/token/"
 
     - name: Extract version
       id: version
