@@ -65,3 +65,4 @@ agent-core.code-workspace
 CLAUDE.md
 complete_project_context.md
 .claude
+.agent_corex_models/
