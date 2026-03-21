@@ -446,7 +446,7 @@ venv\Scripts\activate</code></div>
     <hr style="margin: 30px 0;">
     <div style="text-align: center; margin: 20px 0;">
         <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Ready to search tools?</p>
-        <button class="btn-primary" onclick="switchDashboardTab('query')" style="display: inline-block; margin: 0 8px; width: auto;">🔍 Go to Query Tools</button>
+        <a href="#query" class="btn-primary" style="display: inline-block; margin: 0 8px; padding: 12px 24px; text-decoration: none; color: white; background-color: #27AE60; border-radius: 4px;">🔍 Go to Query Tools</a>
         <a href="/dashboard-guide/" class="btn secondary" style="display: inline-block; margin: 0 8px;">📖 Help</a>
     </div>
 </div>
@@ -499,7 +499,16 @@ venv\Scripts\activate</code></div>
         document.querySelectorAll('.dashboard-tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.dashboard-tab-button').forEach(b => b.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
-        event.target.classList.add('active');
+
+        // Find and activate the corresponding button
+        document.querySelectorAll('.dashboard-tab-button').forEach(b => {
+            if (b.textContent.includes('Setup') && tabName === 'setup') b.classList.add('active');
+            if (b.textContent.includes('Connection') && tabName === 'connection') b.classList.add('active');
+            if (b.textContent.includes('Query') && tabName === 'query') b.classList.add('active');
+        });
+
+        // Update URL hash
+        window.location.hash = tabName;
 
         if (tabName === 'query') {
             const connected = document.getElementById('statusDot').classList.contains('connected');
@@ -507,6 +516,17 @@ venv\Scripts\activate</code></div>
             document.getElementById('notConnectedMsg').style.display = connected ? 'none' : 'block';
         }
     }
+
+    // Handle hash changes and page load
+    function loadTabFromHash() {
+        const hash = window.location.hash.substring(1) || 'setup';
+        if (['setup', 'connection', 'query'].includes(hash)) {
+            switchDashboardTab(hash);
+        }
+    }
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', loadTabFromHash);
 
     function switchOS(os) {
         document.querySelectorAll('.os-content').forEach(c => c.classList.remove('active'));
@@ -623,16 +643,13 @@ venv\Scripts\activate</code></div>
 
     document.getElementById('baseUrl').value = Storage.getBaseUrl();
 
-    // Initialize with connection status on page load
+    // Initialize dashboard on page load
     window.addEventListener('load', () => {
         const storedUrl = Storage.getBaseUrl();
         document.getElementById('baseUrl').value = storedUrl;
-        if (storedUrl !== 'http://localhost:8000') {
-            // Auto test connection if custom URL is stored
-            setTimeout(() => {
-                // Can optionally auto-test, but don't auto-run as it may fail
-            }, 100);
-        }
+
+        // Load tab from URL hash
+        loadTabFromHash();
     });
 </script>
 
