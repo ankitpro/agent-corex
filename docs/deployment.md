@@ -27,7 +27,7 @@ curl http://localhost:8000/health
 ### Configuration
 ```bash
 # With environment variables
-export MCP_CONFIG=/etc/agent-core/mcp.json
+export MCP_CONFIG=/etc/agent-corex/mcp.json
 export LOG_LEVEL=info
 uvicorn agent_core.api.main:app --host 0.0.0.0 --port 8000
 ```
