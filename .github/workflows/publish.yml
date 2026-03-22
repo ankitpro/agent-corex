@@ -30,6 +30,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install build wheel setuptools twine
 
+    - name: Set version from tag
+      run: |
+        # Strip leading 'v' from tag (v1.1.0 → 1.1.0)
+        VERSION="${GITHUB_REF_NAME#v}"
+        echo "Building version: $VERSION"
+        # Patch pyproject.toml so the built wheel carries the right version
+        sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+        grep '^version' pyproject.toml
+
     - name: Build distribution packages
       run: python -m build
 
