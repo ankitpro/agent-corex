@@ -46,7 +46,9 @@ dependencies = [
     "sentence-transformers>=2.2.0",
     "faiss-cpu>=1.7.4",
     "numpy>=1.21.0",
-    "requests>=2.31.0"
+    "requests>=2.31.0",
+    "httpx>=0.27.0",
+    "rich>=13.0.0"
 ]
 
 [project.optional-dependencies]
@@ -76,8 +78,9 @@ Changelog = "https://github.com/ankitpro/agent-corex/releases"
 [project.scripts]
 agent-corex = "agent_core.cli.main:app"
 
-[tool.setuptools]
-packages = ["agent_core"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent_core*"]
 
 [tool.setuptools.package-data]
 agent_core = ["py.typed"]

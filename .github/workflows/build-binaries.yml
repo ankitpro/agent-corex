@@ -1,0 +1,140 @@
+name: Build Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag (e.g. v1.2.0)'
+        required: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: agent-corex-linux-x86_64
+            ext: ""
+          - os: macos-13          # Intel runner
+            artifact: agent-corex-macos-x86_64
+            ext: ""
+          - os: macos-14          # Apple Silicon (M1) runner
+            artifact: agent-corex-macos-arm64
+            ext: ""
+          - os: windows-latest
+            artifact: agent-corex-windows-x86_64
+            ext: ".exe"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e ".[dev]"
+
+      - name: Build binary (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          pyinstaller \
+            --onefile \
+            --name agent-corex \
+            --hidden-import agent_core \
+            --hidden-import agent_core.cli \
+            --hidden-import agent_core.cli.main \
+            agent_core/cli/main.py
+          chmod +x dist/agent-corex
+          mv dist/agent-corex dist/${{ matrix.artifact }}
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          pyinstaller `
+            --onefile `
+            --name agent-corex `
+            --hidden-import agent_core `
+            --hidden-import agent_core.cli `
+            --hidden-import agent_core.cli.main `
+            agent_core/cli/main.py
+          Move-Item dist/agent-corex.exe dist/${{ matrix.artifact }}.exe
+
+      - name: Compute SHA256 (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd dist
+          sha256sum ${{ matrix.artifact }} > ${{ matrix.artifact }}.sha256 2>/dev/null \
+            || shasum -a 256 ${{ matrix.artifact }} > ${{ matrix.artifact }}.sha256
+          cat ${{ matrix.artifact }}.sha256
+
+      - name: Compute SHA256 (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash dist/${{ matrix.artifact }}.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ matrix.artifact }}.exe" | Out-File -Encoding ascii dist/${{ matrix.artifact }}.sha256
+          Get-Content dist/${{ matrix.artifact }}.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/${{ matrix.artifact }}${{ matrix.ext }}
+            dist/${{ matrix.artifact }}.sha256
+          retention-days: 30
+
+  release:
+    name: Attach binaries to GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: List built binaries
+        run: find dist/ -type f | sort
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "refs/heads/main" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Upload binaries to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          files: |
+            dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64
+            dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64.sha256
+            dist/agent-corex-macos-x86_64/agent-corex-macos-x86_64
+            dist/agent-corex-macos-x86_64/agent-corex-macos-x86_64.sha256
+            dist/agent-corex-macos-arm64/agent-corex-macos-arm64
+            dist/agent-corex-macos-arm64/agent-corex-macos-arm64.sha256
+            dist/agent-corex-windows-x86_64/agent-corex-windows-x86_64.exe
+            dist/agent-corex-windows-x86_64/agent-corex-windows-x86_64.sha256
+          fail_on_unmatched_files: false
+
+      - name: Output release asset URLs
+        run: |
+          echo "Release: https://github.com/ankitpro/agent-corex/releases/tag/${{ steps.version.outputs.TAG }}"
