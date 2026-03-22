@@ -11,18 +11,14 @@
 
 class AgentCorex < Formula
   desc "Fast, accurate MCP tool router — detect, inject, and manage MCP servers for AI agents"
-  homepage "https://agentcorex.com"
-  version "1.0.3"
+  homepage "https://github.com/ankitpro/agent-corex"
+  version "1.1.0"
   license "MIT"
 
   on_macos do
-    if Hardware::CPU.arm?
-      url "https://github.com/ankitpro/agent-corex/releases/download/v#{version}/agent-corex-macos-arm64"
-      sha256 "PLACEHOLDER_ARM64_SHA256"
-    else
-      url "https://github.com/ankitpro/agent-corex/releases/download/v#{version}/agent-corex-macos-x86_64"
-      sha256 "PLACEHOLDER_X86_64_SHA256"
-    end
+    # arm64 binary; runs on Intel Macs via Rosetta 2
+    url "https://github.com/ankitpro/agent-corex/releases/download/v#{version}/agent-corex-macos-arm64"
+    sha256 "PLACEHOLDER_ARM64_SHA256"
   end
 
   on_linux do
@@ -32,8 +28,7 @@ class AgentCorex < Formula
 
   def install
     if OS.mac?
-      arch = Hardware::CPU.arm? ? "arm64" : "x86_64"
-      bin.install "agent-corex-macos-#{arch}" => "agent-corex"
+      bin.install "agent-corex-macos-arm64" => "agent-corex"
     else
       bin.install "agent-corex-linux-x86_64" => "agent-corex"
     end
@@ -46,7 +41,7 @@ class AgentCorex < Formula
         agent-corex detect
         agent-corex init
 
-      Full docs: https://agentcorex.com/docs
+      Docs: https://github.com/ankitpro/agent-corex
     EOS
   end
 

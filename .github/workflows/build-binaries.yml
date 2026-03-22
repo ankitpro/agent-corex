@@ -10,6 +10,9 @@ on:
         description: 'Version tag (e.g. v1.2.0)'
         required: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build ${{ matrix.artifact }}
@@ -18,23 +21,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             artifact: agent-corex-linux-x86_64
             ext: ""
-          - os: macos-13          # Intel runner
-            artifact: agent-corex-macos-x86_64
-            ext: ""
-          - os: macos-14          # Apple Silicon (M1) runner
+          - os: macos-15          # arm64 — runs on Intel via Rosetta 2 as well
             artifact: agent-corex-macos-arm64
             ext: ""
-          - os: windows-latest
+          - os: windows-2022
             artifact: agent-corex-windows-x86_64
             ext: ".exe"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.11"
 
@@ -87,7 +87,7 @@ jobs:
           Get-Content dist/${{ matrix.artifact }}.sha256
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ matrix.artifact }}
           path: |
@@ -98,13 +98,13 @@ jobs:
   release:
     name: Attach binaries to GitHub Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
         with:
           path: dist/
 
@@ -121,14 +121,12 @@ jobs:
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
       - name: Upload binaries to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ steps.version.outputs.TAG }}
           files: |
             dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64
             dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64.sha256
-            dist/agent-corex-macos-x86_64/agent-corex-macos-x86_64
-            dist/agent-corex-macos-x86_64/agent-corex-macos-x86_64.sha256
             dist/agent-corex-macos-arm64/agent-corex-macos-arm64
             dist/agent-corex-macos-arm64/agent-corex-macos-arm64.sha256
             dist/agent-corex-windows-x86_64/agent-corex-windows-x86_64.exe

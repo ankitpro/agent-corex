@@ -29,26 +29,33 @@ on:
 jobs:
   update-tap:
     name: Patch formula and push to tap
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       startsWith(github.event.workflow_run.head_branch, 'refs/tags/v'))
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Resolve tag
         id: tag
+        env:
+          GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.tag }}"
           else
-            TAG="${{ github.event.workflow_run.head_branch }}"
+            # workflow_run.head_branch is the tag name when triggered by a tag push
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            TAG=$(gh api "repos/ankitpro/agent-corex/git/refs/tags" \
+              --jq ".[] | select(.object.sha == \"$SHA\" or .object.sha != null) | .ref" \
+              | grep "refs/tags/v" | tail -1 | sed 's|refs/tags/||')
+            # Fallback to head_branch if lookup fails
+            [ -z "$TAG" ] && TAG="${{ github.event.workflow_run.head_branch }}"
           fi
-          # Strip refs/tags/ prefix if present
           TAG="${TAG#refs/tags/}"
           VERSION="${TAG#v}"
-          echo "TAG=$TAG"       >> $GITHUB_OUTPUT
+          echo "TAG=$TAG"         >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Resolved: TAG=$TAG VERSION=$VERSION"
 
       - name: Download SHA256 files from release
         id: hashes
@@ -61,19 +68,16 @@ jobs:
           }
 
           ARM64_SHA=$(fetch_sha256  "$BASE/agent-corex-macos-arm64.sha256")
-          X86_SHA=$(fetch_sha256    "$BASE/agent-corex-macos-x86_64.sha256")
           LINUX_SHA=$(fetch_sha256  "$BASE/agent-corex-linux-x86_64.sha256")
 
           echo "ARM64_SHA=$ARM64_SHA"   >> $GITHUB_OUTPUT
-          echo "X86_SHA=$X86_SHA"       >> $GITHUB_OUTPUT
           echo "LINUX_SHA=$LINUX_SHA"   >> $GITHUB_OUTPUT
 
           echo "arm64:  $ARM64_SHA"
-          echo "x86_64: $X86_SHA"
           echo "linux:  $LINUX_SHA"
 
       - name: Checkout tap repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           repository: ankitpro/homebrew-agent-corex
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
@@ -84,18 +88,16 @@ jobs:
           FORMULA="tap/Formula/agent-corex.rb"
           VERSION="${{ steps.tag.outputs.VERSION }}"
           ARM64="${{ steps.hashes.outputs.ARM64_SHA }}"
-          X86="${{ steps.hashes.outputs.X86_SHA }}"
           LINUX="${{ steps.hashes.outputs.LINUX_SHA }}"
 
           # Update version
           sed -i "s|version \".*\"|version \"$VERSION\"|" "$FORMULA"
 
           # Update SHA256 placeholders / previous values
-          # Each sha256 line appears right after its url line — use line-specific substitution
-          python3 - "$FORMULA" "$ARM64" "$X86" "$LINUX" <<'PYEOF'
+          python3 - "$FORMULA" "$ARM64" "$LINUX" <<'PYEOF'
           import sys, re
 
-          path, arm64, x86, linux = sys.argv[1:]
+          path, arm64, linux = sys.argv[1:]
 
           text = open(path).read()
 
@@ -103,11 +105,6 @@ jobs:
           text = re.sub(
               r'(agent-corex-macos-arm64"\n\s+sha256 ")[^"]*(")',
               rf'\g<1>{arm64}\g<2>', text)
-
-          # Replace sha256 after x86_64 url block
-          text = re.sub(
-              r'(agent-corex-macos-x86_64"\n\s+sha256 ")[^"]*(")',
-              rf'\g<1>{x86}\g<2>', text)
 
           # Replace sha256 after linux url block
           text = re.sub(

@@ -59,13 +59,27 @@ Choose the approach that fits your needs:
 ### 🔌 Multiple Interfaces
 
 ```
-Python SDK  →  REST API  →  CLI Tool
+Python SDK  →  REST API  →  CLI Tool  →  MCP Gateway
 ```
 
 Choose how you integrate:
 - **Python Library**: `from agent_core import rank_tools`
 - **REST API**: `POST /retrieve_tools`
 - **Command Line**: `agent-corex retrieve "query"`
+- **MCP Gateway**: `agent-corex serve` (used by Claude Desktop & Cursor)
+
+### 🛠️ One-Command Claude & Cursor Setup
+
+Connect Agent-CoreX to Claude Desktop or Cursor in seconds:
+
+```bash
+pip install agent-corex
+agent-corex init
+```
+
+Agent-CoreX detects your installed tools, backs up their configs, and **safely merges** the gateway entry — existing MCP servers are never touched.
+
+**[Full setup guide →](/mcp-setup)**
 
 ---
 
@@ -182,6 +196,11 @@ Faster inference on limited hardware
   - Test tool retrieval in real-time
   - Try different ranking methods
   - View results with scores
+
+- **[🛠️ MCP Setup Guide](/mcp-setup)** - Connect Claude Desktop & Cursor ← **Start here**
+  - One-command setup with `agent-corex init`
+  - Safe config merging (existing servers preserved)
+  - Authentication and status check
 
 - **[⚡ Quick Start](/quickstart)** - Get up and running in 5 minutes
 - **[📦 Installation](/installation)** - Installation and setup

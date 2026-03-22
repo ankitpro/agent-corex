@@ -116,6 +116,67 @@ agent-corex retrieve "edit file" --top-k 3
 
 ---
 
+## Connect to Claude Desktop or Cursor
+
+After installing, wire Agent-CoreX into your AI client with one command:
+
+```bash
+agent-corex init
+```
+
+### What it does
+
+| Step | Action |
+|------|--------|
+| 1 | Scans for Claude Desktop and Cursor on your system |
+| 2 | Shows existing MCP servers that will be preserved |
+| 3 | Creates a timestamped backup of the config file |
+| 4 | **Merges** the `agent-corex` entry into `mcpServers` |
+| 5 | Leaves all other servers and settings untouched |
+
+### Skip prompts
+
+```bash
+agent-corex init --yes
+```
+
+### Result — what gets added to the config
+
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "agent-corex",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+Any existing `mcpServers` entries (e.g. `filesystem`, `git`) remain in the file.
+A backup is always saved before any write, e.g. `claude_desktop_config.20260323_120000.bak`.
+
+### Verify
+
+```bash
+agent-corex status
+```
+
+### Where config files live
+
+| Tool | Platform | Path |
+|------|----------|------|
+| Claude Desktop | Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Desktop | macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop | Linux | `~/.config/Claude/claude_desktop_config.json` |
+| Cursor | Windows | `%APPDATA%\Cursor\User\mcp.json` |
+| Cursor | macOS | `~/Library/Application Support/Cursor/User/mcp.json` |
+| Cursor | Linux | `~/.config/Cursor/User/mcp.json` |
+
+**[Full MCP setup guide →](/mcp-setup)**
+
+---
+
 ## First-Run Setup
 
 The first time you use embedding-based ranking, the system downloads a model (~80MB):

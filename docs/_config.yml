@@ -58,6 +58,10 @@ nav_main:
     url: "/quickstart"
     description: "Get started in 5 minutes"
 
+  - title: "🛠️ MCP Setup"
+    url: "/mcp-setup"
+    description: "Connect Claude Desktop and Cursor"
+
   - title: "📦 Installation"
     url: "/installation"
     description: "Setup and configuration"
