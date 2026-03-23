@@ -12,35 +12,46 @@ Agent-CoreX solves a critical problem in LLM systems:
   <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1103833&theme=light" alt="Agent-Corex on Product Hunt" width="250" height="54" />
 </a>
 
-**Quick links:** [PyPI](https://pypi.org/project/agent-corex/) · [Docs](https://ankitpro.github.io/agent-corex/) · [GitHub](https://github.com/ankitpro/agent-corex)
+**Quick links:** [PyPI](https://pypi.org/project/agent-corex/) · [Docs](https://ankitpro.github.io/agent-corex/) · [Releases](https://github.com/ankitpro/agent-corex/releases/latest) · [GitHub](https://github.com/ankitpro/agent-corex)
 
 ---
 
 ## Install
 
-```bash
-# pip (any platform)
-pip install agent-corex
+### Option 1 — Homebrew (macOS / Linux, no Python required)
 
-# Homebrew (macOS / Linux)
+```bash
 brew tap ankitpro/agent-corex
 brew install agent-corex
+```
 
-# Direct binary — no Python required
-# macOS arm64 (M1/M2/M3)
+### Option 2 — Direct binary download (no Python required)
+
+```bash
+# macOS (arm64 — M1/M2/M3 and Intel via Rosetta 2)
 curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-macos-arm64 \
-  -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
-
-# macOS x86_64
-curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-macos-x86_64 \
   -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
 
 # Linux x86_64
 curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-linux-x86_64 \
   -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
-
-# Windows — download agent-corex-windows-x86_64.exe from the releases page
 ```
+
+**Windows** — download [`agent-corex-windows-x86_64.exe`](https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe) and add it to your PATH, or run it directly:
+
+```powershell
+# PowerShell — download and run from current directory
+Invoke-WebRequest -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe -OutFile agent-corex.exe
+.\agent-corex.exe --version
+```
+
+### Option 3 — pip (Python 3.8+)
+
+```bash
+pip install agent-corex
+```
+
+> All three methods give you the same `agent-corex` CLI. Homebrew and the binary downloads require no Python installation.
 
 ---
 
@@ -156,7 +167,7 @@ agent-corex update                # pull latest configs from registry
 ## Tool Retrieval (Python API)
 
 ```python
-from agent_core.retrieval.scorer import rank_tools
+from agent_core.retrieval.ranker import rank_tools
 
 tools = rank_tools("edit a file", all_tools, top_k=5, method="hybrid")
 # Returns: ["edit_file", "write_file", "create_file", ...]
@@ -175,11 +186,9 @@ Every tag push triggers:
 
 | Workflow | What it does |
 |----------|-------------|
-| `test.yml` | Full test suite |
-| `build-binaries.yml` | PyInstaller binaries for Linux x86_64, macOS x86_64, macOS arm64, Windows x86_64 + SHA256 sidecars |
+| `build-binaries.yml` | PyInstaller binaries for Linux x86_64, macOS arm64, Windows x86_64 + SHA256 sidecars |
 | `publish.yml` | Publishes to PyPI |
-| `release.yml` | Creates GitHub Release with changelog |
-| `update-homebrew-tap.yml` | Auto-patches Homebrew formula with new version + SHA256s |
+| `update-homebrew-tap.yml` | Auto-patches the Homebrew formula with new version + SHA256s |
 
 ---
 

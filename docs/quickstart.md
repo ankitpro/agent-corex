@@ -1,211 +1,144 @@
 ---
 layout: page
-title: ⚡ Quick Start Guide
+title: Quick Start Guide
 description: Get Agent-Corex running in 5 minutes
 permalink: /quickstart/
 ---
 
-# Quick Start Guide (5 Minutes)
-
-Get Agent-Core running in 5 minutes!
+# Quick Start (5 Minutes)
 
 ---
 
-## 1. Install (1 minute)
+## Step 1 — Install
 
-### From PyPI (Recommended)
+Pick any one method:
+
+**Homebrew** (macOS / Linux — no Python required):
+```bash
+brew tap ankitpro/agent-corex
+brew install agent-corex
+```
+
+**Direct binary** (macOS arm64):
+```bash
+curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-macos-arm64 \
+  -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
+```
+
+**Direct binary** (Linux x86_64):
+```bash
+curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-linux-x86_64 \
+  -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
+```
+
+**Windows** — [download agent-corex-windows-x86_64.exe](https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe) and run it, or via PowerShell:
+```powershell
+Invoke-WebRequest -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe -OutFile agent-corex.exe
+```
+
+**pip** (Python 3.8+):
 ```bash
 pip install agent-corex
 ```
 
-### From Source
-```bash
-git clone https://github.com/ankitpro/agent-corex.git
-cd agent-corex
-pip install -e .
-```
-
 ---
 
-## 2. Verify Installation (1 minute)
-
-Check that Agent-Core is installed:
+## Step 2 — Verify
 
 ```bash
 agent-corex --version
-# Output: agent-corex 1.0.0
+# agent-corex 1.1.0
 ```
 
 ---
 
-## 3. Connect Claude Desktop or Cursor (Recommended)
-
-The fastest way to start using Agent-CoreX is to wire it into your AI client as an MCP server.
+## Step 3 — Connect to Your AI Tools
 
 ```bash
+# Authenticate
+agent-corex login --key acx_your_key
+
+# See which tools (Claude Desktop, Cursor, VS Code, etc.) are installed
+agent-corex detect
+
+# Inject agent-corex as an MCP server into all detected tools
 agent-corex init
 ```
 
-This command:
-1. Scans for Claude Desktop and Cursor on your machine
-2. Shows you which MCP servers are already configured
-3. **Merges** the `agent-corex` entry — your existing servers are kept untouched
-4. Creates a timestamped backup before writing anything
-
-**Example output:**
-
+Example output:
 ```
 Scanning for AI tools...
 
   [+] Claude Desktop: /Users/you/Library/Application Support/Claude/claude_desktop_config.json
-      Existing servers (will be kept):
-        - filesystem
-        - git
-      Add 'agent-corex' entry in Claude Desktop? [Y/n]: Y
-      [+] Added. mcpServers now contains 3 server(s):
-            - agent-corex  <-- agent-corex
-            - filesystem
-            - git
-      Backup: claude_desktop_config.20260323_120000.bak
+      Existing servers (will be kept): filesystem, git
+      Add 'agent-corex' entry? [Y/n]: Y
+      [+] Injected. Backup saved.
 
-Done. Restart the tool for changes to take effect.
+  [+] VS Code: /Users/you/Library/Application Support/Code/User/mcp.json
+      Add 'agent-corex' entry? [Y/n]: Y
+      [+] Injected. Backup saved.
+
+Done. Restart your AI tools for changes to take effect.
 ```
 
-Restart Claude Desktop or Cursor and Agent-CoreX appears as an available MCP server.
-
-**Skip confirmation prompts:**
-```bash
-agent-corex init --yes
-```
+Restart Claude Desktop / Cursor / VS Code — Agent-CoreX will appear as an available MCP server.
 
 ---
 
-## 4. Try It — CLI
-
-```bash
-agent-corex retrieve "edit file" --top-k 3
-```
-
-**Output:**
-```
-Found 3 tool(s) for: 'edit file'
-
-1. edit_file
-   Edit a file with line-based changes
-
-2. write_file
-   Create or overwrite a file
-
-3. modify_text
-   Modify text content in a file
-```
-
----
-
-## 5. Check Your Setup
+## Step 4 — Verify Setup
 
 ```bash
 agent-corex status
 ```
 
 ```
-agent-corex  v1.0.3
+agent-corex  v1.1.0
 
 Auth
-  [-] Logged in: No
-    Run: agent-corex login
-
-Config
-  Path:   ~/.agent-corex/config.json
-  Exists: No
+  [+] Logged in: Yes
 
 MCP Clients
   [+] Claude Desktop: detected
-      Config:             ~/Library/Application Support/Claude/claude_desktop_config.json
       agent-corex inject: [+] Yes
+  [+] VS Code: detected
+      agent-corex inject: [+] Yes
+```
 
-Available Tools
-  Free (2):
-    [+] retrieve_tools
-    [+] list_mcp_servers
-  Enterprise (3):
-    [-] [locked] github_search
-    [-] [locked] web_search
-    [-] [locked] database_query
-
-  Run  agent-corex login  to unlock enterprise tools.
+If something looks wrong:
+```bash
+agent-corex doctor   # runs 7 health checks and shows exactly what to fix
 ```
 
 ---
 
-## 6. Other Options
+## Step 5 — Browse & Install MCP Servers
 
-### Python Code (3 lines)
-```python
-from agent_core.retrieval.ranker import rank_tools
-
-tools = [{"name": "edit_file", "description": "Edit files"}]
-results = rank_tools("edit file", tools)
-print(results)
-```
-
-### REST API (Run server)
 ```bash
-agent-corex start --port 8000
-
-# In another terminal
-curl "http://localhost:8000/retrieve_tools?query=edit%20file&top_k=3"
+agent-corex registry              # browse the marketplace catalog
+agent-corex install-mcp github    # install the GitHub MCP server
+agent-corex install-mcp postgres  # install Postgres
+agent-corex list                  # see all currently installed servers
+agent-corex update                # pull latest configs from registry
 ```
 
 ---
 
-## 7. Next Steps
+## Useful Commands
 
-### Learn More
-- 📖 [MCP Setup Guide](/mcp-setup) — detailed Claude/Cursor setup
-- 📖 [Full Installation Guide](/installation)
-- 📖 [API Reference](/api)
-
-### Try Examples
 ```bash
-python examples/basic_usage.py
-```
-
-### Run Tests
-```bash
-pytest tests/ -v
+agent-corex detect             # detect AI tools
+agent-corex init               # inject into all tools
+agent-corex eject              # remove from all tools
+agent-corex status             # full status report
+agent-corex doctor             # health diagnostics
+agent-corex keys               # show/verify API key
+agent-corex logout             # remove credentials
 ```
 
 ---
 
-## Common Issues
+## Next Steps
 
-### "command not found: agent-corex"
-Solution: Ensure installation path is in PATH
-```bash
-python -m agent_core.cli.main retrieve "test"
-```
-
-### "ModuleNotFoundError: No module named 'agent_core'"
-Solution: Reinstall package
-```bash
-pip uninstall agent-corex
-pip install agent-corex
-```
-
-### "CUDA not available" (Warning is OK)
-This is normal. Agent-Core works fine with CPU.
-
----
-
-## What's Next?
-
-- ✅ Agent-Core is installed and working
-- 📖 Read [Installation Guide](installation.md) for detailed setup
-- 📖 Read [Tutorial](tutorial.md) for comprehensive usage
-- 🚀 [Deploy to production](deployment.md) when ready
-
----
-
-**Time taken**: ~5 minutes
-**Status**: Ready to use! 🎉
+- [Full Installation Guide](installation.md) — all install methods, SHA256 verification, troubleshooting
+- [MCP Setup Guide](/mcp-setup) — detailed per-tool configuration
+- [GitHub Releases](https://github.com/ankitpro/agent-corex/releases) — changelogs and all binary downloads
