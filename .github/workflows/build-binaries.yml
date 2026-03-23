@@ -40,10 +40,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements-binary.txt
-          # Install the package itself without heavy ML extras
-          pip install --no-deps -e .
+          pip install --upgrade pip setuptools wheel
+          pip install typer[all] pydantic "python-dotenv>=1.0.0" requests httpx rich pyinstaller
+          # Install package without pulling heavy ML transitive deps
+          pip install --no-deps --no-build-isolation .
 
       - name: Build binary (Linux / macOS)
         if: runner.os != 'Windows'
@@ -51,15 +51,12 @@ jobs:
           pyinstaller \
             --onefile \
             --name agent-corex \
-            --hidden-import agent_core \
-            --hidden-import agent_core.cli \
-            --hidden-import agent_core.cli.main \
-            --hidden-import agent_core.detectors \
-            --hidden-import agent_core.config_adapters \
-            --hidden-import agent_core.local_config \
+            --collect-all agent_core \
             --hidden-import typer \
             --hidden-import rich \
             --hidden-import httpx \
+            --hidden-import requests \
+            --hidden-import dotenv \
             --exclude-module torch \
             --exclude-module torchvision \
             --exclude-module torchaudio \
@@ -82,15 +79,12 @@ jobs:
           pyinstaller `
             --onefile `
             --name agent-corex `
-            --hidden-import agent_core `
-            --hidden-import agent_core.cli `
-            --hidden-import agent_core.cli.main `
-            --hidden-import agent_core.detectors `
-            --hidden-import agent_core.config_adapters `
-            --hidden-import agent_core.local_config `
+            --collect-all agent_core `
             --hidden-import typer `
             --hidden-import rich `
             --hidden-import httpx `
+            --hidden-import requests `
+            --hidden-import dotenv `
             --exclude-module torch `
             --exclude-module torchvision `
             --exclude-module torchaudio `
@@ -102,8 +96,8 @@ jobs:
             --exclude-module matplotlib `
             --exclude-module fastapi `
             --exclude-module uvicorn `
-            agent_core/cli/main.py
-          Move-Item dist/agent-corex.exe dist/${{ matrix.artifact }}.exe
+            agent_core\cli\main.py
+          Move-Item dist\agent-corex.exe dist\${{ matrix.artifact }}.exe
 
       - name: Compute SHA256 (Linux / macOS)
         if: runner.os != 'Windows'
