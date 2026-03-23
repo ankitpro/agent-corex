@@ -135,10 +135,18 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4.3.0
         with:
-          path: dist/
+          path: artifacts/
 
-      - name: List built binaries
-        run: find dist/ -type f | sort
+      - name: Flatten artifacts into release/
+        run: |
+          mkdir -p release
+          # download-artifact@v4 nests files as artifacts/<name>/<original-path>/file
+          # flatten everything into release/
+          find artifacts/ -type f | while read f; do
+            cp "$f" release/
+          done
+          echo "=== Release files ==="
+          ls -lh release/
 
       - name: Extract version
         id: version
@@ -149,18 +157,27 @@ jobs:
           fi
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
+      - name: Delete existing release if present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.TAG }}"
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || true)
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Deleting stale release $RELEASE_ID for $TAG"
+            curl -s -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+          fi
+
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ steps.version.outputs.TAG }}
-          files: |
-            dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64
-            dist/agent-corex-linux-x86_64/agent-corex-linux-x86_64.sha256
-            dist/agent-corex-macos-arm64/agent-corex-macos-arm64
-            dist/agent-corex-macos-arm64/agent-corex-macos-arm64.sha256
-            dist/agent-corex-windows-x86_64/agent-corex-windows-x86_64.exe
-            dist/agent-corex-windows-x86_64/agent-corex-windows-x86_64.sha256
-          fail_on_unmatched_files: false
+          files: release/*
+          fail_on_unmatched_files: true
+          generate_release_notes: false
 
       - name: Output release asset URLs
         run: |
