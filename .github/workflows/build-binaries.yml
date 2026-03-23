@@ -157,27 +157,35 @@ jobs:
           fi
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Delete existing release if present
+      - name: Create release and upload binaries
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.version.outputs.TAG }}"
-          RELEASE_ID=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || true)
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Deleting stale release $RELEASE_ID for $TAG"
-            curl -s -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
-          fi
+          echo "=== Files to upload ==="
+          ls -lh release/
 
-      - name: Upload binaries to release
-        uses: softprops/action-gh-release@v2.3.2
-        with:
-          tag_name: ${{ steps.version.outputs.TAG }}
-          files: release/*
-          fail_on_unmatched_files: true
-          generate_release_notes: false
+          # Write release notes to a file to avoid YAML quoting issues
+          cat > release-notes.md << 'NOTES'
+          ## Downloads
+
+          | Platform | File |
+          |----------|------|
+          | Linux x86_64 | `agent-corex-linux-x86_64` |
+          | macOS arm64 (Intel via Rosetta 2) | `agent-corex-macos-arm64` |
+          | Windows x86_64 | `agent-corex-windows-x86_64.exe` |
+
+          No Python required — standalone binary.
+          NOTES
+
+          # Delete stale release if it exists (keeps the tag)
+          gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+
+          # Create fresh release and attach all files
+          gh release create "$TAG" release/* \
+            --repo "${{ github.repository }}" \
+            --title "agent-corex $TAG" \
+            --notes-file release-notes.md
 
       - name: Output release asset URLs
         run: |
