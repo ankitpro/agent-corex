@@ -56,22 +56,48 @@ agent-corex --version
 
 ### Windows (x86_64)
 
-**Option A — PowerShell (adds to current directory):**
+#### System-wide install (recommended — run PowerShell as Administrator)
+
+Right-click PowerShell → **Run as administrator**, then:
+
 ```powershell
+# Download and install to System32 so 'agent-corex' works from anywhere
 Invoke-WebRequest `
   -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe `
-  -OutFile agent-corex.exe
-.\agent-corex.exe --version
+  -OutFile "$env:SystemRoot\System32\agent-corex.exe"
+
+# Verify
+agent-corex --version
 ```
 
-**Option B — Direct download link:**
+#### Per-user install (no admin required)
+
+```powershell
+# Create a local bin folder and add it to your user PATH
+$bin = "$env:USERPROFILE\bin"
+New-Item -ItemType Directory -Force -Path $bin | Out-Null
+
+Invoke-WebRequest `
+  -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe `
+  -OutFile "$bin\agent-corex.exe"
+
+# Add to PATH permanently for current user (takes effect in new terminals)
+$current = [System.Environment]::GetEnvironmentVariable("Path", "User")
+if ($current -notlike "*$bin*") {
+    [System.Environment]::SetEnvironmentVariable("Path", "$current;$bin", "User")
+}
+
+# Use immediately in this session
+$env:Path += ";$bin"
+agent-corex --version
+```
+
+#### Direct download
 
 [Download agent-corex-windows-x86_64.exe](https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe)
 
-Save it somewhere on your `PATH` (e.g. `C:\Windows\System32\` or a folder you've added to PATH), then:
-```powershell
-agent-corex --version
-```
+> **Note:** Always run from a terminal (Command Prompt or PowerShell), not by double-clicking.
+> Double-clicking a CLI tool closes the window instantly before you can read any output.
 
 ### Verify SHA256 checksum (optional)
 

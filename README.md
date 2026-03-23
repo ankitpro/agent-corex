@@ -37,13 +37,17 @@ curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agen
   -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
 ```
 
-**Windows** — download [`agent-corex-windows-x86_64.exe`](https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe) and add it to your PATH, or run it directly:
+**Windows** — run PowerShell **as Administrator**:
 
 ```powershell
-# PowerShell — download and run from current directory
-Invoke-WebRequest -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe -OutFile agent-corex.exe
-.\agent-corex.exe --version
+# Installs to System32 — works from any terminal after this
+Invoke-WebRequest `
+  -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe `
+  -OutFile "$env:SystemRoot\System32\agent-corex.exe"
+agent-corex --version
 ```
+
+No admin access? See the [per-user install →](https://ankitpro.github.io/agent-corex/installation/#per-user-install-no-admin-required)
 
 ### Option 3 — pip (Python 3.8+)
 
