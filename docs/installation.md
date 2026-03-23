@@ -188,7 +188,7 @@ agent-corex status                      # verify injection
 ### "agent-corex: command not found" (pip install)
 ```bash
 # Ensure pip scripts directory is in PATH, or use:
-python -m agent_core.cli.main --version
+python -m agent_core.cli.main version
 ```
 
 ### "Permission denied" on macOS/Linux binary

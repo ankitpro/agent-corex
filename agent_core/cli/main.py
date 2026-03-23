@@ -34,11 +34,27 @@ import typer
 from typing import Optional
 import json
 
+def _version_callback(value: bool):
+    if value:
+        from agent_core import __version__
+        typer.echo(f"agent-corex {__version__}")
+        raise typer.Exit()
+
 app = typer.Typer(
     name="agent-corex",
     help="Fast, accurate MCP tool retrieval engine — with gateway and enterprise support",
     no_args_is_help=True,
 )
+
+@app.callback()
+def _app_options(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-V",
+        callback=_version_callback, is_eager=True,
+        help="Show version and exit.",
+    ),
+):
+    pass
 
 
 # ── Shared detector/adapter helper ────────────────────────────────────────────

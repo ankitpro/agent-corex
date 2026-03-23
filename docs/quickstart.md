@@ -53,6 +53,7 @@ pip install agent-corex
 ```bash
 agent-corex --version
 # agent-corex 1.1.0
+# (also works as: agent-corex version)
 ```
 
 ---
