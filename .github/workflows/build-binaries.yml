@@ -178,14 +178,19 @@ jobs:
           No Python required — standalone binary.
           NOTES
 
-          # Delete stale release if it exists (keeps the tag)
-          gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+          # Delete ALL releases for this tag (published + drafts) to avoid conflicts.
+          # 'gh release delete' only deletes one at a time; loop to catch all.
+          while gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null; do
+            echo "Deleted a release for $TAG, checking for more..."
+          done
+          echo "All stale releases for $TAG removed."
 
-          # Create fresh release and attach all files
+          # Create fresh published release and attach all files
           gh release create "$TAG" release/* \
             --repo "${{ github.repository }}" \
             --title "agent-corex $TAG" \
-            --notes-file release-notes.md
+            --notes-file release-notes.md \
+            --latest
 
       - name: Output release asset URLs
         run: |
