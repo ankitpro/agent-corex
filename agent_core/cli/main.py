@@ -203,22 +203,33 @@ def health():
 
 @app.command(name="set-url")
 def set_url(
-    url: str = typer.Argument(..., help="Backend base URL, e.g. http://localhost:8000"),
+    url: str = typer.Argument(..., help="URL to set (backend API or frontend)"),
+    frontend: bool = typer.Option(
+        False, "--frontend", "-f",
+        help="Set the frontend URL (login page) instead of the backend API URL",
+    ),
 ):
     """
-    Set the backend URL and save it to ~/.agent-corex/config.json.
+    Set the backend API URL or frontend URL, saved to ~/.agent-corex/config.json.
 
     \\b
     Examples:
-        agent-corex set-url http://localhost:8000
-        agent-corex set-url https://my-server.example.com
+        agent-corex set-url http://localhost:8000          # backend API (default)
+        agent-corex set-url http://localhost:5173 --frontend  # frontend login page
+        agent-corex set-url https://api.example.com
+        agent-corex set-url https://app.example.com --frontend
     """
     from agent_core import local_config
 
     url = url.rstrip("/")
-    local_config.set_key("base_url", url)
-    typer.echo(f"✓ Backend URL set to: {url}")
-    typer.echo("  Run  agent-corex health  to verify the connection.")
+    if frontend:
+        local_config.set_key("frontend_url", url)
+        typer.echo(f"✓ Frontend URL set to: {url}")
+        typer.echo("  'agent-corex login' will now open this URL in your browser.")
+    else:
+        local_config.set_key("base_url", url)
+        typer.echo(f"✓ Backend URL set to: {url}")
+        typer.echo("  Run  agent-corex health  to verify the connection.")
 
 
 @app.command(name="config")
@@ -400,9 +411,10 @@ def login(
 
     if not api_key:
         if not no_browser:
-            typer.echo(f"\nOpening browser: {local_config.LOGIN_URL}\n")
+            login_url = local_config.get_login_url()
+            typer.echo(f"\nOpening browser: {login_url}\n")
             try:
-                webbrowser.open(local_config.LOGIN_URL)
+                webbrowser.open(login_url)
             except Exception:
                 typer.echo("Could not open browser automatically.")
             typer.echo("After logging in, copy your API key from the dashboard.\n")
@@ -782,7 +794,8 @@ def keys():
     typer.echo(f"  API key : {masked}")
     typer.echo(f"  User ID : {user.get('user_id', '—')}")
     typer.echo(f"  Name    : {user.get('name', '—')}")
-    typer.echo(f"  Backend : {local_config.get_base_url()}")
+    typer.echo(f"  Backend  : {local_config.get_base_url()}")
+    typer.echo(f"  Frontend : {local_config.get_frontend_url()}")
 
     typer.echo("\nVerifying key with backend...")
     try:

@@ -18,7 +18,7 @@ CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 DEFAULT_BASE_URL = "http://localhost:8000"
-LOGIN_URL = "http://localhost:8000/login?source=cli"
+DEFAULT_FRONTEND_URL = "http://localhost:5173"
 
 
 def _ensure_dir() -> None:
@@ -70,6 +70,14 @@ def get_api_key() -> str | None:
 
 def get_base_url() -> str:
     return get("base_url", DEFAULT_BASE_URL)
+
+
+def get_frontend_url() -> str:
+    return get("frontend_url", DEFAULT_FRONTEND_URL)
+
+
+def get_login_url() -> str:
+    return f"{get_frontend_url()}/login?source=cli"
 
 
 def is_logged_in() -> bool:
