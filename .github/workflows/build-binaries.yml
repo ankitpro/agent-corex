@@ -41,8 +41,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pyinstaller
-          pip install -e ".[dev]"
+          pip install -r requirements-binary.txt
+          # Install the package itself without heavy ML extras
+          pip install --no-deps -e .
 
       - name: Build binary (Linux / macOS)
         if: runner.os != 'Windows'
@@ -53,6 +54,23 @@ jobs:
             --hidden-import agent_core \
             --hidden-import agent_core.cli \
             --hidden-import agent_core.cli.main \
+            --hidden-import agent_core.detectors \
+            --hidden-import agent_core.config_adapters \
+            --hidden-import agent_core.local_config \
+            --hidden-import typer \
+            --hidden-import rich \
+            --hidden-import httpx \
+            --exclude-module torch \
+            --exclude-module torchvision \
+            --exclude-module torchaudio \
+            --exclude-module sentence_transformers \
+            --exclude-module transformers \
+            --exclude-module faiss \
+            --exclude-module sklearn \
+            --exclude-module scipy \
+            --exclude-module matplotlib \
+            --exclude-module fastapi \
+            --exclude-module uvicorn \
             agent_core/cli/main.py
           chmod +x dist/agent-corex
           mv dist/agent-corex dist/${{ matrix.artifact }}
@@ -67,6 +85,23 @@ jobs:
             --hidden-import agent_core `
             --hidden-import agent_core.cli `
             --hidden-import agent_core.cli.main `
+            --hidden-import agent_core.detectors `
+            --hidden-import agent_core.config_adapters `
+            --hidden-import agent_core.local_config `
+            --hidden-import typer `
+            --hidden-import rich `
+            --hidden-import httpx `
+            --exclude-module torch `
+            --exclude-module torchvision `
+            --exclude-module torchaudio `
+            --exclude-module sentence_transformers `
+            --exclude-module transformers `
+            --exclude-module faiss `
+            --exclude-module sklearn `
+            --exclude-module scipy `
+            --exclude-module matplotlib `
+            --exclude-module fastapi `
+            --exclude-module uvicorn `
             agent_core/cli/main.py
           Move-Item dist/agent-corex.exe dist/${{ matrix.artifact }}.exe
 
