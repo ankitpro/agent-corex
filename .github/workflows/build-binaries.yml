@@ -181,4 +181,19 @@ jobs:
 
       - name: Output release asset URLs
         run: |
-          echo "Release: https://github.com/ankitpro/agent-corex/releases/tag/${{ steps.version.outputs.TAG }}"
+          TAG="${{ steps.version.outputs.TAG }}"
+          BASE="https://github.com/ankitpro/agent-corex/releases/download/$TAG"
+          echo "### Release $TAG" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release page:** https://github.com/ankitpro/agent-corex/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Download |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux x86_64 | [$TAG/agent-corex-linux-x86_64]($BASE/agent-corex-linux-x86_64) |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS arm64 (+ Intel via Rosetta) | [$TAG/agent-corex-macos-arm64]($BASE/agent-corex-macos-arm64) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows x86_64 | [$TAG/agent-corex-windows-x86_64.exe]($BASE/agent-corex-windows-x86_64.exe) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**SHA256 checksums:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [$TAG/agent-corex-linux-x86_64.sha256]($BASE/agent-corex-linux-x86_64.sha256)" >> $GITHUB_STEP_SUMMARY
+          echo "- [$TAG/agent-corex-macos-arm64.sha256]($BASE/agent-corex-macos-arm64.sha256)" >> $GITHUB_STEP_SUMMARY
+          echo "- [$TAG/agent-corex-windows-x86_64.sha256]($BASE/agent-corex-windows-x86_64.sha256)" >> $GITHUB_STEP_SUMMARY
