@@ -180,20 +180,45 @@ def version():
 @app.command()
 def health():
     """Check API health (requires running server)."""
-    import requests
+    import httpx
+    from agent_core import local_config
 
+    base_url = local_config.get_base_url()
+    typer.echo(f"Checking {base_url}/health ...")
     try:
-        response = requests.get("http://127.0.0.1:8000/health", timeout=5)
-        if response.status_code == 200:
-            typer.echo("✓ Agent-Core API is healthy")
+        resp = httpx.get(f"{base_url}/health", timeout=5)
+        if resp.status_code == 200:
+            typer.echo("✓ Backend is healthy")
         else:
-            typer.echo(f"✗ Agent-Core API returned status {response.status_code}", err=True)
-    except requests.exceptions.ConnectionError:
-        typer.echo("✗ Cannot connect to Agent-Core API. Is it running?", err=True)
+            typer.echo(f"✗ Backend returned status {resp.status_code}", err=True)
+            raise typer.Exit(1)
+    except httpx.ConnectError:
+        typer.echo(f"✗ Cannot connect to {base_url}. Is the backend running?", err=True)
+        typer.echo("  Change URL:  agent-corex set-url http://your-host:port", err=True)
         raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"✗ Error: {str(e)}", err=True)
+        typer.echo(f"✗ Error: {e}", err=True)
         raise typer.Exit(1)
+
+
+@app.command(name="set-url")
+def set_url(
+    url: str = typer.Argument(..., help="Backend base URL, e.g. http://localhost:8000"),
+):
+    """
+    Set the backend URL and save it to ~/.agent-corex/config.json.
+
+    \\b
+    Examples:
+        agent-corex set-url http://localhost:8000
+        agent-corex set-url https://my-server.example.com
+    """
+    from agent_core import local_config
+
+    url = url.rstrip("/")
+    local_config.set_key("base_url", url)
+    typer.echo(f"✓ Backend URL set to: {url}")
+    typer.echo("  Run  agent-corex health  to verify the connection.")
 
 
 @app.command(name="config")
@@ -360,9 +385,9 @@ def login(
 
     \\b
     Flow:
-      1. Opens https://agent-corex.ai/login in your browser
-      2. You log in and copy the generated API key
-      3. Paste it here — it's stored in ~/.agent-corex/config.json
+      1. Get an API key from your Agent-Corex dashboard
+      2. Paste it here — stored in ~/.agent-corex/config.json
+      3. Use  agent-corex set-url  to point to a different backend if needed
 
     Example:
         agent-corex login

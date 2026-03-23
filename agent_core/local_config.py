@@ -4,7 +4,7 @@ Manages ~/.agent-corex/config.json — persistent CLI configuration.
 Schema:
   {
     "api_key": "acx_...",
-    "base_url": "https://agent-corex.ai",
+    "base_url": "http://localhost:8000",
     "user": { "user_id": "...", "name": "..." }
   }
 """
@@ -17,8 +17,8 @@ import stat
 CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
-DEFAULT_BASE_URL = "https://agent-corex.ai"
-LOGIN_URL = "https://agent-corex.ai/login?source=cli"
+DEFAULT_BASE_URL = "http://localhost:8000"
+LOGIN_URL = "http://localhost:8000/login?source=cli"
 
 
 def _ensure_dir() -> None:
