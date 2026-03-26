@@ -9,10 +9,11 @@ import shutil
 
 class MCPClient:
 
-    def __init__(self, name, command, args):
+    def __init__(self, name, command, args, extra_env=None):
         self.name = name
         self.command = command
         self.args = args
+        self.extra_env = extra_env or {}
         self.process = None
 
     def initialize(self):
@@ -56,6 +57,9 @@ class MCPClient:
         cmd = [command] + self.args
         print(f"cmd: {cmd}")
         env = os.environ.copy()
+        # Inject extra environment variables (from .env file or config)
+        if self.extra_env:
+            env.update(self.extra_env)
 
         if sys.platform.startswith("win"):
             # Windows needs shell=True for npx

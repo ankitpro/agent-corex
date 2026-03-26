@@ -24,6 +24,7 @@ Run:
 from __future__ import annotations
 
 import json
+import pathlib
 import sys
 import traceback
 from typing import Any
@@ -132,7 +133,24 @@ def run() -> None:
     Reads JSON-RPC requests from stdin, writes responses to stdout.
     Runs until stdin is closed.
     """
-    router = ToolRouter()
+    # Load local MCP tools from ~/.agent-corex/mcp.json if available
+    extra_tools = []
+    local_mcp_config = pathlib.Path.home() / ".agent-corex" / "mcp.json"
+    if local_mcp_config.exists():
+        try:
+            from agent_core.tools.mcp.mcp_loader import MCPLoader
+
+            loader = MCPLoader(str(local_mcp_config))
+            manager = loader.load()
+            extra_tools = manager.get_all_tools()
+            print(
+                f"Loaded {len(extra_tools)} tools from local MCP config",
+                file=sys.stderr,
+            )
+        except Exception as e:
+            print(f"Warning: Could not load local MCP tools: {e}", file=sys.stderr)
+
+    router = ToolRouter(extra_tools=extra_tools)
 
     for raw_line in sys.stdin:
         raw_line = raw_line.strip()

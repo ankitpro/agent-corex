@@ -123,24 +123,91 @@ class ToolRouter:
                         "_server": tool.get("server"),  # which MCP server owns it
                     }
 
-    def tools_list(self) -> list[dict]:
-        """Return all tools formatted for MCP tools/list response."""
-        result = []
-        for name, meta in self._registry.items():
-            tool_def: dict[str, Any] = {
-                "name": name,
-                "description": meta["description"],
-                "inputSchema": meta.get("inputSchema", {}),
+    def _format_tool(self, name: str, meta: dict) -> dict[str, Any]:
+        """Format a single tool for MCP tools/list response."""
+        tool_def: dict[str, Any] = {
+            "name": name,
+            "description": meta["description"],
+            "inputSchema": meta.get("inputSchema", {}),
+        }
+        # Surface tier information as an annotation so clients can display it
+        if meta["type"] == "enterprise":
+            tool_def["annotations"] = {
+                "tier": "enterprise",
+                "hint": "Requires Agent-Corex API key. Run: agent-corex login",
             }
-            # Surface tier information as an annotation so clients can display it
-            if meta["type"] == "enterprise":
-                tool_def["annotations"] = {
-                    "tier": "enterprise",
-                    "hint": "Requires Agent-Corex API key. Run: agent-corex login",
-                }
-            else:
-                tool_def["annotations"] = {"tier": "free"}
-            result.append(tool_def)
+        else:
+            tool_def["annotations"] = {"tier": "free"}
+        return tool_def
+
+    def tools_list(self, max_mcp_tools: int = 10) -> list[dict]:
+        """
+        Return tools formatted for MCP tools/list response.
+
+        Intelligently filters MCP tools if there are too many:
+        - Always includes all static built-in tools (5 tools)
+        - If extra MCP tools > max_mcp_tools: uses ranking to select top tools
+        - Tracks filtering decisions for observability
+        """
+        result = []
+
+        # 1. Always include all static built-in tools first
+        for name, meta in TOOL_REGISTRY.items():
+            result.append(self._format_tool(name, meta))
+
+        # 2. Filter extra MCP tools if there are too many
+        mcp_tools_to_add = [
+            (name, meta)
+            for name, meta in self._registry.items()
+            if name not in TOOL_REGISTRY
+        ]
+
+        if len(mcp_tools_to_add) > max_mcp_tools:
+            # Use keyword ranking to pick top tools
+            try:
+                from agent_core.retrieval.ranker import rank_tools
+
+                tool_dicts = [
+                    {"name": name, "description": meta.get("description", "")}
+                    for name, meta in mcp_tools_to_add
+                ]
+                # Use a general utility query for ranking when no context is available
+                ranked = rank_tools(
+                    "general development file database web deploy build",
+                    tool_dicts,
+                    top_k=max_mcp_tools,
+                    method="keyword",
+                )
+                selected_names = {t["name"] for t in ranked}
+                rejected_names = {name for name, _ in mcp_tools_to_add} - selected_names
+
+                # Track the filtering decision
+                try:
+                    from agent_core.tools.observability.tool_selection_tracker import get_tracker
+                    tracker = get_tracker()
+                    tracker.track(
+                        "tools/list (default)",
+                        list(selected_names),
+                        list(rejected_names),
+                        scores={"reason": "max_tools_threshold", "threshold": max_mcp_tools},
+                    )
+                except Exception:
+                    pass  # Observability is optional
+
+                # Keep only selected MCP tools
+                mcp_tools_to_add = [
+                    (name, meta)
+                    for name, meta in mcp_tools_to_add
+                    if name in selected_names
+                ]
+            except Exception:
+                # If ranking fails, just take first max_mcp_tools
+                mcp_tools_to_add = mcp_tools_to_add[:max_mcp_tools]
+
+        # 3. Add filtered MCP tools to result
+        for name, meta in mcp_tools_to_add:
+            result.append(self._format_tool(name, meta))
+
         return result
 
     def is_enterprise(self, tool_name: str) -> bool:
@@ -194,6 +261,22 @@ class ToolRouter:
                 return "No tools found."
 
             results = rank_tools(query, all_tools, top_k=top_k, method=method)
+
+            # Track tool selection
+            try:
+                from agent_core.tools.observability.tool_selection_tracker import get_tracker
+                selected_names = [t["name"] for t in results] if results else []
+                rejected_names = [t["name"] for t in all_tools if t["name"] not in selected_names]
+                tracker = get_tracker()
+                tracker.track(
+                    query,
+                    selected_names,
+                    rejected_names,
+                    scores={"method": method, "top_k": top_k}
+                )
+            except Exception:
+                pass  # Observability is optional
+
             if not results:
                 return f"No tools matched query: {query!r}"
 

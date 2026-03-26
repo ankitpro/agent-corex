@@ -1218,5 +1218,327 @@ def doctor():
             typer.echo(f"  {i}. {issue}")
 
 
+@app.command(name="install-pack")
+def install_pack(
+    pack_name: str = typer.Argument(..., help="Pack name to install (e.g. vibe_coding_pack)"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+):
+    """
+    Install all MCP servers for a capability pack from the backend.
+
+    A pack bundles multiple related capabilities and their MCP servers.
+
+    \\b
+    Example:
+        agent-corex install-pack vibe_coding_pack
+        agent-corex install-pack devops_pack --yes
+    """
+    try:
+        import httpx
+    except ImportError:
+        typer.echo("httpx is required. Run: pip install httpx", err=True)
+        raise typer.Exit(1)
+
+    from agent_core import local_config
+
+    base_url = local_config.get_base_url()
+    typer.echo(f"\nFetching pack '{pack_name}' from backend...")
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            # Fetch pack info
+            pack_resp = client.get(f"{base_url}/packs/{pack_name}")
+            if pack_resp.status_code == 404:
+                typer.echo(f"\n  Pack '{pack_name}' not found.", err=True)
+                typer.echo("  Run: agent-corex registry   to see available packs")
+                raise typer.Exit(1)
+            pack_resp.raise_for_status()
+            pack = pack_resp.json()
+
+            # Fetch servers for this pack
+            srv_resp = client.get(f"{base_url}/packs/{pack_name}/servers")
+            srv_resp.raise_for_status()
+            server_list = srv_resp.json()
+            servers = server_list.get("servers", [])
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        typer.echo(f"\nFailed to reach backend: {e}", err=True)
+        typer.echo(f"  Check your backend URL: agent-corex status")
+        raise typer.Exit(1)
+
+    # Show summary
+    typer.echo(f"\n  {pack.get('name', pack_name)}")
+    if pack.get('description'):
+        typer.echo(f"  {pack['description']}")
+    typer.echo(f"\n  Servers to install ({len(servers)}):")
+    for srv in servers:
+        typer.echo(f"    • {srv}")
+
+    # Confirm
+    if not yes:
+        typer.confirm(f"\nInstall {len(servers)} server(s) for {pack_name}?", abort=True)
+
+    # Install each server using the existing install-mcp logic
+    typer.echo(f"\nInstalling servers...")
+    installed = []
+    failed = []
+
+    for server_name in servers:
+        typer.echo(f"  Installing {server_name}...")
+        try:
+            # Fetch the server definition
+            with httpx.Client(timeout=10.0) as client:
+                srv_def_resp = client.get(f"{base_url}/mcp_registry/{server_name}")
+                if srv_def_resp.status_code != 200:
+                    failed.append((server_name, "not found in registry"))
+                    continue
+                entry = srv_def_resp.json()
+
+            # Build server definition for install
+            base_def = {
+                "command": entry.get("command", ""),
+                "args": entry.get("args", []),
+            }
+
+            # For now, skip env var collection in pack install
+            # Users should run agent-corex setup-env separately
+            vscode_def = {"type": "stdio", **base_def}
+
+            # Install into all detected tools
+            from agent_core.detectors import (
+                ClaudeDesktopDetector,
+                CursorDetector,
+                VSCodeDetector,
+                VSCodeInsidersDetector,
+                VSCodiumDetector,
+            )
+            from agent_core.config_adapters import (
+                ClaudeAdapter,
+                CursorAdapter,
+                VSCodeStableAdapter,
+                VSCodeInsidersAdapter,
+                VSCodiumAdapter,
+            )
+
+            tools = [
+                ("claude", ClaudeDesktopDetector(), ClaudeAdapter()),
+                ("cursor", CursorDetector(), CursorAdapter()),
+                ("vscode", VSCodeDetector(), VSCodeStableAdapter()),
+                ("vscode-insiders", VSCodeInsidersDetector(), VSCodeInsidersAdapter()),
+                ("vscodium", VSCodiumDetector(), VSCodiumAdapter()),
+            ]
+
+            any_installed = False
+            for tool_slug, detector, adapter in tools:
+                if not detector.is_installed():
+                    continue
+                try:
+                    if tool_slug in {"vscode", "vscode-insiders", "vscodium"}:
+                        server_def = vscode_def
+                    else:
+                        server_def = base_def
+
+                    adapter.inject_server(server_name, server_def)
+                    any_installed = True
+                except Exception as e:
+                    typer.echo(f"    Warning: Failed to install in {tool_slug}: {e}")
+
+            if any_installed:
+                installed.append(server_name)
+            else:
+                failed.append((server_name, "no compatible tools found"))
+
+        except Exception as e:
+            failed.append((server_name, str(e)))
+
+    # Summary
+    typer.echo(f"\n✓ Installed pack: {pack_name}")
+    if installed:
+        typer.echo(f"  Servers added ({len(installed)}):")
+        for srv in installed:
+            typer.echo(f"    • {srv}")
+    if failed:
+        typer.echo(f"\n  Warnings ({len(failed)}):")
+        for srv, reason in failed:
+            typer.echo(f"    ⚠ {srv}: {reason}")
+
+    typer.echo("\nRestart your tools for changes to take effect.")
+
+
+@app.command(name="generate-mcp-config")
+def generate_mcp_config():
+    """
+    Generate ~/.agent-corex/mcp.json from all installed MCP servers.
+
+    This reads server definitions from Claude Desktop, VSCode, Cursor, etc.
+    and writes them all to a unified local config file.
+
+    \\b
+    Example:
+        agent-corex generate-mcp-config
+    """
+    from agent_core.detectors import (
+        ClaudeDesktopDetector,
+        CursorDetector,
+        VSCodeDetector,
+        VSCodeInsidersDetector,
+        VSCodiumDetector,
+    )
+    from agent_core.config_adapters import (
+        ClaudeAdapter,
+        CursorAdapter,
+        VSCodeStableAdapter,
+        VSCodeInsidersAdapter,
+        VSCodiumAdapter,
+    )
+
+    import pathlib
+
+    tools = [
+        ("claude", ClaudeDesktopDetector(), ClaudeAdapter()),
+        ("cursor", CursorDetector(), CursorAdapter()),
+        ("vscode", VSCodeDetector(), VSCodeStableAdapter()),
+        ("vscode-insiders", VSCodeInsidersDetector(), VSCodeInsidersAdapter()),
+        ("vscodium", VSCodiumDetector(), VSCodiumAdapter()),
+    ]
+
+    # Collect servers from all tools
+    collected_servers = {}
+
+    for tool_slug, detector, adapter in tools:
+        if not detector.is_installed():
+            continue
+
+        try:
+            servers = adapter.get_servers()
+            typer.echo(f"  {detector.name}: {len(servers)} server(s)")
+            for name, server_def in servers.items():
+                if name not in collected_servers:
+                    collected_servers[name] = server_def
+        except Exception as e:
+            typer.echo(f"  {detector.name}: Error reading config: {e}")
+
+    if not collected_servers:
+        typer.echo("No servers found. Install a pack first: agent-corex install-pack <name>")
+        return
+
+    # Write to ~/.agent-corex/mcp.json
+    mcp_config = {
+        "mcpServers": collected_servers,
+    }
+
+    config_file = pathlib.Path.home() / ".agent-corex" / "mcp.json"
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with open(config_file, "w") as f:
+            json.dump(mcp_config, f, indent=2)
+        typer.echo(f"\n✓ Generated {config_file}")
+        typer.echo(f"  Collected {len(collected_servers)} server(s)")
+        for name in sorted(collected_servers.keys()):
+            typer.echo(f"    • {name}")
+    except Exception as e:
+        typer.echo(f"\nError writing config: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(name="setup-env")
+def setup_env():
+    """
+    Set up environment variables for MCP servers in ~/.agent-corex/.env.
+
+    Store API keys and connection strings that will be injected
+    into all MCP servers.
+
+    \\b
+    Prompted variables:
+        OPENAI_API_KEY        OpenAI API key
+        SUPABASE_URL          Supabase project URL
+        SUPABASE_KEY          Supabase API key
+        REDIS_URL             Redis connection URL
+        RAILWAY_API_KEY       Railway deployment API key
+        RENDER_API_KEY        Render deployment API key
+
+    \\b
+    Example:
+        agent-corex setup-env
+    """
+    import pathlib
+
+    env_file = pathlib.Path.home() / ".agent-corex" / ".env"
+    env_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load existing values
+    existing_env = {}
+    if env_file.exists():
+        try:
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        existing_env[k.strip()] = v.strip()
+        except Exception:
+            pass
+
+    # Variables to prompt for
+    env_vars = [
+        ("OPENAI_API_KEY", "OpenAI API key (sk-... format)"),
+        ("SUPABASE_URL", "Supabase project URL (https://... format)"),
+        ("SUPABASE_KEY", "Supabase API key"),
+        ("REDIS_URL", "Redis connection URL (redis://... or skip if not using Redis)"),
+        ("RAILWAY_API_KEY", "Railway API key (for deployment, optional)"),
+        ("RENDER_API_KEY", "Render API key (for deployment, optional)"),
+    ]
+
+    typer.echo("Setting up environment variables for MCP servers.\n")
+    typer.echo("Press Enter to skip a variable or keep the existing value.\n")
+
+    new_env = dict(existing_env)
+
+    for key, description in env_vars:
+        existing = existing_env.get(key)
+        if existing:
+            typer.echo(f"  {key} (currently set, press Enter to keep)")
+        else:
+            typer.echo(f"  {key}")
+            typer.echo(f"    {description}")
+
+        val = typer.prompt(f"    {key}", default=existing or "", hide_input=True, show_default=False)
+
+        if val.strip():
+            new_env[key] = val.strip()
+        elif key not in new_env:
+            # User skipped and no existing value
+            pass
+
+    # Write to file
+    try:
+        lines = [
+            "# Agent-Corex environment variables",
+            f"# Generated: {__import__('datetime').datetime.utcnow().isoformat()}",
+            "# These are injected into all MCP servers",
+            "",
+        ]
+        for k, v in new_env.items():
+            # Mask values in output
+            lines.append(f"{k}={v}")
+
+        with open(env_file, "w") as f:
+            f.write("\n".join(lines) + "\n")
+
+        typer.echo(f"\n✓ Saved {env_file}")
+        typer.echo(f"  Variables set: {len(new_env)}")
+        for k in new_env.keys():
+            typer.echo(f"    • {k}")
+    except Exception as e:
+        typer.echo(f"\nError writing env file: {e}", err=True)
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
