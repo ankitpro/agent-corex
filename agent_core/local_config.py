@@ -27,8 +27,10 @@ from typing import Optional
 CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
-# All CLI requests go through the frontend URL, which proxies /api/* to the backend.
-DEFAULT_BASE_URL = "https://www.agent-corex.com"
+# Internal API endpoint — not user-configurable, never shown in CLI output.
+# Use AGENT_COREX_API_URL env var to override for local development only.
+_API_URL = "https://agent-corex-enterprise-production.up.railway.app"
+DEFAULT_FRONTEND_URL = "https://www.agent-corex.com"
 
 
 def _ensure_dir() -> None:
@@ -78,13 +80,16 @@ def delete_key(key: str) -> None:
 
 
 def get_base_url() -> str:
-    """Return the base URL for API calls (defaults to www.agent-corex.com)."""
-    return get("base_url", DEFAULT_BASE_URL)
+    """Return the API base URL. Not user-configurable; use AGENT_COREX_API_URL env var for local dev."""
+    env = os.getenv("AGENT_COREX_API_URL")
+    if env:
+        return env.rstrip("/")
+    return _API_URL
 
 
 def get_frontend_url() -> str:
-    """Return the frontend URL (same as base_url — single origin)."""
-    return get_base_url()
+    """Return the frontend URL (used for browser login page)."""
+    return get("frontend_url", DEFAULT_FRONTEND_URL)
 
 
 def get_login_url() -> str:

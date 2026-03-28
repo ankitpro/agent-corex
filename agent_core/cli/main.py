@@ -207,7 +207,7 @@ def health():
     base_url = local_config.get_base_url()
     typer.echo("Checking Agent-CoreX service...")
     try:
-        resp = httpx.get(f"{base_url}/api/health", timeout=5)
+        resp = httpx.get(f"{base_url}/health", timeout=5)
         if resp.status_code == 200:
             typer.echo("✓ Service is healthy")
         else:
@@ -223,24 +223,22 @@ def health():
 
 @app.command(name="set-url")
 def set_url(
-    url: str = typer.Argument(
-        ..., help="Base URL for Agent-CoreX (default: https://www.agent-corex.com)"
-    ),
+    url: str = typer.Argument(..., help="Frontend URL (default: https://www.agent-corex.com)"),
 ):
     """
-    Override the Agent-CoreX URL (for local development only).
+    Override the frontend login page URL (for local development only).
 
     \\b
     Examples:
-        agent-corex set-url http://localhost:3000    # local dev server
+        agent-corex set-url http://localhost:5173    # local dev
         agent-corex set-url https://www.agent-corex.com  # restore default
     """
     from agent_core import local_config
 
     url = url.rstrip("/")
-    local_config.set_key("base_url", url)
-    typer.echo(f"✓ URL set to: {url}")
-    typer.echo("  Run  agent-corex health  to verify the connection.")
+    local_config.set_key("frontend_url", url)
+    typer.echo(f"✓ Frontend URL set to: {url}")
+    typer.echo("  'agent-corex login' will now open this URL in your browser.")
 
 
 @app.command(name="config")
@@ -456,7 +454,7 @@ def login(
             base_url = local_config.get_base_url()
             with httpx.Client(base_url=base_url, timeout=5.0) as client:
                 resp = client.post(
-                    "/api/auth/login",
+                    "/auth/login",
                     headers={"Authorization": f"Bearer {api_key}"},
                     json={"api_key": api_key},
                 )
@@ -494,7 +492,7 @@ def login(
 
     # Step 1: Start CLI session
     try:
-        resp = httpx.post(f"{base_url}/api/auth/cli/start", timeout=10.0)
+        resp = httpx.post(f"{base_url}/auth/cli/start", timeout=10.0)
         resp.raise_for_status()
         data = resp.json()
         device_code = data["device_code"]
@@ -541,7 +539,7 @@ def login(
         typer.echo(".", nl=False)
         try:
             poll = httpx.post(
-                f"{base_url}/api/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
+                f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
             )
             if poll.status_code != 200:
                 continue
@@ -759,7 +757,7 @@ def sync(
         typer.echo("\nPulling configuration...")
         try:
             resp = httpx.get(
-                f"{base_url}/api/user/servers",
+                f"{base_url}/user/servers",
                 headers={"Authorization": auth_header},
                 timeout=15.0,
             )
@@ -825,7 +823,7 @@ def sync(
     typer.echo("\nPushing local state...")
     try:
         push_resp = httpx.post(
-            f"{base_url}/api/user/servers",
+            f"{base_url}/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             json={
                 "installed_servers": sorted(local_servers),
@@ -869,7 +867,7 @@ def list_registry():
 
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(f"{base_url}/api/mcp_registry")
+            resp = client.get(f"{base_url}/mcp_registry")
             resp.raise_for_status()
             servers = resp.json()
     except Exception as e:
@@ -936,7 +934,7 @@ def install_mcp(
 
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(f"{base_url}/api/mcp_registry/{name}")
+            resp = client.get(f"{base_url}/mcp_registry/{name}")
             if resp.status_code == 404:
                 typer.echo(f"\n  Server '{name}' not found in registry.", err=True)
                 typer.echo("  Browse available servers:  agent-corex registry")
@@ -1112,7 +1110,7 @@ def keys():
         base_url = local_config.get_base_url()
         with httpx.Client(base_url=base_url, timeout=5.0) as client:
             resp = client.post(
-                "/api/auth/login",
+                "/auth/login",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={"api_key": api_key},
             )
@@ -1317,7 +1315,7 @@ def update(
             return _registry_cache[name]
         try:
             with httpx.Client(timeout=8.0) as client:
-                resp = client.get(f"{base_url}/api/mcp_registry/{name}")
+                resp = client.get(f"{base_url}/mcp_registry/{name}")
                 entry = resp.json() if resp.status_code == 200 else None
         except Exception:
             entry = None
@@ -1466,7 +1464,7 @@ def doctor():
     try:
         import httpx as _httpx
 
-        resp = _httpx.get(f"{base_url}/api/health", timeout=5.0)
+        resp = _httpx.get(f"{base_url}/health", timeout=5.0)
         if resp.status_code == 200:
             typer.echo(f"  {ok} Agent-CoreX service reachable")
         else:
@@ -1487,7 +1485,7 @@ def doctor():
             import httpx as _httpx
 
             resp = _httpx.post(
-                f"{base_url}/api/auth/login",
+                f"{base_url}/auth/login",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5.0,
             )
@@ -1747,7 +1745,7 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
         import httpx
 
         httpx.post(
-            f"{base_url}/api/user/servers",
+            f"{base_url}/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             json={
                 "installed_servers": sorted(local_servers),
