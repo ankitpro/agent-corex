@@ -508,14 +508,31 @@ def login(
     try:
         resp = httpx.post(f"{base_url}/auth/cli/start", timeout=10.0)
         resp.raise_for_status()
+        data = resp.json()
+        device_code = data["device_code"]
+        verification_url = data["verification_url"]
+    except httpx.ConnectError:
+        typer.echo(f"[error] Cannot reach backend at: {base_url}", err=True)
+        typer.echo("  Run: agent-corex set-url  to point to the correct backend URL.", err=True)
+        typer.echo(
+            "  Or:  agent-corex login --no-browser  to log in with an API key instead.",
+            err=True,
+        )
+        raise typer.Exit(1)
+    except (ValueError, KeyError):
+        typer.echo(
+            f"[error] Backend returned an unexpected response (not JSON). Check your backend URL: {base_url}",
+            err=True,
+        )
+        typer.echo("  Run: agent-corex set-url  to point to the correct backend URL.", err=True)
+        raise typer.Exit(1)
     except Exception as exc:
         typer.echo(f"[error] Could not start login session: {exc}", err=True)
-        typer.echo("Tip: Use  agent-corex login --no-browser  to log in with an API key instead.")
+        typer.echo(
+            "  Tip: agent-corex login --no-browser  to log in with an API key instead.",
+            err=True,
+        )
         raise typer.Exit(1)
-
-    data = resp.json()
-    device_code = data["device_code"]
-    verification_url = data["verification_url"]
 
     # Step 2: Show URL
     typer.echo("Open this URL to complete login:\n")
@@ -537,11 +554,11 @@ def login(
             poll = httpx.post(
                 f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
             )
+            if poll.status_code != 200:
+                continue
+            result = poll.json()
         except Exception:
             continue
-        if poll.status_code != 200:
-            continue
-        result = poll.json()
         status = result.get("status", "pending")
         if status == "expired":
             typer.echo("\n\n[error] Login session expired. Please try again.", err=True)

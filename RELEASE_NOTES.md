@@ -1,5 +1,26 @@
 # Release Notes
 
+## v1.1.8 (March 29, 2026)
+
+### 🔧 Fix
+- **`agent-corex login` crash** — fixed `JSONDecodeError` when the backend URL is not configured or the backend is unreachable. Previously the CLI crashed with an unhandled exception; now it prints a clear error and a fix hint:
+  ```
+  [error] Cannot reach backend at: http://localhost:8000
+    Run: agent-corex set-url  to point to the correct backend URL.
+    Or:  agent-corex login --no-browser  to log in with an API key instead.
+  ```
+- Also fixed `poll.json()` in the polling loop — non-JSON poll responses are now silently skipped instead of crashing.
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.8        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.8)
+
+---
+
 ## v1.1.7 (March 29, 2026)
 
 ### 📖 Documentation
