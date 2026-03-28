@@ -787,37 +787,44 @@ def sync(
         typer.echo(f"  Remote packs   : {', '.join(remote_packs) or 'none'}")
 
         # ── Step 2: Install missing ───────────────────────────────────────────
-        local_servers = set(_load_json_list(installed_file))
-        local_packs = set(_load_json_list(packs_file))
+        # Read local state from PackManager (source of truth)
+        installed_pack_data = PackManager.get_installed_packs()
+        local_packs = set(installed_pack_data.keys())
+        local_servers: set = set()
+        for pack_data in installed_pack_data.values():
+            for srv in pack_data.get("servers", []):
+                if pack_data.get("enabled", {}).get(srv, True):
+                    local_servers.add(srv)
 
         missing_servers = [s for s in remote_servers if s not in local_servers]
         missing_packs = [p for p in remote_packs if p not in local_packs]
 
         if missing_servers or missing_packs:
             typer.echo("\nInstalling missing items locally...")
-            for srv in missing_servers:
-                typer.echo(f"  Installing: {srv}...", nl=False)
-                try:
-                    result = (
-                        PackManager.install_server(srv)
-                        if hasattr(PackManager, "install_server")
-                        else None
-                    )
-                    local_servers.add(srv)
-                    typer.echo(" ✓")
-                except Exception:
-                    local_servers.add(srv)  # Mark as tracked even if install fails
-                    typer.echo(" (registered)")
             for pack in missing_packs:
-                typer.echo(f"  Pack enabled: {pack} ✓")
-                local_packs.add(pack)
-            _save_json_list(installed_file, list(local_servers))
-            _save_json_list(packs_file, list(local_packs))
+                try:
+                    PackManager.install_pack(pack)
+                    local_packs.add(pack)
+                    # Add the pack's servers to local_servers
+                    for srv_def in PackManager.get_servers_for_pack(pack):
+                        local_servers.add(srv_def["name"])
+                    typer.echo(f"  Pack installed: {pack} ✓")
+                except Exception:
+                    local_packs.add(pack)
+                    typer.echo(f"  Pack registered: {pack} (registered)")
+            for srv in missing_servers:
+                local_servers.add(srv)
+                typer.echo(f"  Server registered: {srv} ✓")
         else:
             typer.echo("  Local state is up to date.")
     else:
-        local_servers = set(_load_json_list(installed_file))
-        local_packs = set(_load_json_list(packs_file))
+        installed_pack_data = PackManager.get_installed_packs()
+        local_packs = set(installed_pack_data.keys())
+        local_servers = set()
+        for pack_data in installed_pack_data.values():
+            for srv in pack_data.get("servers", []):
+                if pack_data.get("enabled", {}).get(srv, True):
+                    local_servers.add(srv)
 
     # ── Step 3: Push local state ──────────────────────────────────────────────
     typer.echo("\nPushing local state...")
@@ -1712,7 +1719,6 @@ def install_pack(
 
 def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
     """Push pack install state to backend. Non-fatal if not logged in or backend unreachable."""
-    import json as _json
     from agent_core import local_config
 
     auth_header = local_config.get_auth_header()
@@ -1720,25 +1726,15 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
         return  # Not logged in — skip notification
 
     base_url = local_config.get_base_url()
-    installed_file = local_config.CONFIG_DIR / "installed_servers.json"
-    packs_file = local_config.CONFIG_DIR / "installed_packs.json"
 
-    def _load(path) -> list:
-        try:
-            if path.exists():
-                return _json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-        return []
-
-    # Update local tracking files
-    local_servers = set(_load(installed_file)) | set(server_names)
-    local_packs = set(_load(packs_file)) | {pack_name}
-    try:
-        installed_file.write_text(_json.dumps(sorted(local_servers), indent=2), encoding="utf-8")
-        packs_file.write_text(_json.dumps(sorted(local_packs), indent=2), encoding="utf-8")
-    except Exception:
-        pass
+    # Read current local state from PackManager (source of truth — do NOT touch the files here)
+    installed_pack_data = PackManager.get_installed_packs()
+    all_packs = set(installed_pack_data.keys())
+    all_servers: set = set()
+    for pd in installed_pack_data.values():
+        for srv in pd.get("servers", []):
+            if pd.get("enabled", {}).get(srv, True):
+                all_servers.add(srv)
 
     # Push to backend
     try:
@@ -1748,8 +1744,8 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
             f"{base_url}/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             json={
-                "installed_servers": sorted(local_servers),
-                "installed_packs": sorted(local_packs),
+                "installed_servers": sorted(all_servers),
+                "installed_packs": sorted(all_packs),
             },
             timeout=10.0,
         )
