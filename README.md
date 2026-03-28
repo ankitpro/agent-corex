@@ -62,8 +62,8 @@ pip install agent-corex
 ## Quick Start
 
 ```bash
-# 1. Authenticate with the Agent-Corex backend
-agent-corex login --key acx_your_key
+# 1. Log in — opens your browser automatically, saves credentials locally
+agent-corex login
 
 # 2. Detect installed AI tools (Claude Desktop, Cursor, VS Code, etc.)
 agent-corex detect
@@ -80,32 +80,118 @@ agent-corex doctor
 
 ---
 
+## Authentication
+
+Agent-CoreX uses a **browser-based login flow** (like GitHub CLI or Vercel CLI) — no manual key copying required.
+
+### Login (recommended)
+
+```bash
+agent-corex login
+```
+
+What happens:
+1. A unique verification URL is generated and printed in the terminal
+2. Your browser opens automatically to `https://agent-corex.com/cli-auth?code=...`
+3. You log in with your Agent-CoreX account (email, Google, or GitHub)
+4. The CLI detects the completed login and saves your session locally
+5. Done — credentials are stored in `~/.agent-corex/config.json`
+
+```
+$ agent-corex login
+
+Logging in to Agent-CoreX...
+
+Open this URL to complete login:
+
+  https://agent-corex.com/cli-auth?code=a1b2c3d4-...
+
+(Opened in your browser automatically)
+
+Waiting for authentication.......
+
+✓ Logged in successfully!
+  User: you@example.com
+  Session saved to ~/.agent-corex/config.json
+
+You can now run:
+  agent-corex sync
+  agent-corex status
+```
+
+### Login with API key (alternative)
+
+If you prefer to use an API key directly:
+
+```bash
+# Paste your key (from the dashboard → API Keys)
+agent-corex login --key acx_your_key_here
+
+# Or: open the dashboard in browser, then prompt for key
+agent-corex login --no-browser
+```
+
+### Sync with dashboard
+
+After logging in, sync your locally installed packs and servers with your Agent-CoreX dashboard:
+
+```bash
+agent-corex sync
+```
+
+What sync does:
+1. **Pulls** packs/servers you enabled in the dashboard → installs any missing locally
+2. **Pushes** your local install state → dashboard shows what's installed
+
+```bash
+agent-corex sync --push-only   # only push local state, skip pull/install
+```
+
+### Logout
+
+```bash
+agent-corex logout
+```
+
+Clears all credentials (session tokens + API key) from `~/.agent-corex/config.json`.
+
+---
+
 ## CLI Reference
 
 ### Setup & Auth
+
 | Command | Description |
 |---------|-------------|
-| `agent-corex login --key <key>` | Store API key and verify with backend |
-| `agent-corex logout` | Remove stored credentials |
+| `agent-corex login` | **Log in via browser** — opens browser, saves session automatically |
+| `agent-corex login --key <key>` | Log in with an API key directly |
+| `agent-corex login --no-browser` | Prompt for API key without opening browser |
+| `agent-corex logout` | Remove all stored credentials |
+| `agent-corex sync` | Sync installed packs/servers with dashboard |
+| `agent-corex sync --push-only` | Push local state to dashboard only |
 | `agent-corex keys` | Show masked API key + live backend verification |
 
 ### Tool Detection & Injection
+
 | Command | Description |
 |---------|-------------|
 | `agent-corex detect` | Detect installed AI tools and show config paths |
 | `agent-corex init [--yes]` | Inject agent-corex MCP entry into all detected tools |
 | `agent-corex eject [--tool <t>] [--yes]` | Remove agent-corex from tool configs |
-| `agent-corex status` | Auth state, backend ping, injection status per tool |
+| `agent-corex status` | Auth state, sync status, backend ping, injection status per tool |
 
 ### MCP Server Management
+
 | Command | Description |
 |---------|-------------|
 | `agent-corex list` | List all MCP servers injected across detected tools |
 | `agent-corex registry` | Browse the installable MCP server catalog |
 | `agent-corex install-mcp <name> [--yes]` | Install any registry server into detected tools |
+| `agent-corex install-pack <name> [--yes]` | Install a curated pack of MCP servers |
 | `agent-corex update [--yes]` | Re-fetch registry and update injected server configs |
 
 ### Diagnostics
+
 | Command | Description |
 |---------|-------------|
 | `agent-corex doctor` | Full health check: Python, PATH, config, backend, API key, injection |
@@ -113,11 +199,13 @@ agent-corex doctor
 | `agent-corex version` | Print installed version |
 
 ### Gateway
+
 | Command | Description |
 |---------|-------------|
 | `agent-corex serve` | Start the MCP gateway server (stdio — invoked by AI tools) |
 
 ### Tool Retrieval
+
 | Command | Description |
 |---------|-------------|
 | `agent-corex retrieve "<query>"` | Semantic search for relevant tools |

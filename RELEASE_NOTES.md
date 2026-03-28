@@ -1,5 +1,23 @@
 # Release Notes
 
+## v1.1.7 (March 29, 2026)
+
+### 📖 Documentation
+- **README**: Full documentation for browser-based login flow with terminal output example
+- **README**: New dedicated "Authentication" section explaining device-code login, API key fallback, sync, and logout
+- **README**: Updated Quick Start — `agent-corex login` (no `--key` required)
+- **README**: Updated CLI Reference table with `sync`, `sync --push-only`, and all login variants
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.7        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.7)
+
+---
+
 ## v1.1.6 (March 29, 2026)
 
 ### ✨ New Features
