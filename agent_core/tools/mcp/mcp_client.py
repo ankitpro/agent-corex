@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import json
 import uuid
@@ -5,6 +6,8 @@ import os
 import sys
 import time
 import shutil
+
+logger = logging.getLogger(__name__)
 
 
 class MCPClient:
@@ -53,22 +56,30 @@ class MCPClient:
         return self.command
 
     def start(self):
+        if self.is_running():
+            # Guard: never spawn a second process for the same client instance
+            return
+
         command = self.resolve_command()
         cmd = [command] + self.args
-        print(f"cmd: {cmd}")
+        logger.debug(f"[MCP] spawn: {cmd}")
         env = os.environ.copy()
         # Inject extra environment variables (from .env file or config)
         if self.extra_env:
             env.update(self.extra_env)
 
         if sys.platform.startswith("win"):
-            # Windows needs shell=True for npx
+            # Windows needs shell=True for npx.
+            # Force UTF-8 encoding — the default cp1252/charmap breaks on servers
+            # that emit non-ASCII characters (e.g. emoji in railway-mcp output).
             self.process = subprocess.Popen(
                 " ".join(cmd),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 env=env,
                 shell=True,
                 bufsize=1,
@@ -77,6 +88,7 @@ class MCPClient:
 
             if self.process.poll() is not None:
                 err = self.process.stderr.read()
+                self.process = None
                 raise RuntimeError(f"MCP server failed to start: {err}")
         else:
             self.process = subprocess.Popen(
@@ -85,17 +97,45 @@ class MCPClient:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 env=env,
                 bufsize=1,
             )
 
-        print(f"MCP server started: {self.name}")
+        logger.info(f"[MCP] process started: {self.name}")
+
+    def stop(self):
+        """Terminate the MCP server process cleanly."""
+        if self.process is None:
+            return
+        try:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=2)
+        except Exception as e:
+            logger.warning(f"[MCP] error stopping {self.name}: {e}")
+        finally:
+            self.process = None
+        logger.info(f"[MCP] process stopped: {self.name}")
+
+    def is_running(self) -> bool:
+        """Return True if the server process is currently alive."""
+        return self.process is not None and self.process.poll() is None
 
     def list_tools(self):
 
         result = self._send_request("tools/list")
 
         return result.get("tools", [])
+
+    def call_tool(self, tool_name: str, arguments: dict):
+        """Call a tool on this MCP server and return the result."""
+        result = self._send_request("tools/call", {"name": tool_name, "arguments": arguments})
+        return result
 
     def _send_request(self, method, params=None):
 
@@ -115,8 +155,7 @@ class MCPClient:
 
             if not line:
                 err = self.process.stderr.read()
-                print("MCP SERVER ERROR:")
-                print(err)
+                logger.error(f"[MCP] server stderr: {self.name}\n{err}")
                 raise RuntimeError("MCP server closed connection")
 
             response = json.loads(line)

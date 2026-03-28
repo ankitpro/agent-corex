@@ -12,6 +12,7 @@ tools/call  → checks auth for enterprise tools before execution
 from __future__ import annotations
 
 import pathlib
+import threading
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -107,28 +108,49 @@ class ToolRouter:
     is_enterprise(name) — True if the tool requires auth
     """
 
-    def __init__(self, extra_tools: list[dict] | None = None) -> None:
+    def __init__(self, extra_tools: list[dict] | None = None, mcp_manager=None) -> None:
         # Start with the static registry
         self._registry: dict[str, dict] = dict(TOOL_REGISTRY)
+        self._registry_lock = threading.Lock()
+
+        # MCPManager for lazy-starting servers on tool call
+        self._mcp_manager = mcp_manager
 
         # Optionally merge in dynamically discovered MCP tools (all free)
         if extra_tools:
-            for tool in extra_tools:
+            self.add_mcp_tools(extra_tools)
+
+    def add_mcp_tools(self, tools: list[dict]) -> None:
+        """
+        Thread-safe: add dynamically discovered MCP tools to the registry.
+        Called from the background discovery thread in MCPLoader.
+        """
+        added = 0
+        with self._registry_lock:
+            for tool in tools:
                 name = tool.get("name")
                 if name and name not in self._registry:
                     self._registry[name] = {
                         "type": "free",
                         "description": tool.get("description", ""),
                         "inputSchema": tool.get("input_schema") or tool.get("inputSchema") or {},
-                        "_server": tool.get("server"),  # which MCP server owns it
+                        "_server": tool.get("server"),
                     }
+                    added += 1
+        if added:
+            import logging
+            logging.getLogger(__name__).info(f"[MCP] router: added {added} new tools")
 
     def _format_tool(self, name: str, meta: dict) -> dict[str, Any]:
         """Format a single tool for MCP tools/list response."""
+        schema = dict(meta.get("inputSchema") or {})
+        # Claude Code rejects tools whose inputSchema lacks "type": "object"
+        if schema.get("type") != "object":
+            schema["type"] = "object"
         tool_def: dict[str, Any] = {
             "name": name,
             "description": meta["description"],
-            "inputSchema": meta.get("inputSchema", {}),
+            "inputSchema": schema,
         }
         # Surface tier information as an annotation so clients can display it
         if meta["type"] == "enterprise":
@@ -140,14 +162,19 @@ class ToolRouter:
             tool_def["annotations"] = {"tier": "free"}
         return tool_def
 
-    def tools_list(self, max_mcp_tools: int = 10) -> list[dict]:
+    def tools_list(self, max_mcp_tools: int = 10, query: str | None = None) -> list[dict]:
         """
         Return tools formatted for MCP tools/list response.
 
-        Intelligently filters MCP tools if there are too many:
-        - Always includes all static built-in tools (5 tools)
+        Intelligently filters MCP tools:
+        - Always includes all static built-in tools
         - If extra MCP tools > max_mcp_tools: uses ranking to select top tools
+        - If query provided: ranks tools by relevance to query
         - Tracks filtering decisions for observability
+
+        Args:
+            max_mcp_tools: Maximum MCP tools to include (default 10)
+            query: Optional context query for ranking (e.g., "deploy", "database")
         """
         result = []
 
@@ -163,7 +190,7 @@ class ToolRouter:
         ]
 
         if len(mcp_tools_to_add) > max_mcp_tools:
-            # Use keyword ranking to pick top tools
+            # Use ranking to pick top tools
             try:
                 from agent_core.retrieval.ranker import rank_tools
 
@@ -171,12 +198,16 @@ class ToolRouter:
                     {"name": name, "description": meta.get("description", "")}
                     for name, meta in mcp_tools_to_add
                 ]
-                # Use a general utility query for ranking when no context is available
+
+                # Use provided query, or fall back to default context
+                ranking_query = query or "general development file database web deploy build"
+                ranking_method = "hybrid" if query else "keyword"
+
                 ranked = rank_tools(
-                    "general development file database web deploy build",
+                    ranking_query,
                     tool_dicts,
                     top_k=max_mcp_tools,
-                    method="keyword",
+                    method=ranking_method,
                 )
                 selected_names = {t["name"] for t in ranked}
                 rejected_names = {name for name, _ in mcp_tools_to_add} - selected_names
@@ -186,10 +217,10 @@ class ToolRouter:
                     from agent_core.tools.observability.tool_selection_tracker import get_tracker
                     tracker = get_tracker()
                     tracker.track(
-                        "tools/list (default)",
+                        f"tools/list ({ranking_query})" if query else "tools/list (default)",
                         list(selected_names),
                         list(rejected_names),
-                        scores={"reason": "max_tools_threshold", "threshold": max_mcp_tools},
+                        scores={"reason": "max_tools_threshold", "threshold": max_mcp_tools, "query": query},
                     )
                 except Exception:
                     pass  # Observability is optional
@@ -217,7 +248,8 @@ class ToolRouter:
         return meta.get("type") == "enterprise"
 
     def get_meta(self, tool_name: str) -> dict | None:
-        return self._registry.get(tool_name)
+        with self._registry_lock:
+            return self._registry.get(tool_name)
 
     def get_server(self, tool_name: str) -> str | None:
         """Return the backing MCP server name for dynamically loaded tools."""
@@ -226,15 +258,39 @@ class ToolRouter:
 
     def execute_free_tool(self, tool_name: str, arguments: dict) -> Any:
         """
-        Execute a free built-in tool.
+        Execute a free tool — built-in or MCP-backed.
         Returns the result payload (str or dict).
         """
         if tool_name == "retrieve_tools":
             return self._run_retrieve_tools(arguments)
         if tool_name == "list_mcp_servers":
             return self._run_list_mcp_servers()
-        # Unknown built-in tool
-        raise ValueError(f"No built-in executor for tool: {tool_name!r}")
+
+        # Check if this is a dynamically loaded MCP tool
+        server_name = self.get_server(tool_name)
+        if server_name is not None:
+            return self._run_mcp_tool(tool_name, server_name, arguments)
+
+        raise ValueError(f"No executor for tool: {tool_name!r}")
+
+    def _run_mcp_tool(self, tool_name: str, server_name: str, arguments: dict) -> Any:
+        """Execute a tool on its backing MCP server, starting it lazily if needed."""
+        if self._mcp_manager is None:
+            raise RuntimeError("MCP manager not available")
+
+        # Lazy-start the server if not running
+        if not self._mcp_manager.ensure_server_running(server_name):
+            raise RuntimeError(
+                f"MCP server {server_name!r} could not be started. "
+                "Check logs for details."
+            )
+
+        client = self._mcp_manager.get_client(server_name)
+        if client is None:
+            raise RuntimeError(f"MCP server {server_name!r} has no active client")
+
+        result = client.call_tool(tool_name, arguments)
+        return result
 
     # ── Built-in free tool implementations ────────────────────────────────
 

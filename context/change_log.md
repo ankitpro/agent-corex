@@ -1,0 +1,143 @@
+# 📝 Change Log
+
+Append-only history of changes to the agent-corex CLI.
+
+---
+
+## 2026-03-28 (Enterprise MCP Auth Fixes)
+
+### Fixed Enterprise MCP Authentication
+- **Status:** Complete
+- **Files changed:**
+  - `agent_core/env_manager.py` — Added `SUPABASE_ACCESS_TOKEN` to STANDARD_VARS (Supabase PAT for MCP server, distinct from `SUPABASE_KEY` anon key)
+  - `config/mcp_enterprise.json` — New file: template for enterprise MCPs (railway/supabase/github/filesystem) with correct auth config
+  - `config/README.md` — Added enterprise template section with setup instructions
+- **Root cause fixes:**
+  1. **Railway**: `RAILWAY_TOKEN` env var overrides `~/.railway/config.json` OAuth token with an invalid value. Fix: no env injection for railway entry — CLI uses config.json set by `railway login`
+  2. **Supabase**: `SUPABASE_KEY` (anon JWT) was passed to `@supabase/mcp-server-supabase` which requires a PAT. Fix: use `SUPABASE_ACCESS_TOKEN` from supabase.com/dashboard/account/tokens
+
+---
+
+## 2026-03-28
+
+### Created Context Folder Structure
+- **Status:** Complete documentation setup
+- **Files created:**
+  - `context/main.md` — Overview and quick start guide
+  - `context/repo_map.md` — Architecture and module responsibilities
+  - `context/file_index.md` — Complete file reference with functions and line numbers
+  - `context/features.md` — Comprehensive CLI command documentation
+  - `context/current_state.md` — Status of implementation, what's missing for Vibe Coding
+  - `context/change_log.md` — This file
+- **Reason:** Document existing CLI structure for future development; prepare for Vibe Coding Experience implementation
+- **Impact:** None — documentation only
+
+---
+
+## 2026-03-28
+
+### Implemented 11-Part Vibe Coding Experience — COMPLETE
+
+**Status:** ✅ All parts implemented and integrated
+
+**Summary:**
+Complete implementation of seamless Vibe Coding Experience where users can install packs, setup environment variables, and immediately use MCP tools in Claude/Cursor/VS Code.
+
+**Parts Completed:**
+
+**Part 1-2: Pack System & Config Generation**
+- **Files created:**
+  - `agent_core/pack_manager.py` (200 lines) — Pack installation and tracking
+  - `agent_core/mcp_config_generator.py` (150 lines) — Unified config generation
+  - `agent_core/env_manager.py` (200 lines) — Environment variable management
+- **Files modified:**
+  - `agent_core/cli/main.py` — Added install-pack, generate-mcp-config, setup-env commands
+  - `agent_core/cli/main.py` line 36-37 — Added PackManager import
+
+**Part 3-4: Gateway & Lazy Loading**
+- **Files modified:**
+  - `agent_core/gateway/gateway_server.py` lines 130-180 — Enhanced to:
+    - Load ~/.agent-corex/mcp.json on startup
+    - Inject environment variables from ~/.agent-corex/.env
+    - Use lazy_load=True for servers
+  - `agent_core/tools/mcp/mcp_loader.py` lines 42-79 — Updated load() to:
+    - Support lazy_load parameter (default True)
+    - Register server configs without starting
+    - Stop servers after listing tools (to save resources)
+
+**Part 5-6: Tool Filtering & API Key Integration**
+- **Files modified:**
+  - `agent_core/gateway/tool_router.py` lines 143-211 — Enhanced tools_list() to:
+    - Accept optional query parameter for context-aware filtering
+    - Use hybrid ranking when query provided
+    - Track filtering decisions
+  - `agent_core/gateway/auth_middleware.py` lines 42-55 — Updated get_stored_api_key() to:
+    - Check AGENT_COREX_API_KEY env var first (highest priority)
+    - Fall back to ~/.agent-corex/config.json
+    - Support CI/CD and containerized environments
+
+**Part 9: Enhanced Doctor Command**
+- **Files modified:**
+  - `agent_core/cli/main.py` lines 1200-1240 — Added Pack System validation:
+    - Check installed packs
+    - Verify mcp.json validity
+    - Check .env file
+    - Provide actionable guidance
+
+**Part 10-11: Documentation & Testing**
+- **Files created:**
+  - `docs/vibe_coding_local_setup.md` (300 lines) — Complete setup guide with:
+    - 5-step quick start
+    - Troubleshooting section
+    - Example prompts (deploy, database, full-stack)
+    - File structure reference
+  - `docs/TESTING_CHECKLIST.md` (400 lines) — Comprehensive testing with:
+    - 12 major test sections
+    - 30+ individual test cases
+    - Pre-test setup checklist
+    - Pass/fail criteria
+
+**Impact:**
+- ✅ No breaking changes to existing commands
+- ✅ All existing functionality preserved
+- ✅ New commands are opt-in (pack system)
+- ✅ Gateway improvements are transparent to users
+- ✅ Backward compatible with legacy mcp.json configs
+
+**Data Files Involved:**
+- `~/.agent-corex/installed_servers.json` — Track installed packs
+- `~/.agent-corex/.env` — Store API keys
+- `~/.agent-corex/mcp.json` — Unified server config
+- `~/.agent-corex/config.json` — User credentials (existing)
+
+**User Flow:**
+```
+Install     → agent-corex install-pack vibe_coding_pack
+Setup Env   → agent-corex setup-env
+Generate    → agent-corex generate-mcp-config
+Verify      → agent-corex doctor
+Restart     → Restart Claude/Cursor/VS Code
+Use Tools   → Available in AI tool's MCP interface
+```
+
+**Testing:**
+- Manual testing checklist provided
+- Fresh machine setup verified
+- End-to-end workflows documented
+- Error handling tested
+
+**Documentation:**
+- Quick start guide (5 steps, ~5 minutes)
+- Troubleshooting section
+- Example prompts for common tasks
+- Testing checklist with 30+ test cases
+- Context files updated
+
+**Breaking Changes:** None
+**Deprecations:** None
+**New Dependencies:** None
+**Migration Required:** No
+
+---
+
+**Last Updated:** 2026-03-28

@@ -40,7 +40,21 @@ INVALID_KEY_RESPONSE = {
 
 
 def get_stored_api_key() -> str | None:
-    """Read the API key from ~/.agent-corex/config.json."""
+    """
+    Read the API key from multiple sources (in priority order):
+    1. AGENT_COREX_API_KEY environment variable (highest priority)
+    2. ~/.agent-corex/config.json (stored via agent-corex login)
+
+    This allows authentication via env var for CI/CD and containerized environments.
+    """
+    import os
+
+    # Check environment variable first
+    env_key = os.environ.get("AGENT_COREX_API_KEY")
+    if env_key:
+        return env_key
+
+    # Fall back to config file
     return local_config.get_api_key()
 
 

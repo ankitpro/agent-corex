@@ -45,6 +45,23 @@ Configuration for MCP (Model Context Protocol) servers.
 | git | uvx | mcp-server-git |
 | puppeteer | npx | @modelcontextprotocol/server-puppeteer |
 
+### mcp_enterprise.json
+
+Template for enterprise integrations (Railway, GitHub, Supabase). Copy this to `~/.agent-corex/mcp.json` for enterprise use.
+
+**Required setup before use:**
+- **Railway**: Run `railway login` (uses `~/.railway/config.json` — do NOT set `RAILWAY_TOKEN` env var as it overrides OAuth auth)
+- **GitHub**: Set `GITHUB_TOKEN` in `~/.agent-corex/.env` (`ghp_...` or `github_pat_...` format)
+- **Supabase**: Set `SUPABASE_ACCESS_TOKEN` in `~/.agent-corex/.env` — this is a **Personal Access Token** from [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens), NOT the anon/service key
+
+```bash
+# Copy enterprise template to user config
+cp config/mcp_enterprise.json ~/.agent-corex/mcp.json
+
+# Set required env vars
+agent-corex setup-env
+```
+
 ## Adding a New Server
 
 1. Edit `mcp.json`

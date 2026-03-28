@@ -24,6 +24,7 @@ Run:
 from __future__ import annotations
 
 import json
+import logging
 import pathlib
 import sys
 import traceback
@@ -31,6 +32,13 @@ from typing import Any
 
 from agent_core.gateway.tool_router import ToolRouter
 from agent_core.gateway.auth_middleware import check_auth
+
+# Route MCP lifecycle logs to stderr so they don't corrupt the JSON-RPC stdout stream
+logging.basicConfig(
+    stream=sys.stderr,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 SERVER_NAME = "agent-corex"
 SERVER_VERSION = "1.0.3"
@@ -72,7 +80,10 @@ def _handle_initialize(req_id: Any, _params: dict, router: ToolRouter) -> dict:
 
 
 def _handle_tools_list(req_id: Any, _params: dict, router: ToolRouter) -> dict:
-    return _ok_response(req_id, {"tools": router.tools_list()})
+    # Pass a high limit so ranking is not triggered on the default tools/list call.
+    # Ranking (rank_tools) loads ML models which is slow on first call.
+    # Use retrieve_tools if you need context-filtered results.
+    return _ok_response(req_id, {"tools": router.tools_list(max_mcp_tools=512)})
 
 
 def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
@@ -127,67 +138,167 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
 # Main loop
 # ---------------------------------------------------------------------------
 
+_RECURSION_GUARD_ENV = "AGENT_COREX_GATEWAY_DEPTH"
+
+
 def run() -> None:
     """
     Start the MCP gateway server.
     Reads JSON-RPC requests from stdin, writes responses to stdout.
     Runs until stdin is closed.
+
+    On startup:
+    1. Load ~/.agent-corex/mcp.json if available
+    2. Load environment variables from ~/.agent-corex/.env
+    3. Inject env vars into MCP server definitions
+    4. Register all tool metadata via lazy discovery (servers stopped after tool list)
     """
-    # Load local MCP tools from ~/.agent-corex/mcp.json if available
-    extra_tools = []
+    import os
+    log = logging.getLogger(__name__)
+
+    # ── Recursion guard ────────────────────────────────────────────────────
+    # If this process was spawned BY another agent-corex gateway (e.g. because
+    # agent-corex was listed inside mcp.json), skip mcp.json loading entirely.
+    # This prevents the exponential process explosion:
+    #   gateway → discovers "agent-corex" in mcp.json → spawns gateway
+    #           → spawns gateway → spawns gateway → 1000+ processes
+    gateway_depth = int(os.environ.get(_RECURSION_GUARD_ENV, "0"))
+    if gateway_depth > 0:
+        log.warning(
+            f"[MCP] nested gateway detected (depth={gateway_depth}) — "
+            "skipping mcp.json loading to prevent recursion"
+        )
+        router = ToolRouter()
+        for raw_line in sys.stdin:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                msg = json.loads(raw_line)
+            except json.JSONDecodeError as exc:
+                _send(_error_response(None, -32700, f"Parse error: {exc}"))
+                continue
+            req_id = msg.get("id")
+            method: str = msg.get("method", "")
+            params: dict = msg.get("params") or {}
+            if req_id is None:
+                continue
+            try:
+                if method == "initialize":
+                    response = _handle_initialize(req_id, params, router)
+                elif method == "tools/list":
+                    response = _handle_tools_list(req_id, params, router)
+                elif method == "tools/call":
+                    response = _handle_tools_call(req_id, params, router)
+                elif method == "ping":
+                    response = _ok_response(req_id, {})
+                else:
+                    response = _error_response(req_id, -32601, f"Method not found: {method!r}")
+            except Exception:
+                tb = traceback.format_exc()
+                response = _error_response(req_id, -32603, "Internal error", tb)
+            _send(response)
+        return
+
+    # Stamp our depth so any child processes that run agent-corex will not
+    # load mcp.json (env is inherited by all subprocess.Popen children)
+    os.environ[_RECURSION_GUARD_ENV] = str(gateway_depth + 1)
+
+    # Load environment variables
+    env_vars = {}
+    env_file = pathlib.Path.home() / ".agent-corex" / ".env"
+    if env_file.exists():
+        try:
+            from agent_core.env_manager import EnvManager
+            env_vars = EnvManager.load_env()
+            log.info(f"Loaded {len(env_vars)} environment variables")
+        except Exception as e:
+            log.warning(f"Could not load env file: {e}")
+
+    # Build router immediately with built-in tools — no blocking I/O yet
+    router = ToolRouter()
+    mcp_manager = None
+
+    # Load MCP tools from ~/.agent-corex/mcp.json using cache for instant startup.
+    # Background thread runs live discovery and updates router as tools are found.
     local_mcp_config = pathlib.Path.home() / ".agent-corex" / "mcp.json"
     if local_mcp_config.exists():
         try:
             from agent_core.tools.mcp.mcp_loader import MCPLoader
 
             loader = MCPLoader(str(local_mcp_config))
-            manager = loader.load()
-            extra_tools = manager.get_all_tools()
-            print(
-                f"Loaded {len(extra_tools)} tools from local MCP config",
-                file=sys.stderr,
+
+            def _on_tools_discovered(server_name: str, tools: list) -> None:
+                """Called by background discovery thread for each server."""
+                # Stamp server name onto each tool dict so router knows its origin
+                for t in tools:
+                    t["server"] = server_name
+                router.add_mcp_tools(tools)
+
+            mcp_manager = loader.load_with_cache(add_tools_callback=_on_tools_discovered)
+            router._mcp_manager = mcp_manager
+
+            # Push cached tools into the router's registry immediately
+            cached_tools = mcp_manager.get_all_tools()
+            if cached_tools:
+                router.add_mcp_tools(cached_tools)
+
+            log.info(
+                f"[MCP] gateway ready — {len(cached_tools)} tools from cache, "
+                "background discovery running"
             )
         except Exception as e:
-            print(f"Warning: Could not load local MCP tools: {e}", file=sys.stderr)
+            log.warning(f"Could not load local MCP tools: {e}")
 
-    router = ToolRouter(extra_tools=extra_tools)
+    try:
+        for raw_line in sys.stdin:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
 
-    for raw_line in sys.stdin:
-        raw_line = raw_line.strip()
-        if not raw_line:
-            continue
+            try:
+                msg = json.loads(raw_line)
+            except json.JSONDecodeError as exc:
+                _send(_error_response(None, -32700, f"Parse error: {exc}"))
+                continue
 
-        try:
-            msg = json.loads(raw_line)
-        except json.JSONDecodeError as exc:
-            _send(_error_response(None, -32700, f"Parse error: {exc}"))
-            continue
+            req_id = msg.get("id")
+            method: str = msg.get("method", "")
+            params: dict = msg.get("params") or {}
 
-        req_id = msg.get("id")
-        method: str = msg.get("method", "")
-        params: dict = msg.get("params") or {}
+            # Notifications (no id) — acknowledge silently
+            if req_id is None:
+                continue
 
-        # Notifications (no id) — acknowledge silently
-        if req_id is None:
-            continue
+            try:
+                if method == "initialize":
+                    response = _handle_initialize(req_id, params, router)
+                elif method == "tools/list":
+                    response = _handle_tools_list(req_id, params, router)
+                elif method == "tools/call":
+                    response = _handle_tools_call(req_id, params, router)
+                elif method == "ping":
+                    response = _ok_response(req_id, {})
+                else:
+                    response = _error_response(req_id, -32601, f"Method not found: {method!r}")
+            except Exception:
+                tb = traceback.format_exc()
+                response = _error_response(req_id, -32603, "Internal error", tb)
 
-        try:
-            if method == "initialize":
-                response = _handle_initialize(req_id, params, router)
-            elif method == "tools/list":
-                response = _handle_tools_list(req_id, params, router)
-            elif method == "tools/call":
-                response = _handle_tools_call(req_id, params, router)
-            elif method == "ping":
-                response = _ok_response(req_id, {})
-            else:
-                response = _error_response(req_id, -32601, f"Method not found: {method!r}")
-        except Exception:
-            tb = traceback.format_exc()
-            response = _error_response(req_id, -32603, "Internal error", tb)
-
-        _send(response)
+            _send(response)
+    finally:
+        # Clean shutdown: terminate all running MCP server processes
+        if mcp_manager is not None:
+            log.info("[MCP] gateway shutting down — stopping all servers")
+            mcp_manager.shutdown()
 
 
 if __name__ == "__main__":
+    import sys as _sys
+    import pathlib as _pathlib
+    # When run as a script (python gateway_server.py), ensure the repo root is on sys.path
+    # so that `import agent_core.*` resolves to the source tree, not site-packages.
+    _repo_root = str(_pathlib.Path(__file__).resolve().parents[2])
+    if _repo_root not in _sys.path:
+        _sys.path.insert(0, _repo_root)
     run()
