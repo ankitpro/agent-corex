@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-corex"
-version = "1.1.4"
+version = "1.1.5"
 description = "Fast, accurate MCP tool retrieval engine for LLMs with semantic search"
 readme = "README.md"
 requires-python = ">=3.8"

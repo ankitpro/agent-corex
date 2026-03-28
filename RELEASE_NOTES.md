@@ -1,5 +1,20 @@
 # Release Notes
 
+## v1.1.5 (March 28, 2026)
+
+### 🔧 Fixes
+- **`install-pack` SyntaxError on Windows**: fixed misplaced `from __future__ import annotations` in `config_adapters/claude.py`, `config_adapters/cursor.py` (was appended at end-of-file), and `detectors/base.py` (was injected inside class docstring) — all now correctly placed after module docstring
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.5        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.5)
+
+---
+
 ## v1.1.4 (March 28, 2026)
 
 ### 🔧 Fixes
