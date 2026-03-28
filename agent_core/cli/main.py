@@ -409,7 +409,9 @@ def init(
 
 @app.command()
 def login(
-    api_key: Optional[str] = typer.Option(None, "--key", "-k", help="API key to store (acx_...) — skips browser flow"),
+    api_key: Optional[str] = typer.Option(
+        None, "--key", "-k", help="API key to store (acx_...) — skips browser flow"
+    ),
     no_browser: bool = typer.Option(
         False, "--no-browser", help="Prompt for API key instead of opening browser"
     ),
@@ -439,6 +441,7 @@ def login(
     # ── API key flow (--key or --no-browser) ─────────────────────────────────
     if api_key or no_browser:
         from agent_core.gateway.auth_middleware import validate_api_key_format
+
         if not api_key:
             if not no_browser:
                 login_url = local_config.get_login_url()
@@ -452,19 +455,30 @@ def login(
 
         api_key = api_key.strip()
         if not validate_api_key_format(api_key):
-            typer.echo("Invalid API key format. Keys must start with 'acx_' and be 8+ characters.", err=True)
+            typer.echo(
+                "Invalid API key format. Keys must start with 'acx_' and be 8+ characters.",
+                err=True,
+            )
             raise typer.Exit(1)
 
         user_info: dict = {}
         try:
             import httpx
+
             base_url = local_config.get_base_url()
             with httpx.Client(base_url=base_url, timeout=5.0) as client:
-                resp = client.post("/auth/login", headers={"Authorization": f"Bearer {api_key}"}, json={"api_key": api_key})
+                resp = client.post(
+                    "/auth/login",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={"api_key": api_key},
+                )
                 if resp.status_code == 200:
                     user_info = resp.json()
                 elif resp.status_code == 401:
-                    typer.echo("Backend rejected the API key. Please check the key and try again.", err=True)
+                    typer.echo(
+                        "Backend rejected the API key. Please check the key and try again.",
+                        err=True,
+                    )
                     raise typer.Exit(1)
         except ImportError:
             pass
@@ -520,7 +534,9 @@ def login(
         _time.sleep(2)
         typer.echo(".", nl=False)
         try:
-            poll = httpx.post(f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0)
+            poll = httpx.post(
+                f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
+            )
         except Exception:
             continue
         if poll.status_code != 200:
@@ -657,6 +673,7 @@ def status():
     typer.echo("\nSync Status")
     if local_config.is_logged_in():
         import json as _json
+
         installed_file = local_config.CONFIG_DIR / "installed_servers.json"
         packs_file = local_config.CONFIG_DIR / "installed_packs.json"
         local_servers: list = []
@@ -672,7 +689,9 @@ def status():
         except Exception:
             pass
         typer.echo(f"  Installed packs   : {', '.join(local_packs) if local_packs else '(none)'}")
-        typer.echo(f"  Installed servers : {', '.join(local_servers) if local_servers else '(none)'}")
+        typer.echo(
+            f"  Installed servers : {', '.join(local_servers) if local_servers else '(none)'}"
+        )
         typer.echo("  Run: agent-corex sync  (to sync with backend)")
     else:
         typer.echo("  Not connected — run: agent-corex login")
@@ -682,7 +701,9 @@ def status():
 
 @app.command()
 def sync(
-    push_only: bool = typer.Option(False, "--push-only", help="Only push local state, skip pull/install"),
+    push_only: bool = typer.Option(
+        False, "--push-only", help="Only push local state, skip pull/install"
+    ),
 ):
     """
     Sync packs and servers between CLI and backend.
@@ -765,7 +786,11 @@ def sync(
             for srv in missing_servers:
                 typer.echo(f"  Installing: {srv}...", nl=False)
                 try:
-                    result = PackManager.install_server(srv) if hasattr(PackManager, "install_server") else None
+                    result = (
+                        PackManager.install_server(srv)
+                        if hasattr(PackManager, "install_server")
+                        else None
+                    )
                     local_servers.add(srv)
                     typer.echo(" ✓")
                 except Exception:
@@ -796,8 +821,10 @@ def sync(
         )
         push_resp.raise_for_status()
         result = push_resp.json()
-        typer.echo(f"  Synced {result.get('synced_servers', 0)} servers, "
-                   f"{result.get('synced_packs', 0)} packs.")
+        typer.echo(
+            f"  Synced {result.get('synced_servers', 0)} servers, "
+            f"{result.get('synced_packs', 0)} packs."
+        )
     except Exception as exc:
         typer.echo(f"  [warn] Push failed (will retry next sync): {exc}")
 
@@ -1024,7 +1051,14 @@ def logout(
             return
 
     data = local_config.load()
-    for key in ("api_key", "user", "access_token", "refresh_token", "token_expires_at", "user_email"):
+    for key in (
+        "api_key",
+        "user",
+        "access_token",
+        "refresh_token",
+        "token_expires_at",
+        "user_email",
+    ):
         data.pop(key, None)
     local_config.save(data)
 
@@ -1698,10 +1732,14 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
     # Push to backend
     try:
         import httpx
+
         httpx.post(
             f"{base_url}/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
-            json={"installed_servers": sorted(local_servers), "installed_packs": sorted(local_packs)},
+            json={
+                "installed_servers": sorted(local_servers),
+                "installed_packs": sorted(local_packs),
+            },
             timeout=10.0,
         )
     except Exception:

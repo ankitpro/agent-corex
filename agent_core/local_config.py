@@ -77,6 +77,7 @@ def delete_key(key: str) -> None:
 
 # ── API key helpers (existing — unchanged) ───────────────────────────────────
 
+
 def get_api_key() -> Optional[str]:
     return get("api_key")
 
@@ -94,6 +95,7 @@ def get_login_url() -> str:
 
 
 # ── JWT session helpers (new — device-code login flow) ───────────────────────
+
 
 def save_session(
     access_token: str,
@@ -153,6 +155,7 @@ def try_refresh_token() -> Optional[str]:
 
     try:
         import httpx
+
         resp = httpx.post(
             f"{supabase_url}/auth/v1/token?grant_type=refresh_token",
             headers={
@@ -205,6 +208,7 @@ def get_auth_header() -> Optional[str]:
 
 
 # ── Auth state ────────────────────────────────────────────────────────────────
+
 
 def is_logged_in() -> bool:
     """
