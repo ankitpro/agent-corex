@@ -1,5 +1,7 @@
 """Adapter for Cursor's mcp.json."""
 
+from __future__ import annotations
+
 import pathlib
 
 from agent_core.config_adapters.base import BaseAdapter
@@ -11,6 +13,3 @@ class CursorAdapter(BaseAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         return CursorDetector().config_path()
-
-
-from __future__ import annotations

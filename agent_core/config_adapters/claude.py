@@ -1,5 +1,7 @@
 """Adapter for Claude Desktop's claude_desktop_config.json."""
 
+from __future__ import annotations
+
 import pathlib
 
 from agent_core.config_adapters.base import BaseAdapter
@@ -11,6 +13,3 @@ class ClaudeAdapter(BaseAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         return ClaudeDesktopDetector().config_path()
-
-
-from __future__ import annotations

@@ -1,14 +1,15 @@
 """Abstract base class for MCP-client detectors."""
 
+from __future__ import annotations
+
 import pathlib
 from abc import ABC, abstractmethod
 
 
 class BaseDetector(ABC):
     """
-    from __future__ import annotations
-        Checks whether a particular AI tool (Claude Desktop, Cursor, …)
-        is installed and locates its MCP configuration file.
+    Checks whether a particular AI tool (Claude Desktop, Cursor, …)
+    is installed and locates its MCP configuration file.
     """
 
     name: str = ""
