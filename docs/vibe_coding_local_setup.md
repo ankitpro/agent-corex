@@ -390,4 +390,4 @@ Servers are **not started** until their tools are actually used:
 ---
 
 **Last Updated:** 2026-03-28
-**Agent-Corex Version:** 1.1.3+
+**Agent-Corex Version:** 1.1.4+

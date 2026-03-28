@@ -1,5 +1,28 @@
 # Release Notes
 
+## v1.1.4 (March 28, 2026)
+
+### 🔧 Fixes
+- **Railway MCP auth**: switched from `railway-mcp` to official `@railway/mcp-server`; removed `RAILWAY_TOKEN` env injection that was overriding OAuth auth from `railway login`
+- **Supabase MCP auth**: `@supabase/mcp-server-supabase` now uses `SUPABASE_ACCESS_TOKEN` (Personal Access Token) instead of `SUPABASE_KEY` (anon key)
+- **GitHub MCP env**: added `GITHUB_PERSONAL_ACCESS_TOKEN` mapping so `install-pack` correctly wires `GITHUB_TOKEN` to the expected env var
+- **install-pack**: server-specific `env` fields now included when injecting into AI tools (Claude Desktop, VS Code, Cursor)
+
+### ✨ New
+- `SUPABASE_ACCESS_TOKEN` added to `setup-env` prompt
+- `config/mcp_enterprise.json` — enterprise MCP template (railway/supabase/github/filesystem)
+- `.pre-commit-config.yaml` — enforces black formatting for all contributors on every commit
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.4        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.4)
+
+---
+
 ## 1.1.3 (March 27, 2026)
 
 ### ✨ New Features
