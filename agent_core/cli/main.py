@@ -774,7 +774,15 @@ def sync(
             typer.echo(f"[error] Could not connect to Agent-CoreX: {exc}", err=True)
             raise typer.Exit(1)
 
-        remote = resp.json()
+        try:
+            remote = resp.json()
+        except Exception:
+            typer.echo(
+                "[error] Agent-CoreX returned an unexpected response. "
+                "Try again or run: agent-corex login --no-browser",
+                err=True,
+            )
+            raise typer.Exit(1)
         remote_servers: list = remote.get("enabled_servers", [])
         remote_packs: list = remote.get("enabled_packs", [])
         typer.echo(f"  Remote servers : {', '.join(remote_servers) or 'none'}")
@@ -826,11 +834,14 @@ def sync(
             timeout=15.0,
         )
         push_resp.raise_for_status()
-        result = push_resp.json()
-        typer.echo(
-            f"  Synced {result.get('synced_servers', 0)} servers, "
-            f"{result.get('synced_packs', 0)} packs."
-        )
+        try:
+            result = push_resp.json()
+            typer.echo(
+                f"  Synced {result.get('synced_servers', 0)} servers, "
+                f"{result.get('synced_packs', 0)} packs."
+            )
+        except Exception:
+            typer.echo("  Synced.")
     except Exception as exc:
         typer.echo(f"  [warn] Push failed (will retry next sync): {exc}")
 
