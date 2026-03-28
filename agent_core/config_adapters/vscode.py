@@ -85,9 +85,7 @@ class VSCodeAdapter(BaseAdapter):
         self._write(data)
         return bak
 
-    def remove_server(
-        self, server_name: str, backup: bool = True
-    ) -> pathlib.Path | None:
+    def remove_server(self, server_name: str, backup: bool = True) -> pathlib.Path | None:
         """Remove *server_name* from mcp.servers. No-op if absent."""
         if not self.has_server(server_name):
             return None
@@ -100,11 +98,13 @@ class VSCodeAdapter(BaseAdapter):
 
 # ── Concrete adapters for each VS Code variant ─────────────────────────────
 
+
 class VSCodeStableAdapter(VSCodeAdapter):
     tool_name = "VS Code"
 
     def config_path(self) -> pathlib.Path | None:
         from agent_core.detectors.vscode import VSCodeDetector
+
         return VSCodeDetector().config_path()
 
 
@@ -113,6 +113,7 @@ class VSCodeInsidersAdapter(VSCodeAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         from agent_core.detectors.vscode import VSCodeInsidersDetector
+
         return VSCodeInsidersDetector().config_path()
 
 
@@ -121,4 +122,5 @@ class VSCodiumAdapter(VSCodeAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         from agent_core.detectors.vscode import VSCodiumDetector
+
         return VSCodiumDetector().config_path()

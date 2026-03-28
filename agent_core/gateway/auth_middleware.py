@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from agent_core import local_config
 
-
 AUTH_ERROR_RESPONSE = {
     "error": {
         "code": "AUTH_REQUIRED",
@@ -32,8 +31,7 @@ INVALID_KEY_RESPONSE = {
     "error": {
         "code": "AUTH_INVALID",
         "message": (
-            "API key is invalid or empty. "
-            "Run: agent-corex login  to refresh your credentials."
+            "API key is invalid or empty. " "Run: agent-corex login  to refresh your credentials."
         ),
     }
 }

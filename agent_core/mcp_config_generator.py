@@ -38,12 +38,18 @@ class MCPConfigGenerator:
         }
         """
         from agent_core.detectors import (
-            ClaudeDesktopDetector, CursorDetector,
-            VSCodeDetector, VSCodeInsidersDetector, VSCodiumDetector,
+            ClaudeDesktopDetector,
+            CursorDetector,
+            VSCodeDetector,
+            VSCodeInsidersDetector,
+            VSCodiumDetector,
         )
         from agent_core.config_adapters import (
-            ClaudeAdapter, CursorAdapter,
-            VSCodeStableAdapter, VSCodeInsidersAdapter, VSCodiumAdapter,
+            ClaudeAdapter,
+            CursorAdapter,
+            VSCodeStableAdapter,
+            VSCodeInsidersAdapter,
+            VSCodiumAdapter,
         )
 
         tools = [

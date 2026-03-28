@@ -66,17 +66,21 @@ def _ok_response(req_id: Any, result: Any) -> dict:
 # Handler implementations
 # ---------------------------------------------------------------------------
 
+
 def _handle_initialize(req_id: Any, _params: dict, router: ToolRouter) -> dict:
-    return _ok_response(req_id, {
-        "protocolVersion": PROTOCOL_VERSION,
-        "capabilities": {
-            "tools": {"listChanged": False},
+    return _ok_response(
+        req_id,
+        {
+            "protocolVersion": PROTOCOL_VERSION,
+            "capabilities": {
+                "tools": {"listChanged": False},
+            },
+            "serverInfo": {
+                "name": SERVER_NAME,
+                "version": SERVER_VERSION,
+            },
         },
-        "serverInfo": {
-            "name": SERVER_NAME,
-            "version": SERVER_VERSION,
-        },
-    })
+    )
 
 
 def _handle_tools_list(req_id: Any, _params: dict, router: ToolRouter) -> dict:
@@ -99,15 +103,18 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
         auth_err = check_auth()
         if auth_err is not None:
             # Return a structured tool result with the auth error — do NOT crash
-            return _ok_response(req_id, {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": json.dumps(auth_err, indent=2),
-                    }
-                ],
-                "isError": True,
-            })
+            return _ok_response(
+                req_id,
+                {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps(auth_err, indent=2),
+                        }
+                    ],
+                    "isError": True,
+                },
+            )
 
         # Auth passed — enterprise execution (stub: real backend call goes here)
         result_text = (
@@ -116,22 +123,21 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
             "This tool requires a running enterprise backend.\n"
             "See: https://agent-corex.ai/docs/enterprise"
         )
-        return _ok_response(req_id, {
-            "content": [{"type": "text", "text": result_text}]
-        })
+        return _ok_response(req_id, {"content": [{"type": "text", "text": result_text}]})
 
     # ── Free tool execution ────────────────────────────────────────────────
     try:
         result = router.execute_free_tool(tool_name, arguments)
         text = result if isinstance(result, str) else json.dumps(result, indent=2)
-        return _ok_response(req_id, {
-            "content": [{"type": "text", "text": text}]
-        })
+        return _ok_response(req_id, {"content": [{"type": "text", "text": text}]})
     except Exception as exc:
-        return _ok_response(req_id, {
-            "content": [{"type": "text", "text": f"Tool execution error: {exc}"}],
-            "isError": True,
-        })
+        return _ok_response(
+            req_id,
+            {
+                "content": [{"type": "text", "text": f"Tool execution error: {exc}"}],
+                "isError": True,
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +160,7 @@ def run() -> None:
     4. Register all tool metadata via lazy discovery (servers stopped after tool list)
     """
     import os
+
     log = logging.getLogger(__name__)
 
     # ── Recursion guard ────────────────────────────────────────────────────
@@ -210,6 +217,7 @@ def run() -> None:
     if env_file.exists():
         try:
             from agent_core.env_manager import EnvManager
+
             env_vars = EnvManager.load_env()
             log.info(f"Loaded {len(env_vars)} environment variables")
         except Exception as e:
@@ -296,6 +304,7 @@ def run() -> None:
 if __name__ == "__main__":
     import sys as _sys
     import pathlib as _pathlib
+
     # When run as a script (python gateway_server.py), ensure the repo root is on sys.path
     # so that `import agent_core.*` resolves to the source tree, not site-packages.
     _repo_root = str(_pathlib.Path(__file__).resolve().parents[2])

@@ -139,6 +139,7 @@ class ToolRouter:
                     added += 1
         if added:
             import logging
+
             logging.getLogger(__name__).info(f"[MCP] router: added {added} new tools")
 
     def _format_tool(self, name: str, meta: dict) -> dict[str, Any]:
@@ -184,9 +185,7 @@ class ToolRouter:
 
         # 2. Filter extra MCP tools if there are too many
         mcp_tools_to_add = [
-            (name, meta)
-            for name, meta in self._registry.items()
-            if name not in TOOL_REGISTRY
+            (name, meta) for name, meta in self._registry.items() if name not in TOOL_REGISTRY
         ]
 
         if len(mcp_tools_to_add) > max_mcp_tools:
@@ -215,21 +214,24 @@ class ToolRouter:
                 # Track the filtering decision
                 try:
                     from agent_core.tools.observability.tool_selection_tracker import get_tracker
+
                     tracker = get_tracker()
                     tracker.track(
                         f"tools/list ({ranking_query})" if query else "tools/list (default)",
                         list(selected_names),
                         list(rejected_names),
-                        scores={"reason": "max_tools_threshold", "threshold": max_mcp_tools, "query": query},
+                        scores={
+                            "reason": "max_tools_threshold",
+                            "threshold": max_mcp_tools,
+                            "query": query,
+                        },
                     )
                 except Exception:
                     pass  # Observability is optional
 
                 # Keep only selected MCP tools
                 mcp_tools_to_add = [
-                    (name, meta)
-                    for name, meta in mcp_tools_to_add
-                    if name in selected_names
+                    (name, meta) for name, meta in mcp_tools_to_add if name in selected_names
                 ]
             except Exception:
                 # If ranking fails, just take first max_mcp_tools
@@ -281,8 +283,7 @@ class ToolRouter:
         # Lazy-start the server if not running
         if not self._mcp_manager.ensure_server_running(server_name):
             raise RuntimeError(
-                f"MCP server {server_name!r} could not be started. "
-                "Check logs for details."
+                f"MCP server {server_name!r} could not be started. " "Check logs for details."
             )
 
         client = self._mcp_manager.get_client(server_name)
@@ -308,10 +309,11 @@ class ToolRouter:
 
             # Also include tools from our gateway registry
             gateway_tools = [
-                {"name": n, "description": m["description"]}
-                for n, m in self._registry.items()
+                {"name": n, "description": m["description"]} for n, m in self._registry.items()
             ]
-            all_tools = tools + [t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in tools}]
+            all_tools = tools + [
+                t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in tools}
+            ]
 
             if not all_tools:
                 return "No tools found."
@@ -321,14 +323,12 @@ class ToolRouter:
             # Track tool selection
             try:
                 from agent_core.tools.observability.tool_selection_tracker import get_tracker
+
                 selected_names = [t["name"] for t in results] if results else []
                 rejected_names = [t["name"] for t in all_tools if t["name"] not in selected_names]
                 tracker = get_tracker()
                 tracker.track(
-                    query,
-                    selected_names,
-                    rejected_names,
-                    scores={"method": method, "top_k": top_k}
+                    query, selected_names, rejected_names, scores={"method": method, "top_k": top_k}
                 )
             except Exception:
                 pass  # Observability is optional
@@ -353,6 +353,7 @@ class ToolRouter:
         lines = ["Configured MCP servers:\n"]
         if mcp_config.exists():
             import json
+
             try:
                 data = json.loads(mcp_config.read_text())
                 for name in data.get("mcpServers", {}):

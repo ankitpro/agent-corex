@@ -65,12 +65,14 @@ class MCPManager:
     def register_tools(self, server: str, tools: list[dict]) -> None:
         """Register tool metadata for a server."""
         for tool in tools:
-            self.tools.append({
-                "server": server,
-                "name": tool["name"],
-                "description": tool.get("description", ""),
-                "schema": tool.get("input_schema", {}),
-            })
+            self.tools.append(
+                {
+                    "server": server,
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "schema": tool.get("input_schema", {}),
+                }
+            )
 
     def register_server(self, name: str, client: Any) -> None:
         """Register an already-started client (used by eager loading)."""
@@ -125,10 +127,7 @@ class MCPManager:
         return None
 
     def _count_running(self) -> int:
-        return sum(
-            1 for s in self._states.values()
-            if s.get("status") == "running"
-        )
+        return sum(1 for s in self._states.values() if s.get("status") == "running")
 
     # ------------------------------------------------------------------ #
     # Lifecycle                                                            #
@@ -171,7 +170,7 @@ class MCPManager:
                         f"({restart_count} attempts) — disabled"
                     )
                     return False
-                delay = min(2 ** restart_count, 60)
+                delay = min(2**restart_count, 60)
                 logger.warning(
                     f"[MCP] restart_backoff: {server_name} "
                     f"(attempt {restart_count + 1}, waiting {delay}s)"
@@ -208,12 +207,14 @@ class MCPManager:
                 client.initialize()
 
                 with self._global_lock:
-                    self._states[server_name].update({
-                        "status": "running",
-                        "client": client,
-                        "last_started": time.time(),
-                        "last_used": time.time(),
-                    })
+                    self._states[server_name].update(
+                        {
+                            "status": "running",
+                            "client": client,
+                            "last_started": time.time(),
+                            "last_used": time.time(),
+                        }
+                    )
 
                 logger.info(f"[MCP] started: {server_name}")
                 return True

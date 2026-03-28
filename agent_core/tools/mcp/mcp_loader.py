@@ -59,9 +59,11 @@ class MCPLoader:
         merged_env = dict(env_dict)
         if "env" in server and isinstance(server["env"], dict):
             resolved_server_env = {
-                k: (env_dict.get(v[2:-1], v)
+                k: (
+                    env_dict.get(v[2:-1], v)
                     if (isinstance(v, str) and v.startswith("${") and v.endswith("}"))
-                    else v)
+                    else v
+                )
                 for k, v in server["env"].items()
             }
             merged_env.update(resolved_server_env)
@@ -109,9 +111,13 @@ class MCPLoader:
             for server_name, tools in cached_tools_by_server.items():
                 manager.register_tools(server_name, tools)
             total = sum(len(t) for t in cached_tools_by_server.values())
-            logger.info(f"[MCP] loaded {total} tools from cache for {len(cached_tools_by_server)} servers")
+            logger.info(
+                f"[MCP] loaded {total} tools from cache for {len(cached_tools_by_server)} servers"
+            )
         else:
-            logger.info("[MCP] no tools cache found — MCP tools will appear after background discovery")
+            logger.info(
+                "[MCP] no tools cache found — MCP tools will appear after background discovery"
+            )
 
         # Step 3: background discovery to refresh cache
         thread = threading.Thread(
@@ -143,7 +149,9 @@ class MCPLoader:
                 "servers": {name: {"tools": tools} for name, tools in servers_tools.items()},
             }
             TOOLS_CACHE_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
-            logger.info(f"[MCP] tools cache written ({sum(len(t) for t in servers_tools.values())} tools)")
+            logger.info(
+                f"[MCP] tools cache written ({sum(len(t) for t in servers_tools.values())} tools)"
+            )
         except Exception as e:
             logger.warning(f"[MCP] cache write failed: {e}")
 

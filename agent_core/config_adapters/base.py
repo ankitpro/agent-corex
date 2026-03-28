@@ -86,9 +86,7 @@ class BaseAdapter(ABC):
         self._write(data)
         return bak
 
-    def remove_server(
-        self, server_name: str, backup: bool = True
-    ) -> pathlib.Path | None:
+    def remove_server(self, server_name: str, backup: bool = True) -> pathlib.Path | None:
         """Remove *server_name* from mcpServers. No-op if absent."""
         if not self.has_server(server_name):
             return None
