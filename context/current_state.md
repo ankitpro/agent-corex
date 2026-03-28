@@ -5,13 +5,25 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-28** — Vibe Coding Experience fully implemented
+**2026-03-29** — CLI Auth + Sync System (v1.1.6)
 
 ---
 
 ## Current Status
 
-**Version:** 1.1.3 + Vibe Coding Extensions
+**Version:** 1.1.6
+
+**State:** ✅ **COMPLETE** — CLI Auth + Sync System added:
+- ✅ Device-code browser login (`agent-corex login`)
+- ✅ JWT session stored in `~/.agent-corex/config.json`
+- ✅ Token auto-refresh on expiry
+- ✅ `agent-corex sync` — bidirectional pack/server sync with backend
+- ✅ `agent-corex status` — shows sync state
+- ✅ `agent-corex logout` — clears JWT + API key
+- ✅ `agent-corex install-pack` — notifies backend after install
+- ✅ Backward compatible — API key auth still works
+
+**Previous (v1.1.5):** Vibe Coding Extensions
 
 **State:** ✅ **COMPLETE** — Fully functional Vibe Coding Experience with:
 - ✅ Pack system (install-pack, installed_servers.json)

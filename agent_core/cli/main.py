@@ -409,85 +409,172 @@ def init(
 
 @app.command()
 def login(
-    api_key: Optional[str] = typer.Option(None, "--key", "-k", help="API key to store (acx_...)"),
+    api_key: Optional[str] = typer.Option(None, "--key", "-k", help="API key to store (acx_...) — skips browser flow"),
     no_browser: bool = typer.Option(
-        False, "--no-browser", help="Skip opening browser, just prompt for key"
+        False, "--no-browser", help="Prompt for API key instead of opening browser"
     ),
 ):
     """
-    Authenticate with Agent-Corex and store your API key.
+    Authenticate with Agent-Corex.
 
     \\b
-    Flow:
-      1. Get an API key from your Agent-Corex dashboard
-      2. Paste it here — stored in ~/.agent-corex/config.json
-      3. Use  agent-corex set-url  to point to a different backend if needed
+    Default flow (browser-based, recommended):
+      1. Opens browser to complete login
+      2. CLI polls for completion automatically
+      3. Session stored in ~/.agent-corex/config.json
+
+    \\b
+    API key flow (if you already have a key):
+        agent-corex login --key acx_your_key_here
+        agent-corex login --no-browser
 
     Example:
         agent-corex login
         agent-corex login --key acx_your_key_here
-        agent-corex login --no-browser
     """
     import webbrowser
+    import time as _time
     from agent_core import local_config
-    from agent_core.gateway.auth_middleware import validate_api_key_format
 
-    if not api_key:
-        if not no_browser:
-            login_url = local_config.get_login_url()
-            typer.echo(f"\nOpening browser: {login_url}\n")
-            try:
-                webbrowser.open(login_url)
-            except Exception:
-                typer.echo("Could not open browser automatically.")
-            typer.echo("After logging in, copy your API key from the dashboard.\n")
+    # ── API key flow (--key or --no-browser) ─────────────────────────────────
+    if api_key or no_browser:
+        from agent_core.gateway.auth_middleware import validate_api_key_format
+        if not api_key:
+            if not no_browser:
+                login_url = local_config.get_login_url()
+                typer.echo(f"\nOpening browser: {login_url}\n")
+                try:
+                    webbrowser.open(login_url)
+                except Exception:
+                    pass
+                typer.echo("After logging in, copy your API key from the dashboard.\n")
+            api_key = typer.prompt("Paste your API key (acx_...)", hide_input=True)
 
-        api_key = typer.prompt("Paste your API key (acx_...)", hide_input=True)
+        api_key = api_key.strip()
+        if not validate_api_key_format(api_key):
+            typer.echo("Invalid API key format. Keys must start with 'acx_' and be 8+ characters.", err=True)
+            raise typer.Exit(1)
 
-    api_key = api_key.strip()
+        user_info: dict = {}
+        try:
+            import httpx
+            base_url = local_config.get_base_url()
+            with httpx.Client(base_url=base_url, timeout=5.0) as client:
+                resp = client.post("/auth/login", headers={"Authorization": f"Bearer {api_key}"}, json={"api_key": api_key})
+                if resp.status_code == 200:
+                    user_info = resp.json()
+                elif resp.status_code == 401:
+                    typer.echo("Backend rejected the API key. Please check the key and try again.", err=True)
+                    raise typer.Exit(1)
+        except ImportError:
+            pass
+        except Exception:
+            typer.echo("(Could not reach backend — storing key locally for offline use.)")
 
-    if not validate_api_key_format(api_key):
-        typer.echo(
-            "Invalid API key format. Keys must start with 'acx_' and be at least 8 characters.",
-            err=True,
-        )
+        data = local_config.load()
+        data["api_key"] = api_key
+        if user_info:
+            data["user"] = user_info
+        local_config.save(data)
+        name = user_info.get("name") or user_info.get("user_id", "")
+        suffix = f" as {name}" if name else ""
+        typer.echo(f"\n[+] Logged in{suffix}")
+        typer.echo(f"  Credentials saved to {local_config.CONFIG_FILE}")
+        return
+
+    # ── Device-code browser flow (default) ───────────────────────────────────
+    import httpx
+
+    base_url = local_config.get_base_url()
+    frontend_url = local_config.get_frontend_url()
+
+    typer.echo("\nLogging in to Agent-CoreX...\n")
+
+    # Step 1: Start CLI session on backend
+    try:
+        resp = httpx.post(f"{base_url}/auth/cli/start", timeout=10.0)
+        resp.raise_for_status()
+    except Exception as exc:
+        typer.echo(f"[error] Could not start login session: {exc}", err=True)
+        typer.echo("Tip: Use  agent-corex login --no-browser  to log in with an API key instead.")
         raise typer.Exit(1)
 
-    # Try to validate against the backend (gracefully skip if unreachable)
-    user_info: dict = {}
+    data = resp.json()
+    device_code = data["device_code"]
+    verification_url = data["verification_url"]
+
+    # Step 2: Show URL
+    typer.echo("Open this URL to complete login:\n")
+    typer.echo(f"  {verification_url}\n")
     try:
-        import httpx
-
-        base_url = local_config.get_base_url()
-        with httpx.Client(base_url=base_url, timeout=5.0) as client:
-            resp = client.post(
-                "/auth/login",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json={"api_key": api_key},
-            )
-            if resp.status_code == 200:
-                user_info = resp.json()
-            elif resp.status_code == 401:
-                typer.echo(
-                    "Backend rejected the API key. Please check the key and try again.", err=True
-                )
-                raise typer.Exit(1)
-    except ImportError:
-        pass  # httpx not installed — skip remote validation
+        webbrowser.open(verification_url)
+        typer.echo("(Opened in your browser automatically)\n")
     except Exception:
-        # Backend unreachable — store key locally anyway (offline mode)
-        typer.echo("(Could not reach backend — storing key locally for offline use.)")
+        pass
 
-    data = local_config.load()
-    data["api_key"] = api_key
-    if user_info:
-        data["user"] = user_info
-    local_config.save(data)
+    typer.echo("Waiting for authentication", nl=False)
 
-    name = user_info.get("name") or user_info.get("user_id", "")
-    suffix = f" as {name}" if name else ""
-    typer.echo(f"\n[+] Logged in{suffix}")
-    typer.echo(f"  Credentials saved to {local_config.CONFIG_FILE}")
+    # Step 3: Poll
+    deadline = _time.time() + 300
+    while _time.time() < deadline:
+        _time.sleep(2)
+        typer.echo(".", nl=False)
+        try:
+            poll = httpx.post(f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0)
+        except Exception:
+            continue
+        if poll.status_code != 200:
+            continue
+        result = poll.json()
+        status = result.get("status", "pending")
+        if status == "expired":
+            typer.echo("\n\n[error] Login session expired. Please try again.", err=True)
+            raise typer.Exit(1)
+        if status == "complete":
+            typer.echo("\n")
+            _save_jwt_session(result, local_config)
+            return
+
+    typer.echo("\n\n[error] Login timed out. Please try again.", err=True)
+    raise typer.Exit(1)
+
+
+def _save_jwt_session(result: dict, local_config) -> None:
+    """Save JWT session returned from /auth/cli/poll to config."""
+    import base64
+    import json as _json
+    import time as _time
+
+    access_token = result.get("access_token", "")
+    expires_at = int(_time.time()) + 3600
+    email = result.get("email", "")
+
+    # Decode JWT exp claim
+    try:
+        payload_b64 = access_token.split(".")[1]
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += "=" * padding
+        payload = _json.loads(base64.b64decode(payload_b64))
+        if "exp" in payload:
+            expires_at = payload["exp"]
+        if not email:
+            email = payload.get("email", "")
+    except Exception:
+        pass
+
+    local_config.save_session(
+        access_token=access_token,
+        refresh_token=result.get("refresh_token", ""),
+        user_id=result.get("user_id", ""),
+        email=email,
+        expires_at=expires_at,
+    )
+    typer.echo(f"✓ Logged in successfully!")
+    if email:
+        typer.echo(f"  User: {email}")
+    typer.echo(f"  Session saved to {local_config.CONFIG_FILE}\n")
+    typer.echo("You can now run:\n  agent-corex sync\n  agent-corex status\n")
 
 
 @app.command()
@@ -566,7 +653,155 @@ def status():
     if locked and ent_tools:
         typer.echo("\n  Run  agent-corex login  to unlock enterprise tools.")
 
+    # ── Sync status ──────────────────────────────────────────────────────────
+    typer.echo("\nSync Status")
+    if local_config.is_logged_in():
+        import json as _json
+        installed_file = local_config.CONFIG_DIR / "installed_servers.json"
+        packs_file = local_config.CONFIG_DIR / "installed_packs.json"
+        local_servers: list = []
+        local_packs: list = []
+        try:
+            if installed_file.exists():
+                local_servers = _json.loads(installed_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        try:
+            if packs_file.exists():
+                local_packs = _json.loads(packs_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        typer.echo(f"  Installed packs   : {', '.join(local_packs) if local_packs else '(none)'}")
+        typer.echo(f"  Installed servers : {', '.join(local_servers) if local_servers else '(none)'}")
+        typer.echo("  Run: agent-corex sync  (to sync with backend)")
+    else:
+        typer.echo("  Not connected — run: agent-corex login")
+
     typer.echo("")
+
+
+@app.command()
+def sync(
+    push_only: bool = typer.Option(False, "--push-only", help="Only push local state, skip pull/install"),
+):
+    """
+    Sync packs and servers between CLI and backend.
+
+    \\b
+    Steps:
+      1. Pull enabled packs/servers from backend
+      2. Install any missing locally
+      3. Push local install state back to backend
+
+    Requires login (run: agent-corex login).
+
+    Example:
+        agent-corex sync
+        agent-corex sync --push-only
+    """
+    import json as _json
+    import httpx
+    from agent_core import local_config
+
+    if not local_config.is_logged_in():
+        typer.echo("Not logged in. Run: agent-corex login", err=True)
+        raise typer.Exit(1)
+
+    auth_header = local_config.get_auth_header()
+    if not auth_header:
+        typer.echo("No credentials found. Run: agent-corex login", err=True)
+        raise typer.Exit(1)
+
+    base_url = local_config.get_base_url()
+    installed_file = local_config.CONFIG_DIR / "installed_servers.json"
+    packs_file = local_config.CONFIG_DIR / "installed_packs.json"
+
+    def _load_json_list(path: pathlib.Path) -> list:
+        try:
+            if path.exists():
+                return _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        return []
+
+    def _save_json_list(path: pathlib.Path, data: list) -> None:
+        path.write_text(_json.dumps(sorted(set(data)), indent=2), encoding="utf-8")
+
+    if not push_only:
+        # ── Step 1: Pull from backend ─────────────────────────────────────────
+        typer.echo("\nPulling configuration from backend...")
+        try:
+            resp = httpx.get(
+                f"{base_url}/user/servers",
+                headers={"Authorization": auth_header},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 401:
+                typer.echo("[error] Authentication failed. Run: agent-corex login", err=True)
+            else:
+                typer.echo(f"[error] Backend returned HTTP {exc.response.status_code}", err=True)
+            raise typer.Exit(1)
+        except Exception as exc:
+            typer.echo(f"[error] Could not reach backend: {exc}", err=True)
+            raise typer.Exit(1)
+
+        remote = resp.json()
+        remote_servers: list = remote.get("enabled_servers", [])
+        remote_packs: list = remote.get("enabled_packs", [])
+        typer.echo(f"  Remote servers : {', '.join(remote_servers) or 'none'}")
+        typer.echo(f"  Remote packs   : {', '.join(remote_packs) or 'none'}")
+
+        # ── Step 2: Install missing ───────────────────────────────────────────
+        local_servers = set(_load_json_list(installed_file))
+        local_packs = set(_load_json_list(packs_file))
+
+        missing_servers = [s for s in remote_servers if s not in local_servers]
+        missing_packs = [p for p in remote_packs if p not in local_packs]
+
+        if missing_servers or missing_packs:
+            typer.echo("\nInstalling missing items locally...")
+            for srv in missing_servers:
+                typer.echo(f"  Installing: {srv}...", nl=False)
+                try:
+                    result = PackManager.install_server(srv) if hasattr(PackManager, "install_server") else None
+                    local_servers.add(srv)
+                    typer.echo(" ✓")
+                except Exception:
+                    local_servers.add(srv)  # Mark as tracked even if install fails
+                    typer.echo(" (registered)")
+            for pack in missing_packs:
+                typer.echo(f"  Pack enabled: {pack} ✓")
+                local_packs.add(pack)
+            _save_json_list(installed_file, list(local_servers))
+            _save_json_list(packs_file, list(local_packs))
+        else:
+            typer.echo("  Local state is up to date.")
+    else:
+        local_servers = set(_load_json_list(installed_file))
+        local_packs = set(_load_json_list(packs_file))
+
+    # ── Step 3: Push local state to backend ──────────────────────────────────
+    typer.echo("\nPushing local state to backend...")
+    try:
+        push_resp = httpx.post(
+            f"{base_url}/user/servers",
+            headers={"Authorization": auth_header, "Content-Type": "application/json"},
+            json={
+                "installed_servers": sorted(local_servers),
+                "installed_packs": sorted(local_packs),
+            },
+            timeout=15.0,
+        )
+        push_resp.raise_for_status()
+        result = push_resp.json()
+        typer.echo(f"  Synced {result.get('synced_servers', 0)} servers, "
+                   f"{result.get('synced_packs', 0)} packs.")
+    except Exception as exc:
+        typer.echo(f"  [warn] Push failed (will retry next sync): {exc}")
+
+    typer.echo("\n✓ Sync complete.\n")
 
 
 @app.command(name="registry")
@@ -789,8 +1024,8 @@ def logout(
             return
 
     data = local_config.load()
-    data.pop("api_key", None)
-    data.pop("user", None)
+    for key in ("api_key", "user", "access_token", "refresh_token", "token_expires_at", "user_email"):
+        data.pop(key, None)
     local_config.save(data)
 
     typer.echo("Logged out.")
@@ -1425,6 +1660,52 @@ def install_pack(
     typer.echo(f"  1. Run: agent-corex setup-env        (configure API keys)")
     typer.echo(f"  2. Run: agent-corex generate-mcp-config  (create unified config)")
     typer.echo(f"  3. Restart your AI tools for changes to take effect")
+
+    # Notify backend (non-fatal — if not logged in, silently skip)
+    _notify_backend_pack_installed(pack_name, [s["name"] for s in servers])
+
+
+def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
+    """Push pack install state to backend. Non-fatal if not logged in or backend unreachable."""
+    import json as _json
+    from agent_core import local_config
+
+    auth_header = local_config.get_auth_header()
+    if not auth_header:
+        return  # Not logged in — skip notification
+
+    base_url = local_config.get_base_url()
+    installed_file = local_config.CONFIG_DIR / "installed_servers.json"
+    packs_file = local_config.CONFIG_DIR / "installed_packs.json"
+
+    def _load(path) -> list:
+        try:
+            if path.exists():
+                return _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        return []
+
+    # Update local tracking files
+    local_servers = set(_load(installed_file)) | set(server_names)
+    local_packs = set(_load(packs_file)) | {pack_name}
+    try:
+        installed_file.write_text(_json.dumps(sorted(local_servers), indent=2), encoding="utf-8")
+        packs_file.write_text(_json.dumps(sorted(local_packs), indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+    # Push to backend
+    try:
+        import httpx
+        httpx.post(
+            f"{base_url}/user/servers",
+            headers={"Authorization": auth_header, "Content-Type": "application/json"},
+            json={"installed_servers": sorted(local_servers), "installed_packs": sorted(local_packs)},
+            timeout=10.0,
+        )
+    except Exception:
+        pass  # Non-fatal
 
 
 @app.command(name="generate-mcp-config")

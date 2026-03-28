@@ -1,5 +1,44 @@
 # Release Notes
 
+## v1.1.6 (March 29, 2026)
+
+### ✨ New Features
+
+#### 🔐 Browser-Based CLI Login (Device Code Flow)
+`agent-corex login` now opens your browser and authenticates automatically — no more manually copying API keys.
+
+```bash
+agent-corex login               # opens browser, polls until complete
+agent-corex login --key acx_xxx # API key flow (unchanged)
+agent-corex login --no-browser  # prompt for key without browser
+```
+
+#### 🔄 Sync Command
+New `agent-corex sync` keeps your local CLI in sync with your Agent-CoreX dashboard:
+
+```bash
+agent-corex sync            # pull enabled packs/servers → install missing → push local state
+agent-corex sync --push-only    # only push local state to backend
+```
+
+#### 📊 Enhanced Status
+`agent-corex status` now includes a Sync Status section showing installed packs, servers, and connection state.
+
+### 🔧 Updated Behavior
+- **`logout`** — now clears JWT session tokens (access_token, refresh_token)
+- **`install-pack`** — automatically notifies backend after installation so your dashboard stays in sync
+- **`config.json`** — extended to store JWT session alongside API key (backward compatible)
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.6        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.6)
+
+---
+
 ## v1.1.5 (March 28, 2026)
 
 ### 🔧 Fixes

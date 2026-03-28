@@ -4,6 +4,42 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-29 — v1.1.6 — CLI Auth + Sync System
+
+### CLI Authentication + Sync (Device-Code Flow)
+**What:** Replaced API-key-only login with browser-based device-code flow (like GitHub CLI / Vercel CLI). Added sync command. Bumped version to 1.1.6.
+
+**Files Changed:**
+- `agent_core/local_config.py` — Added JWT session helpers: `save_session()`, `get_access_token()`, `get_refresh_token()`, `try_refresh_token()`, `clear_session()`, `get_auth_header()`, `get_user_email()`. Updated `is_logged_in()` to accept both API key and JWT.
+- `agent_core/cli/main.py` — Updated `login` (device-code default + API key via `--key`/`--no-browser`), added `sync` command, updated `status` (sync section), updated `logout` (clears JWT), updated `install-pack` (calls `_notify_backend_pack_installed`).
+- `agent_core/__init__.py` — Bumped `__version__` to `"1.1.6"`
+- `pyproject.toml` — Bumped `version` to `"1.1.6"`
+
+**New CLI Commands:**
+- `agent-corex sync` — Pull enabled packs/servers from backend, install missing, push local state
+- `agent-corex sync --push-only` — Only push local state to backend (used internally after install-pack)
+
+**Updated Behavior:**
+- `agent-corex login` (no flags) — Opens browser to device-code URL, polls backend for JWT
+- `agent-corex login --key acx_xxx` — API key flow (backward compatible, unchanged)
+- `agent-corex login --no-browser` — Prompts for API key without browser
+- `agent-corex logout` — Now also clears JWT tokens (access_token, refresh_token, expires_at)
+- `agent-corex status` — New "Sync Status" section showing installed packs/servers
+- `agent-corex install-pack <name>` — Now notifies backend after install (non-fatal)
+
+**config.json Schema Extended:**
+```json
+{
+  "api_key": "acx_...",           // existing — unchanged
+  "access_token": "eyJ...",        // NEW — Supabase JWT
+  "refresh_token": "...",          // NEW
+  "token_expires_at": 1234567890,  // NEW — Unix timestamp
+  "user_email": "..."              // NEW
+}
+```
+
+---
+
 ## 2026-03-28 (Enterprise MCP Auth Fixes)
 
 ### Fixed Enterprise MCP Authentication
