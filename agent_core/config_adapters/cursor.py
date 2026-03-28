@@ -11,3 +11,6 @@ class CursorAdapter(BaseAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         return CursorDetector().config_path()
+
+
+from __future__ import annotations

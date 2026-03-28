@@ -1,5 +1,7 @@
 """Detector for Cursor's MCP configuration file."""
 
+from __future__ import annotations
+
 import os
 import pathlib
 import sys

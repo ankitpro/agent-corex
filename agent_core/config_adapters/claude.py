@@ -11,3 +11,6 @@ class ClaudeAdapter(BaseAdapter):
 
     def config_path(self) -> pathlib.Path | None:
         return ClaudeDesktopDetector().config_path()
+
+
+from __future__ import annotations

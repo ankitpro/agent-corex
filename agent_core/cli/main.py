@@ -30,6 +30,8 @@ Registry / install:
   install-mcp   Install an MCP server from the registry into all detected tools
 """
 
+from __future__ import annotations
+
 import typer
 from typing import Optional
 import json

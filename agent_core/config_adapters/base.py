@@ -18,6 +18,8 @@ Config files always contain a top-level "mcpServers" object:
   }
 """
 
+from __future__ import annotations
+
 import json
 import pathlib
 import shutil

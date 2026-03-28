@@ -4,6 +4,8 @@ Pack Manager — Handle curated tool bundle installation and tracking.
 A "pack" is a curated bundle of MCP servers (e.g., "vibe_coding_pack" = railway, github, supabase, filesystem, redis).
 """
 
+from __future__ import annotations
+
 import json
 import pathlib
 from typing import Optional, Dict, List, Any

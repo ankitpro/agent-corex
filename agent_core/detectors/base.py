@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod
 
 class BaseDetector(ABC):
     """
-    Checks whether a particular AI tool (Claude Desktop, Cursor, …)
-    is installed and locates its MCP configuration file.
+    from __future__ import annotations
+        Checks whether a particular AI tool (Claude Desktop, Cursor, …)
+        is installed and locates its MCP configuration file.
     """
 
     name: str = ""

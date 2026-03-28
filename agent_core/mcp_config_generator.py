@@ -5,6 +5,8 @@ This reads server definitions from all detected AI tools (Claude, Cursor, VS Cod
 and merges them into a single mcp.json file that can be used by the MCP gateway.
 """
 
+from __future__ import annotations
+
 import json
 import pathlib
 from typing import Dict, Any, List, Optional
