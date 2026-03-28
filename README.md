@@ -155,6 +155,15 @@ agent-corex logout
 
 Clears all credentials (session tokens + API key) from `~/.agent-corex/config.json`.
 
+### Local development
+
+By default the CLI points to the production backend (`https://www.agent-corex.com`).
+To use a local backend instead:
+
+```bash
+agent-corex set-url http://localhost:8000
+```
+
 ---
 
 ## CLI Reference

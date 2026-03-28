@@ -4,8 +4,8 @@ Manages ~/.agent-corex/config.json — persistent CLI configuration.
 Schema:
   {
     "api_key": "acx_...",           # API key (legacy auth, still supported)
-    "base_url": "http://localhost:8000",
-    "frontend_url": "http://localhost:5173",
+    "base_url": "https://www.agent-corex.com",
+    "frontend_url": "https://www.agent-corex.com",
     "user": { "user_id": "...", "name": "..." },
 
     # JWT session (from device-code login flow):
@@ -28,8 +28,8 @@ from typing import Optional
 CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
-DEFAULT_BASE_URL = "http://localhost:8000"
-DEFAULT_FRONTEND_URL = "http://localhost:5173"
+DEFAULT_BASE_URL = "https://www.agent-corex.com"
+DEFAULT_FRONTEND_URL = "https://www.agent-corex.com"
 
 
 def _ensure_dir() -> None:

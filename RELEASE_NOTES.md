@@ -1,5 +1,23 @@
 # Release Notes
 
+## v1.1.9 (March 29, 2026)
+
+### 🔧 Fix
+- **Default URLs now point to production** — `agent-corex login` and all commands now connect to `https://agent-corex.com` out of the box. No configuration needed for most users.
+  - `base_url` default: `https://www.agent-corex.com`
+  - `frontend_url` default: `https://www.agent-corex.com`
+- Local development: run `agent-corex set-url` to override with `http://localhost:8000` if you're running the backend locally.
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.1.9        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.1.9)
+
+---
+
 ## v1.1.8 (March 29, 2026)
 
 ### 🔧 Fix
