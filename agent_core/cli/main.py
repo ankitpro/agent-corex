@@ -205,17 +205,16 @@ def health():
     from agent_core import local_config
 
     base_url = local_config.get_base_url()
-    typer.echo(f"Checking {base_url}/health ...")
+    typer.echo("Checking Agent-CoreX service...")
     try:
-        resp = httpx.get(f"{base_url}/health", timeout=5)
+        resp = httpx.get(f"{base_url}/api/health", timeout=5)
         if resp.status_code == 200:
-            typer.echo("✓ Backend is healthy")
+            typer.echo("✓ Service is healthy")
         else:
-            typer.echo(f"✗ Backend returned status {resp.status_code}", err=True)
+            typer.echo(f"✗ Service returned status {resp.status_code}", err=True)
             raise typer.Exit(1)
     except httpx.ConnectError:
-        typer.echo(f"✗ Cannot connect to {base_url}. Is the backend running?", err=True)
-        typer.echo("  Change URL:  agent-corex set-url http://your-host:port", err=True)
+        typer.echo("✗ Cannot connect to Agent-CoreX. Check your internet connection.", err=True)
         raise typer.Exit(1)
     except Exception as e:
         typer.echo(f"✗ Error: {e}", err=True)
@@ -224,35 +223,24 @@ def health():
 
 @app.command(name="set-url")
 def set_url(
-    url: str = typer.Argument(..., help="URL to set (backend API or frontend)"),
-    frontend: bool = typer.Option(
-        False,
-        "--frontend",
-        "-f",
-        help="Set the frontend URL (login page) instead of the backend API URL",
+    url: str = typer.Argument(
+        ..., help="Base URL for Agent-CoreX (default: https://www.agent-corex.com)"
     ),
 ):
     """
-    Set the backend API URL or frontend URL, saved to ~/.agent-corex/config.json.
+    Override the Agent-CoreX URL (for local development only).
 
     \\b
     Examples:
-        agent-corex set-url http://localhost:8000          # backend API (default)
-        agent-corex set-url http://localhost:5173 --frontend  # frontend login page
-        agent-corex set-url https://api.example.com
-        agent-corex set-url https://app.example.com --frontend
+        agent-corex set-url http://localhost:3000    # local dev server
+        agent-corex set-url https://www.agent-corex.com  # restore default
     """
     from agent_core import local_config
 
     url = url.rstrip("/")
-    if frontend:
-        local_config.set_key("frontend_url", url)
-        typer.echo(f"✓ Frontend URL set to: {url}")
-        typer.echo("  'agent-corex login' will now open this URL in your browser.")
-    else:
-        local_config.set_key("base_url", url)
-        typer.echo(f"✓ Backend URL set to: {url}")
-        typer.echo("  Run  agent-corex health  to verify the connection.")
+    local_config.set_key("base_url", url)
+    typer.echo(f"✓ URL set to: {url}")
+    typer.echo("  Run  agent-corex health  to verify the connection.")
 
 
 @app.command(name="config")
@@ -468,7 +456,7 @@ def login(
             base_url = local_config.get_base_url()
             with httpx.Client(base_url=base_url, timeout=5.0) as client:
                 resp = client.post(
-                    "/auth/login",
+                    "/api/auth/login",
                     headers={"Authorization": f"Bearer {api_key}"},
                     json={"api_key": api_key},
                 )
@@ -504,27 +492,28 @@ def login(
 
     typer.echo("\nLogging in to Agent-CoreX...\n")
 
-    # Step 1: Start CLI session on backend
+    # Step 1: Start CLI session
     try:
-        resp = httpx.post(f"{base_url}/auth/cli/start", timeout=10.0)
+        resp = httpx.post(f"{base_url}/api/auth/cli/start", timeout=10.0)
         resp.raise_for_status()
         data = resp.json()
         device_code = data["device_code"]
         verification_url = data["verification_url"]
     except httpx.ConnectError:
-        typer.echo(f"[error] Cannot reach backend at: {base_url}", err=True)
-        typer.echo("  Run: agent-corex set-url  to point to the correct backend URL.", err=True)
+        typer.echo(
+            "[error] Cannot connect to Agent-CoreX. Check your internet connection.", err=True
+        )
         typer.echo(
             "  Or:  agent-corex login --no-browser  to log in with an API key instead.",
             err=True,
         )
         raise typer.Exit(1)
     except (ValueError, KeyError):
+        typer.echo("[error] Unexpected response from Agent-CoreX. Please try again.", err=True)
         typer.echo(
-            f"[error] Backend returned an unexpected response (not JSON). Check your backend URL: {base_url}",
+            "  Or:  agent-corex login --no-browser  to log in with an API key instead.",
             err=True,
         )
-        typer.echo("  Run: agent-corex set-url  to point to the correct backend URL.", err=True)
         raise typer.Exit(1)
     except Exception as exc:
         typer.echo(f"[error] Could not start login session: {exc}", err=True)
@@ -552,7 +541,7 @@ def login(
         typer.echo(".", nl=False)
         try:
             poll = httpx.post(
-                f"{base_url}/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
+                f"{base_url}/api/auth/cli/poll", json={"device_code": device_code}, timeout=10.0
             )
             if poll.status_code != 200:
                 continue
@@ -767,10 +756,10 @@ def sync(
 
     if not push_only:
         # ── Step 1: Pull from backend ─────────────────────────────────────────
-        typer.echo("\nPulling configuration from backend...")
+        typer.echo("\nPulling configuration...")
         try:
             resp = httpx.get(
-                f"{base_url}/user/servers",
+                f"{base_url}/api/user/servers",
                 headers={"Authorization": auth_header},
                 timeout=15.0,
             )
@@ -779,10 +768,10 @@ def sync(
             if exc.response.status_code == 401:
                 typer.echo("[error] Authentication failed. Run: agent-corex login", err=True)
             else:
-                typer.echo(f"[error] Backend returned HTTP {exc.response.status_code}", err=True)
+                typer.echo(f"[error] Sync failed (HTTP {exc.response.status_code})", err=True)
             raise typer.Exit(1)
         except Exception as exc:
-            typer.echo(f"[error] Could not reach backend: {exc}", err=True)
+            typer.echo(f"[error] Could not connect to Agent-CoreX: {exc}", err=True)
             raise typer.Exit(1)
 
         remote = resp.json()
@@ -824,11 +813,11 @@ def sync(
         local_servers = set(_load_json_list(installed_file))
         local_packs = set(_load_json_list(packs_file))
 
-    # ── Step 3: Push local state to backend ──────────────────────────────────
-    typer.echo("\nPushing local state to backend...")
+    # ── Step 3: Push local state ──────────────────────────────────────────────
+    typer.echo("\nPushing local state...")
     try:
         push_resp = httpx.post(
-            f"{base_url}/user/servers",
+            f"{base_url}/api/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             json={
                 "installed_servers": sorted(local_servers),
@@ -865,11 +854,11 @@ def list_registry():
     from agent_core import local_config
 
     base_url = local_config.get_base_url()
-    typer.echo(f"\nFetching registry from {base_url}...\n")
+    typer.echo("\nFetching registry...\n")
 
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(f"{base_url}/mcp_registry")
+            resp = client.get(f"{base_url}/api/mcp_registry")
             resp.raise_for_status()
             servers = resp.json()
     except Exception as e:
@@ -936,7 +925,7 @@ def install_mcp(
 
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(f"{base_url}/mcp_registry/{name}")
+            resp = client.get(f"{base_url}/api/mcp_registry/{name}")
             if resp.status_code == 404:
                 typer.echo(f"\n  Server '{name}' not found in registry.", err=True)
                 typer.echo("  Browse available servers:  agent-corex registry")
@@ -947,7 +936,6 @@ def install_mcp(
         raise
     except Exception as e:
         typer.echo(f"\nFailed to reach registry: {e}", err=True)
-        typer.echo("  Check your backend URL:  agent-corex status")
         raise typer.Exit(1)
 
     # ── Show server info ────────────────────────────────────────────────────
@@ -1105,17 +1093,15 @@ def keys():
     typer.echo(f"  API key : {masked}")
     typer.echo(f"  User ID : {user.get('user_id', '—')}")
     typer.echo(f"  Name    : {user.get('name', '—')}")
-    typer.echo(f"  Backend  : {local_config.get_base_url()}")
-    typer.echo(f"  Frontend : {local_config.get_frontend_url()}")
 
-    typer.echo("\nVerifying key with backend...")
+    typer.echo("\nVerifying key...")
     try:
         import httpx
 
         base_url = local_config.get_base_url()
         with httpx.Client(base_url=base_url, timeout=5.0) as client:
             resp = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={"api_key": api_key},
             )
@@ -1320,7 +1306,7 @@ def update(
             return _registry_cache[name]
         try:
             with httpx.Client(timeout=8.0) as client:
-                resp = client.get(f"{base_url}/mcp_registry/{name}")
+                resp = client.get(f"{base_url}/api/mcp_registry/{name}")
                 entry = resp.json() if resp.status_code == 200 else None
         except Exception:
             entry = None
@@ -1463,22 +1449,21 @@ def doctor():
         typer.echo(f"  {no} Not logged in")
         issues.append("Run:  agent-corex login --key <your-api-key>")
 
-    # ── 5. Backend connectivity ───────────────────────────────────────────────
-    typer.echo("\nBackend")
+    # ── 5. Service connectivity ───────────────────────────────────────────────
+    typer.echo("\nService")
     base_url = local_config.get_base_url()
-    typer.echo(f"  URL: {base_url}")
     try:
         import httpx as _httpx
 
-        resp = _httpx.get(f"{base_url}/health", timeout=5.0)
+        resp = _httpx.get(f"{base_url}/api/health", timeout=5.0)
         if resp.status_code == 200:
-            typer.echo(f"  {ok} Reachable (status 200)")
+            typer.echo(f"  {ok} Agent-CoreX service reachable")
         else:
-            typer.echo(f"  {warn} Responded with HTTP {resp.status_code}")
-            issues.append(f"Backend at {base_url} returned unexpected status {resp.status_code}.")
+            typer.echo(f"  {warn} Service responded with HTTP {resp.status_code}")
+            issues.append(f"Agent-CoreX service returned unexpected status {resp.status_code}.")
     except Exception as e:
-        typer.echo(f"  {no} Unreachable: {e}")
-        issues.append(f"Cannot reach backend at {base_url}. Check the URL or run the server.")
+        typer.echo(f"  {no} Service unreachable: {e}")
+        issues.append("Cannot reach Agent-CoreX. Check your internet connection.")
 
     # ── 6. API key verification ───────────────────────────────────────────────
     typer.echo("\nAPI Key")
@@ -1491,7 +1476,7 @@ def doctor():
             import httpx as _httpx
 
             resp = _httpx.post(
-                f"{base_url}/auth/login",
+                f"{base_url}/api/auth/login",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5.0,
             )
@@ -1501,7 +1486,7 @@ def doctor():
                 typer.echo(f"  {no} Key rejected (HTTP {resp.status_code}): {masked}")
                 issues.append("API key is invalid. Run:  agent-corex login --key <new-key>")
         except Exception:
-            typer.echo(f"  {warn} Key stored ({masked}) — could not verify (backend unreachable)")
+            typer.echo(f"  {warn} Key stored ({masked}) — could not verify (service unreachable)")
 
     # ── 7. Tool detection + injection ────────────────────────────────────────
     typer.echo("\nAI Tools")
@@ -1751,7 +1736,7 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
         import httpx
 
         httpx.post(
-            f"{base_url}/user/servers",
+            f"{base_url}/api/user/servers",
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             json={
                 "installed_servers": sorted(local_servers),

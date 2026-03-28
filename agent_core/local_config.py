@@ -5,7 +5,6 @@ Schema:
   {
     "api_key": "acx_...",           # API key (legacy auth, still supported)
     "base_url": "https://www.agent-corex.com",
-    "frontend_url": "https://www.agent-corex.com",
     "user": { "user_id": "...", "name": "..." },
 
     # JWT session (from device-code login flow):
@@ -28,8 +27,8 @@ from typing import Optional
 CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
+# All CLI requests go through the frontend URL, which proxies /api/* to the backend.
 DEFAULT_BASE_URL = "https://www.agent-corex.com"
-DEFAULT_FRONTEND_URL = "https://www.agent-corex.com"
 
 
 def _ensure_dir() -> None:
@@ -75,26 +74,31 @@ def delete_key(key: str) -> None:
     save(data)
 
 
-# ── API key helpers (existing — unchanged) ───────────────────────────────────
-
-
-def get_api_key() -> Optional[str]:
-    return get("api_key")
+# ── URL helpers ───────────────────────────────────────────────────────────────
 
 
 def get_base_url() -> str:
+    """Return the base URL for API calls (defaults to www.agent-corex.com)."""
     return get("base_url", DEFAULT_BASE_URL)
 
 
 def get_frontend_url() -> str:
-    return get("frontend_url", DEFAULT_FRONTEND_URL)
+    """Return the frontend URL (same as base_url — single origin)."""
+    return get_base_url()
 
 
 def get_login_url() -> str:
     return f"{get_frontend_url()}/login?source=cli"
 
 
-# ── JWT session helpers (new — device-code login flow) ───────────────────────
+# ── API key helpers ───────────────────────────────────────────────────────────
+
+
+def get_api_key() -> Optional[str]:
+    return get("api_key")
+
+
+# ── JWT session helpers ───────────────────────────────────────────────────────
 
 
 def save_session(
@@ -149,7 +153,6 @@ def try_refresh_token() -> Optional[str]:
     supabase_url = os.getenv("SUPABASE_URL", "")
     supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "")
 
-    # Try to derive Supabase URL from frontend_url if not set via env
     if not supabase_url:
         return None
 

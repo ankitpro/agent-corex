@@ -1,5 +1,23 @@
 # Release Notes
 
+## v1.2.0 (March 29, 2026)
+
+### ✨ Architecture
+- **Single-origin routing** — all CLI API calls now route through `https://www.agent-corex.com/api/*`, which proxies to the backend transparently. Users only ever interact with one URL.
+- **No backend URL exposure** — the CLI never shows or asks users to configure a backend URL. All connectivity goes through `www.agent-corex.com`.
+- **`set-url` simplified** — `agent-corex set-url <url>` now sets a single base URL (no `--frontend` flag needed). For local dev: `agent-corex set-url http://localhost:3000`.
+- **Cleaner error messages** — connection errors say "Cannot connect to Agent-CoreX" instead of exposing internal URLs.
+
+### 📦 Installation
+```bash
+pip install agent-corex==1.2.0        # PyPI
+brew install ankitpro/agent-corex/agent-corex  # Homebrew
+```
+
+Windows: download `agent-corex-windows-x86_64.exe` from the [releases page](https://github.com/ankitpro/agent-corex/releases/tag/v1.2.0)
+
+---
+
 ## v1.1.9 (March 29, 2026)
 
 ### 🔧 Fix
