@@ -203,7 +203,9 @@ class EnvManager:
                 errors.append("ANTHROPIC_API_KEY should start with 'sk-'")
 
         if "GITHUB_TOKEN" in env_vars:
-            if not env_vars["GITHUB_TOKEN"].startswith("ghp_") and not env_vars["GITHUB_TOKEN"].startswith("github_pat_"):
+            if not env_vars["GITHUB_TOKEN"].startswith("ghp_") and not env_vars[
+                "GITHUB_TOKEN"
+            ].startswith("github_pat_"):
                 errors.append("GITHUB_TOKEN should start with 'ghp_' or 'github_pat_'")
 
         if "SUPABASE_URL" in env_vars:

@@ -36,11 +36,14 @@ import json
 import pathlib
 from agent_core.pack_manager import PackManager
 
+
 def _version_callback(value: bool):
     if value:
         from agent_core import __version__
+
         typer.echo(f"agent-corex {__version__}")
         raise typer.Exit()
+
 
 app = typer.Typer(
     name="agent-corex",
@@ -48,11 +51,15 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+
 @app.callback()
 def _app_options(
     version: Optional[bool] = typer.Option(
-        None, "--version", "-V",
-        callback=_version_callback, is_eager=True,
+        None,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
 ):
@@ -61,28 +68,37 @@ def _app_options(
 
 # ── Shared detector/adapter helper ────────────────────────────────────────────
 
+
 def _tool_pairs():
     """Return [(slug, detector, adapter), ...] for all 5 supported AI tools."""
     from agent_core.detectors import (
-        ClaudeDesktopDetector, CursorDetector,
-        VSCodeDetector, VSCodeInsidersDetector, VSCodiumDetector,
+        ClaudeDesktopDetector,
+        CursorDetector,
+        VSCodeDetector,
+        VSCodeInsidersDetector,
+        VSCodiumDetector,
     )
     from agent_core.config_adapters import (
-        ClaudeAdapter, CursorAdapter,
-        VSCodeStableAdapter, VSCodeInsidersAdapter, VSCodiumAdapter,
+        ClaudeAdapter,
+        CursorAdapter,
+        VSCodeStableAdapter,
+        VSCodeInsidersAdapter,
+        VSCodiumAdapter,
     )
+
     return [
-        ("claude",          ClaudeDesktopDetector(),  ClaudeAdapter()),
-        ("cursor",          CursorDetector(),          CursorAdapter()),
-        ("vscode",          VSCodeDetector(),          VSCodeStableAdapter()),
-        ("vscode-insiders", VSCodeInsidersDetector(),  VSCodeInsidersAdapter()),
-        ("vscodium",        VSCodiumDetector(),        VSCodiumAdapter()),
+        ("claude", ClaudeDesktopDetector(), ClaudeAdapter()),
+        ("cursor", CursorDetector(), CursorAdapter()),
+        ("vscode", VSCodeDetector(), VSCodeStableAdapter()),
+        ("vscode-insiders", VSCodeInsidersDetector(), VSCodeInsidersAdapter()),
+        ("vscodium", VSCodiumDetector(), VSCodiumAdapter()),
     ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Existing commands (preserved exactly)
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 @app.command()
 def retrieve(
@@ -176,6 +192,7 @@ def start(
 def version():
     """Show Agent-Core version."""
     from agent_core import __version__
+
     typer.echo(f"Agent-Core {__version__}")
 
 
@@ -207,7 +224,9 @@ def health():
 def set_url(
     url: str = typer.Argument(..., help="URL to set (backend API or frontend)"),
     frontend: bool = typer.Option(
-        False, "--frontend", "-f",
+        False,
+        "--frontend",
+        "-f",
         help="Set the frontend URL (login page) instead of the backend API URL",
     ),
 ):
@@ -264,6 +283,7 @@ def show_config():
 # New gateway / management commands
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 @app.command()
 def serve():
     """
@@ -283,6 +303,7 @@ def serve():
         agent-corex serve
     """
     from agent_core.gateway.gateway_server import run
+
     run()
 
 
@@ -319,7 +340,7 @@ def init(
     typer.echo("\nScanning for AI tools...\n")
 
     found_any = False
-    vscode_written: list[str] = []   # track VS Code variants that were actually written
+    vscode_written: list[str] = []  # track VS Code variants that were actually written
     for detector, adapter, server_def in pairs:
         if not detector.is_installed():
             typer.echo(f"  [-] {detector.name}: not detected")
@@ -386,9 +407,7 @@ def init(
 
 @app.command()
 def login(
-    api_key: Optional[str] = typer.Option(
-        None, "--key", "-k", help="API key to store (acx_...)"
-    ),
+    api_key: Optional[str] = typer.Option(None, "--key", "-k", help="API key to store (acx_...)"),
     no_browser: bool = typer.Option(
         False, "--no-browser", help="Skip opening browser, just prompt for key"
     ),
@@ -447,7 +466,9 @@ def login(
             if resp.status_code == 200:
                 user_info = resp.json()
             elif resp.status_code == 401:
-                typer.echo("Backend rejected the API key. Please check the key and try again.", err=True)
+                typer.echo(
+                    "Backend rejected the API key. Please check the key and try again.", err=True
+                )
                 raise typer.Exit(1)
     except ImportError:
         pass  # httpx not installed — skip remote validation
@@ -600,7 +621,9 @@ def list_registry():
 def install_mcp(
     name: str = typer.Argument(..., help="Registry server slug, e.g. 'github'"),
     tool: Optional[str] = typer.Option(
-        None, "--tool", "-t",
+        None,
+        "--tool",
+        "-t",
         help="Target: claude | cursor | vscode | vscode-insiders | vscodium. All detected if omitted.",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
@@ -718,9 +741,7 @@ def install_mcp(
         verb = "Update" if already else "Install"
 
         if not yes:
-            confirmed = typer.confirm(
-                f"  {verb} '{name}' in {detector.name}?", default=True
-            )
+            confirmed = typer.confirm(f"  {verb} '{name}' in {detector.name}?", default=True)
             if not confirmed:
                 typer.echo("      Skipped.")
                 continue
@@ -858,7 +879,9 @@ def detect():
 @app.command()
 def eject(
     tool: Optional[str] = typer.Option(
-        None, "--tool", "-t",
+        None,
+        "--tool",
+        "-t",
         help="Target: claude | cursor | vscode | vscode-insiders | vscodium. Ejects from all if omitted.",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
@@ -916,7 +939,9 @@ def eject(
 @app.command(name="list")
 def list_servers(
     all_tools: bool = typer.Option(
-        False, "--all", "-a",
+        False,
+        "--all",
+        "-a",
         help="Include tools that are not installed (show empty rows).",
     ),
 ):
@@ -959,7 +984,9 @@ def list_servers(
 def update(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
     tool: Optional[str] = typer.Option(
-        None, "--tool", "-t",
+        None,
+        "--tool",
+        "-t",
         help="Limit to one tool: claude | cursor | vscode | vscode-insiders | vscodium",
     ),
 ):
@@ -1052,11 +1079,17 @@ def update(
                 continue
 
             typer.echo(f"  [!] {detector.name} / {server_name}: update available")
-            typer.echo(f"      current:  {current_def.get('command')} {' '.join(str(a) for a in current_def.get('args', []))}")
-            typer.echo(f"      registry: {new_def.get('command')} {' '.join(str(a) for a in new_def.get('args', []))}")
+            typer.echo(
+                f"      current:  {current_def.get('command')} {' '.join(str(a) for a in current_def.get('args', []))}"
+            )
+            typer.echo(
+                f"      registry: {new_def.get('command')} {' '.join(str(a) for a in new_def.get('args', []))}"
+            )
 
             if not yes:
-                confirmed = typer.confirm(f"      Update '{server_name}' in {detector.name}?", default=True)
+                confirmed = typer.confirm(
+                    f"      Update '{server_name}' in {detector.name}?", default=True
+                )
                 if not confirmed:
                     typer.echo("      Skipped.")
                     continue
@@ -1117,10 +1150,12 @@ def doctor():
     # ── 3. Config file ───────────────────────────────────────────────────────
     typer.echo("\nConfig")
     from agent_core import local_config
+
     cfg_path = local_config.CONFIG_FILE
     if cfg_path.exists():
         try:
             import json as _json
+
             _json.loads(cfg_path.read_text(encoding="utf-8"))
             typer.echo(f"  {ok} Config file exists and is valid JSON ({cfg_path})")
         except Exception:
@@ -1146,6 +1181,7 @@ def doctor():
     typer.echo(f"  URL: {base_url}")
     try:
         import httpx as _httpx
+
         resp = _httpx.get(f"{base_url}/health", timeout=5.0)
         if resp.status_code == 200:
             typer.echo(f"  {ok} Reachable (status 200)")
@@ -1165,6 +1201,7 @@ def doctor():
         masked = api_key[:10] + "…" + api_key[-4:] if len(api_key) > 14 else "****"
         try:
             import httpx as _httpx
+
             resp = _httpx.post(
                 f"{base_url}/auth/login",
                 headers={"Authorization": f"Bearer {api_key}"},
@@ -1208,7 +1245,9 @@ def doctor():
         typer.echo(f"  {ok} agent-corex found at {exe}")
     else:
         typer.echo(f"  {no} agent-corex not found in PATH")
-        issues.append("Add the Python Scripts directory to your PATH, or reinstall:  pip install agent-corex")
+        issues.append(
+            "Add the Python Scripts directory to your PATH, or reinstall:  pip install agent-corex"
+        )
 
     # ── Pack system ──────────────────────────────────────────────────────────
     typer.echo("\nPack System")
@@ -1232,6 +1271,7 @@ def doctor():
         typer.echo(f"  {ok} mcp.json found: {mcp_config_file}")
         # Validate mcp.json
         from agent_core.mcp_config_generator import MCPConfigGenerator
+
         is_valid, errors = MCPConfigGenerator.validate_config(mcp_config_file)
         if is_valid:
             typer.echo(f"      ✓ Config is valid")
@@ -1245,6 +1285,7 @@ def doctor():
 
     if env_file.exists():
         from agent_core.env_manager import EnvManager
+
         env_vars = EnvManager.load_env()
         typer.echo(f"  {ok} .env file found with {len(env_vars)} variable(s)")
     else:
@@ -1296,12 +1337,16 @@ def install_pack(
     servers = PackManager.get_servers_for_pack(pack_name)
     typer.echo(f"\nServers to install ({len(servers)}):")
     for server in servers:
-        env_note = f"  (requires: {', '.join(server['env_required'])})" if server['env_required'] else ""
+        env_note = (
+            f"  (requires: {', '.join(server['env_required'])})" if server["env_required"] else ""
+        )
         typer.echo(f"  • {server['name']}: {server['description']}{env_note}")
 
     # Confirm
     if not yes:
-        confirmed = typer.confirm(f"\nRegister pack '{pack_name}' and install {len(servers)} server(s)?", default=True)
+        confirmed = typer.confirm(
+            f"\nRegister pack '{pack_name}' and install {len(servers)} server(s)?", default=True
+        )
         if not confirmed:
             typer.echo("Aborted.")
             raise typer.Exit(0)
@@ -1311,7 +1356,7 @@ def install_pack(
         result = PackManager.install_pack(pack_name, enable_all=True)
         typer.echo(f"\n✓ Registered pack: {pack_name}")
         typer.echo(f"  Servers enabled: {len(result['servers'])}")
-        for srv in result['servers']:
+        for srv in result["servers"]:
             typer.echo(f"    • {srv}")
     except Exception as e:
         typer.echo(f"\n✗ Failed to register pack: {e}", err=True)
@@ -1321,12 +1366,18 @@ def install_pack(
     typer.echo(f"\nInjecting servers into detected tools...")
 
     from agent_core.detectors import (
-        ClaudeDesktopDetector, CursorDetector,
-        VSCodeDetector, VSCodeInsidersDetector, VSCodiumDetector,
+        ClaudeDesktopDetector,
+        CursorDetector,
+        VSCodeDetector,
+        VSCodeInsidersDetector,
+        VSCodiumDetector,
     )
     from agent_core.config_adapters import (
-        ClaudeAdapter, CursorAdapter,
-        VSCodeStableAdapter, VSCodeInsidersAdapter, VSCodiumAdapter,
+        ClaudeAdapter,
+        CursorAdapter,
+        VSCodeStableAdapter,
+        VSCodeInsidersAdapter,
+        VSCodiumAdapter,
     )
 
     tools = [
@@ -1343,7 +1394,7 @@ def install_pack(
             continue
 
         for server in servers:
-            server_name = server['name']
+            server_name = server["name"]
             base_def = {
                 "command": server["command"],
                 "args": server.get("args", []),
@@ -1468,7 +1519,9 @@ def setup_env():
             typer.echo(f"  • {error}")
 
     # Confirm save
-    confirmed = typer.confirm(f"\nSave {len(new_env)} variable(s) to ~/.agent-corex/.env?", default=True)
+    confirmed = typer.confirm(
+        f"\nSave {len(new_env)} variable(s) to ~/.agent-corex/.env?", default=True
+    )
     if not confirmed:
         typer.echo("Aborted.")
         return

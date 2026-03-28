@@ -2,17 +2,11 @@
   "mcpServers": {
     "railway": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@railway/mcp-server"
-      ]
+      "args": ["-y", "@railway/mcp-server"]
     },
     "github": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
       }
@@ -28,11 +22,7 @@
     },
     "filesystem": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "~"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~"]
     }
   }
 }

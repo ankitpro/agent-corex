@@ -53,7 +53,12 @@ class PackManager:
                     "env_required": ["SUPABASE_ACCESS_TOKEN"],
                     "env_optional": [],
                     "command": "npx",
-                    "args": ["-y", "@supabase/mcp-server-supabase", "--access-token", "${SUPABASE_ACCESS_TOKEN}"],
+                    "args": [
+                        "-y",
+                        "@supabase/mcp-server-supabase",
+                        "--access-token",
+                        "${SUPABASE_ACCESS_TOKEN}",
+                    ],
                 },
                 {
                     "name": "filesystem",
@@ -71,7 +76,13 @@ class PackManager:
                     "env_required": ["REDIS_URL"],
                     "env_optional": [],
                     "command": "uvx",
-                    "args": ["--from", "redis-mcp-server", "redis-mcp-server", "--url", "${REDIS_URL}"],
+                    "args": [
+                        "--from",
+                        "redis-mcp-server",
+                        "redis-mcp-server",
+                        "--url",
+                        "${REDIS_URL}",
+                    ],
                 },
             ],
         },
