@@ -68,29 +68,46 @@ def _report_usage(tool_name: str, status: str, latency_ms: int) -> None:
     """
     Fire-and-forget: POST /usage/event to the enterprise backend.
     Runs in a daemon thread so it never blocks the stdio JSON-RPC loop.
+    Uses urllib.request (stdlib only) so it works inside the PyInstaller binary.
     Auth header is read from ~/.agent-corex/config.json at call time.
     """
 
     def _post() -> None:
         try:
-            import httpx
+            import json as _json
+            import ssl
+            import urllib.request
+
             from agent_core import local_config
 
             auth_header = local_config.get_auth_header()
             if not auth_header:
                 return  # Not authenticated — skip silently
 
-            base_url = local_config.get_base_url()
-            httpx.post(
+            base_url = local_config.get_base_url().rstrip("/")
+            payload = _json.dumps(
+                {"tool_name": tool_name, "status": status, "latency_ms": latency_ms}
+            ).encode("utf-8")
+            req = urllib.request.Request(
                 f"{base_url}/usage/event",
+                data=payload,
                 headers={"Authorization": auth_header, "Content-Type": "application/json"},
-                json={"tool_name": tool_name, "status": status, "latency_ms": latency_ms},
-                timeout=3.0,
+                method="POST",
             )
+            # Use certifi bundle when available (PyInstaller binary), fall back to default
+            try:
+                import certifi
+
+                ctx = ssl.create_default_context(cafile=certifi.where())
+            except Exception:
+                ctx = ssl.create_default_context()
+
+            with urllib.request.urlopen(req, timeout=3, context=ctx):
+                pass
         except Exception:
             pass  # Never propagate — usage reporting must not affect tool execution
 
-    threading.Thread(target=_post, daemon=True).start()
+    threading.Thread(target=_post, daemon=False).start()
 
 
 # ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-29** — CLI gateway usage reporting to backend (v1.2.8)
+**2026-03-29** — CLI gateway usage reporting to backend (v1.2.9)
 
 ---
 
