@@ -43,7 +43,7 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
         except Exception:
             pass  # Logging is best-effort
 
-    threading.Thread(target=_do, daemon=True).start()
+    threading.Thread(target=_do, daemon=False).start()
 
 
 # ---------------------------------------------------------------------------
