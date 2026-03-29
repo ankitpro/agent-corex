@@ -11,8 +11,10 @@ tools/call  → checks auth for enterprise tools before execution
 
 from __future__ import annotations
 
+import json
 import pathlib
 import threading
+import urllib.request
 from typing import Any
 
 
@@ -21,25 +23,24 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
 
     def _do():
         try:
-            import httpx
             from agent_core import local_config
 
             base_url = local_config.get_base_url().rstrip("/")
             api_key = local_config.get_api_key() or ""
-            with httpx.Client(timeout=5) as client:
-                client.post(
-                    f"{base_url}/query/log",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "query": query,
-                        "source": "mcp",
-                        "selected_tools": selected,
-                        "scores": scores,
-                    },
-                )
+            payload = json.dumps(
+                {"query": query, "source": "mcp", "selected_tools": selected, "scores": scores}
+            ).encode("utf-8")
+            req = urllib.request.Request(
+                f"{base_url}/query/log",
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=5):
+                pass
         except Exception:
             pass  # Logging is best-effort
 
