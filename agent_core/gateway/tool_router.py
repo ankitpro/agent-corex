@@ -15,6 +15,37 @@ import pathlib
 import threading
 from typing import Any
 
+
+def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
+    """Non-blocking POST to /query/log — never blocks tool execution."""
+
+    def _do():
+        try:
+            import httpx
+            from agent_core import local_config
+
+            base_url = local_config.get_base_url().rstrip("/")
+            api_key = local_config.get_api_key() or ""
+            with httpx.Client(timeout=5) as client:
+                client.post(
+                    f"{base_url}/query/log",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "query": query,
+                        "source": "mcp",
+                        "selected_tools": selected,
+                        "scores": scores,
+                    },
+                )
+        except Exception:
+            pass  # Logging is best-effort
+
+    threading.Thread(target=_do, daemon=True).start()
+
+
 # ---------------------------------------------------------------------------
 # Static tool registry
 # Extend this dict as new tools are added.  Enterprise tools get exposed in
@@ -335,6 +366,12 @@ class ToolRouter:
 
             if not results:
                 return f"No tools matched query: {query!r}"
+
+            # ── Log query + selected tools to enterprise backend (non-blocking) ──
+            selected_names = [t["name"] for t in results]
+            score_map = {t["name"]: float(t.get("score", 0.0)) for t in results}
+            _fire_and_forget_log(query, selected_names, score_map)
+            # ─────────────────────────────────────────────────────────────────────
 
             lines = [f"Top {len(results)} tool(s) for {query!r}:\n"]
             for i, t in enumerate(results, 1):
