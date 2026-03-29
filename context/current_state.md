@@ -5,15 +5,24 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-29** — CLI Auth + Sync System (v1.1.6)
+**2026-03-29** — Query observability daemon-thread fix (v1.2.5)
 
 ---
 
 ## Current Status
 
-**Version:** 1.1.6
+**Version:** 1.2.5
 
-**State:** ✅ **COMPLETE** — CLI Auth + Sync System added:
+**State:** ✅ **COMPLETE** — Query observability logging fixed:
+- ✅ `_fire_and_forget_log` in `tool_router.py` now uses `daemon=False` so the HTTP POST to `/query/log` completes even when the main thread is blocked on stdin (MCP stdio loop)
+- ✅ Binary build triggered via `v1.2.5` tag
+
+**Previous (v1.2.4):** Query observability (OSS gateway logging)
+- ✅ Added `_fire_and_forget_log()` to `agent_core/gateway/tool_router.py` — logs each `retrieve_tools` call to the enterprise backend's `/query/log` endpoint in a background thread
+- ✅ `__version__` bumped to 1.2.4; binary released as `v1.2.4`
+- ⚠️ Known bug: `daemon=True` threads killed by OS in binary context — fixed in v1.2.5
+
+**Previous (v1.1.6):** CLI Auth + Sync System added:
 - ✅ Device-code browser login (`agent-corex login`)
 - ✅ JWT session stored in `~/.agent-corex/config.json`
 - ✅ Token auto-refresh on expiry

@@ -284,4 +284,34 @@ Return result to client
 
 ---
 
-**Last Updated:** 2026-03-28
+## Version Increment Checklist
+
+**EVERY TIME you release a new version** (e.g. v1.2.4 → v1.2.5), update ALL of these files:
+
+### Source files (code)
+| File | What to change |
+|------|---------------|
+| `agent_core/__init__.py` | `__version__ = "X.Y.Z"` |
+| `pyproject.toml` | `version = "X.Y.Z"` under `[project]` |
+| `homebrew/Formula/agent-corex.rb` | `version "X.Y.Z"` |
+
+### Context files (docs)
+| File | What to change |
+|------|---------------|
+| `context/current_state.md` | Update "**Version:** X.Y.Z" and "Last Updated" date |
+| `context/change_log.md` | Append new `## YYYY-MM-DD — vX.Y.Z — <title>` entry |
+| `context/main.md` | Update "**Last Updated:**" footer date |
+
+### Git / GitHub
+1. `git add` all changed files
+2. `git commit -m "release: vX.Y.Z — <short description>"`
+3. `git push origin main`
+4. `git tag vX.Y.Z && git push origin vX.Y.Z`  ← triggers GitHub Actions binary build
+
+### After the release
+- GitHub Actions (`build-binaries.yml`) automatically builds Linux/macOS/Windows binaries and attaches them to the GitHub Release.
+- Update `homebrew/Formula/agent-corex.rb` SHA256 placeholders once binaries are published (get hashes from the `.sha256` files in the release).
+
+---
+
+**Last Updated:** 2026-03-29

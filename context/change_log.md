@@ -4,6 +4,35 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-29 — v1.2.5 — Fix: non-daemon logging thread in binary
+
+**What:** Changed `daemon=True` → `daemon=False` in `_fire_and_forget_log()` inside `tool_router.py`.
+
+**Root cause:** In the PyInstaller binary, the main thread is blocked indefinitely on `sys.stdin` (MCP stdio loop). Python's OS-level scheduler can terminate daemon threads attached to a blocked main thread before the HTTP POST to `/query/log` completes. Non-daemon threads are not subject to this termination.
+
+**Files Changed:**
+- `agent_core/gateway/tool_router.py` line 46 — `daemon=True` → `daemon=False`
+- `agent_core/__init__.py` — `__version__` bumped to `"1.2.5"`
+- `pyproject.toml` — `version` bumped to `"1.2.5"`
+- `homebrew/Formula/agent-corex.rb` — `version` bumped to `"1.2.5"`
+
+**Impact:** Query events now appear in the enterprise dashboard Queries tab when using the installed binary.
+
+---
+
+## 2026-03-29 — v1.2.4 — Query observability: OSS gateway logging
+
+**What:** Added fire-and-forget query logging to the OSS MCP gateway so every `retrieve_tools` call is recorded in the enterprise backend's `query_events` table. Also bumped version to 1.2.4.
+
+**Files Changed:**
+- `agent_core/gateway/tool_router.py` — Added `_fire_and_forget_log()` helper + call after `_run_retrieve_tools` returns results
+- `agent_core/__init__.py` — `__version__` bumped to `"1.2.4"`
+- `pyproject.toml` — `version` bumped to `"1.2.4"`
+
+**Known issue:** `daemon=True` caused thread to be killed in binary context — fixed in v1.2.5.
+
+---
+
 ## 2026-03-29 — v1.1.6 — CLI Auth + Sync System
 
 ### CLI Authentication + Sync (Device-Code Flow)
