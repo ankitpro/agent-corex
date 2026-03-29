@@ -5,15 +5,20 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-29** — Query observability daemon-thread fix (v1.2.5)
+**2026-03-29** — CLI gateway usage reporting to backend (v1.2.8)
 
 ---
 
 ## Current Status
 
-**Version:** 1.2.5
+**Version:** 1.2.6
 
-**State:** ✅ **COMPLETE** — Query observability logging fixed:
+**State:** ✅ **COMPLETE** — CLI gateway usage reporting added:
+- ✅ `_report_usage()` helper in `gateway_server.py` — POSTs to `/usage/event` in a daemon thread after every `tools/call` (success or failure)
+- ✅ Auth header read from `local_config.get_auth_header()` (JWT or API key)
+- ✅ Non-blocking — daemon thread, errors silently swallowed, never affects tool execution
+
+**Previous (v1.2.5):** Query observability logging fixed:
 - ✅ `_fire_and_forget_log` in `tool_router.py` now uses `daemon=False` so the HTTP POST to `/query/log` completes even when the main thread is blocked on stdin (MCP stdio loop)
 - ✅ Binary build triggered via `v1.2.5` tag
 

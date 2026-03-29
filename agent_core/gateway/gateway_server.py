@@ -27,6 +27,8 @@ import json
 import logging
 import pathlib
 import sys
+import threading
+import time
 import traceback
 from typing import Any
 
@@ -60,6 +62,34 @@ def _error_response(req_id: Any, code: int, message: str, data: Any = None) -> d
 
 def _ok_response(req_id: Any, result: Any) -> dict:
     return {"jsonrpc": "2.0", "id": req_id, "result": result}
+
+
+def _report_usage(tool_name: str, status: str, latency_ms: int) -> None:
+    """
+    Fire-and-forget: POST /usage/event to the enterprise backend.
+    Runs in a daemon thread so it never blocks the stdio JSON-RPC loop.
+    Auth header is read from ~/.agent-corex/config.json at call time.
+    """
+    def _post() -> None:
+        try:
+            import httpx
+            from agent_core import local_config
+
+            auth_header = local_config.get_auth_header()
+            if not auth_header:
+                return  # Not authenticated — skip silently
+
+            base_url = local_config.get_base_url()
+            httpx.post(
+                f"{base_url}/usage/event",
+                headers={"Authorization": auth_header, "Content-Type": "application/json"},
+                json={"tool_name": tool_name, "status": status, "latency_ms": latency_ms},
+                timeout=3.0,
+            )
+        except Exception:
+            pass  # Never propagate — usage reporting must not affect tool execution
+
+    threading.Thread(target=_post, daemon=True).start()
 
 
 # ---------------------------------------------------------------------------
@@ -123,14 +153,20 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
             "This tool requires a running enterprise backend.\n"
             "See: https://agent-corex.ai/docs/enterprise"
         )
+        _report_usage(tool_name, "success", 0)
         return _ok_response(req_id, {"content": [{"type": "text", "text": result_text}]})
 
     # ── Free tool execution ────────────────────────────────────────────────
+    start_ms = int(time.time() * 1000)
     try:
         result = router.execute_free_tool(tool_name, arguments)
+        latency_ms = int(time.time() * 1000) - start_ms
         text = result if isinstance(result, str) else json.dumps(result, indent=2)
+        _report_usage(tool_name, "success", latency_ms)
         return _ok_response(req_id, {"content": [{"type": "text", "text": text}]})
     except Exception as exc:
+        latency_ms = int(time.time() * 1000) - start_ms
+        _report_usage(tool_name, "failure", latency_ms)
         return _ok_response(
             req_id,
             {
