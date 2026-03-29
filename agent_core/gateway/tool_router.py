@@ -23,6 +23,9 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
 
     def _do():
         try:
+            import os
+            import ssl
+
             from agent_core import local_config
 
             base_url = local_config.get_base_url().rstrip("/")
@@ -39,10 +42,28 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=5):
+
+            # Build SSL context — try certifi bundle first (works in PyInstaller binary),
+            # fall back to default context (works in normal Python).
+            try:
+                import certifi
+
+                ctx = ssl.create_default_context(cafile=certifi.where())
+            except Exception:
+                ctx = ssl.create_default_context()
+
+            with urllib.request.urlopen(req, timeout=5, context=ctx):
                 pass
-        except Exception:
-            pass  # Logging is best-effort
+        except Exception as exc:
+            # Write errors to ~/.agent-corex/query_log_debug.txt for diagnosing binary issues.
+            try:
+                import os
+
+                log = os.path.join(os.path.expanduser("~"), ".agent-corex", "query_log_debug.txt")
+                with open(log, "a") as fh:
+                    fh.write(f"{exc}\n")
+            except Exception:
+                pass
 
     threading.Thread(target=_do, daemon=False).start()
 
