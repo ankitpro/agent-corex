@@ -70,6 +70,7 @@ def _report_usage(tool_name: str, status: str, latency_ms: int) -> None:
     Runs in a daemon thread so it never blocks the stdio JSON-RPC loop.
     Auth header is read from ~/.agent-corex/config.json at call time.
     """
+
     def _post() -> None:
         try:
             import httpx
