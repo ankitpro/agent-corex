@@ -1,9 +1,17 @@
-fastapi
-uvicorn
-typer
-pydantic
-python-dotenv
-pytest
-sentence-transformers
-faiss-cpu
-numpy
+# Core runtime dependencies — installed with `pip install agent-corex`
+typer[all]>=0.9.0
+httpx>=0.27.0
+rich>=13.0.0
+
+# Optional: semantic search + embeddings (`agent-corex retrieve`)
+# pip install "agent-corex[ml]"
+# sentence-transformers>=2.2.0
+# faiss-cpu>=1.7.4
+# numpy>=1.21.0
+
+# Optional: retrieval API server (`agent-corex start`)
+# pip install "agent-corex[server]"
+# fastapi>=0.104.0
+# uvicorn[standard]>=0.24.0
+
+# Everything: pip install "agent-corex[full]"

@@ -117,6 +117,8 @@ def retrieve(
     """
     Retrieve the most relevant tools for a given query.
 
+    Requires the [ml] extra:  pip install "agent-corex[ml]"
+
     Example:
         agent-corex retrieve "edit a file" --top-k 5 --method hybrid
     """
@@ -159,6 +161,12 @@ def retrieve(
             typer.echo(f"{i}. {tool['name']}")
             typer.echo(f"   {tool.get('description', 'No description')}\n")
 
+    except ImportError:
+        typer.echo(
+            "\n✗ ML dependencies are not installed.\n" '  Run: pip install "agent-corex[ml]"\n',
+            err=True,
+        )
+        raise typer.Exit(1)
     except Exception as e:
         typer.echo(f"Error: {str(e)}", err=True)
         raise typer.Exit(1)
@@ -176,10 +184,19 @@ def start(
     """
     Start the Agent-Core retrieval API server.
 
+    Requires the [server] extra:  pip install "agent-corex[server]"
+
     Example:
         agent-corex start --host 0.0.0.0 --port 8000
     """
-    import uvicorn
+    try:
+        import uvicorn  # noqa: F401
+    except ImportError:
+        typer.echo(
+            "\n✗ uvicorn is not installed.\n" '  Run: pip install "agent-corex[server]"\n',
+            err=True,
+        )
+        raise typer.Exit(1)
     import os
 
     if config:
@@ -253,19 +270,29 @@ def show_config():
     typer.echo(f"  Python version: {__import__('sys').version.split()[0]}")
     typer.echo(f"  Installation path: {pathlib.Path(__import__('agent_core').__file__).parent}")
 
-    deps = {
-        "fastapi": "FastAPI",
-        "sentence_transformers": "Sentence Transformers",
-        "faiss": "FAISS",
+    core_deps = {"typer": "Typer", "httpx": "httpx", "rich": "Rich"}
+    optional_deps = {
+        "sentence_transformers": ("Sentence Transformers", "[ml]"),
+        "faiss": ("FAISS", "[ml]"),
+        "fastapi": ("FastAPI", "[server]"),
+        "uvicorn": ("uvicorn", "[server]"),
     }
 
-    typer.echo("\nDependencies:")
-    for module, name in deps.items():
+    typer.echo("\nCore dependencies:")
+    for module, name in core_deps.items():
         try:
             __import__(module)
             typer.echo(f"  ✓ {name}")
         except ImportError:
             typer.echo(f"  ✗ {name} (not installed)")
+
+    typer.echo("\nOptional dependencies:")
+    for module, (name, extra) in optional_deps.items():
+        try:
+            __import__(module)
+            typer.echo(f"  ✓ {name}")
+        except ImportError:
+            typer.echo(f'  ✗ {name} — pip install "agent-corex{extra}" to enable')
 
 
 # ═══════════════════════════════════════════════════════════════════════════

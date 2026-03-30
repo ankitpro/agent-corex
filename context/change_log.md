@@ -4,7 +4,43 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
-## 2026-03-30 — v1.3.0 (unreleased) — skill.md install system + `agent-corex apply`
+## 2026-03-30 — v1.3.0 (unreleased) — slim deps + skill.md install system
+
+### Dependency cleanup
+
+**What:** Removed 8 unnecessary packages from core install. The CLI gateway/injection/registry/auth use case requires only 3 packages (`typer`, `httpx`, `rich`). Heavy ML and server packages moved to optional extras.
+
+**Removed from core dependencies:**
+- `fastapi` — only used by `agent-corex start` → moved to `[server]` extra
+- `uvicorn` — only used by `agent-corex start` → moved to `[server]` extra
+- `sentence-transformers` — only used by `agent-corex retrieve` → moved to `[ml]` extra
+- `faiss-cpu` — only used by `agent-corex retrieve` → moved to `[ml]` extra
+- `numpy` — only used by `agent-corex retrieve` → moved to `[ml]` extra
+- `pydantic` — not imported anywhere in `agent_core/`
+- `requests` — not imported anywhere in `agent_core/`
+- `python-dotenv` — not imported; `.env` parsing is done with a custom stdlib parser
+
+**New install matrix:**
+| Command | Install |
+|---------|---------|
+| `pip install agent-corex` | Core only (gateway, init, registry, auth, apply) |
+| `pip install "agent-corex[ml]"` | + retrieve command |
+| `pip install "agent-corex[server]"` | + start command |
+| `pip install "agent-corex[full]"` | Everything |
+| `pip install -e .` | Dev (OSS contributors) |
+
+**Files changed:**
+- `pyproject.toml` — slimmed `[dependencies]`, added `[ml]`, `[server]`, `[full]` extras
+- `requirements.txt` — updated to core deps only with comments for optionals
+- `agent_core/cli/main.py` — `retrieve`: catches `ImportError` with install hint; `start`: checks for uvicorn before running with install hint; `config`: shows optional deps with install commands
+
+---
+
+### skill.md install system + `agent-corex apply`
+
+**What:** Declarative, AI-readable install spec system inspired by Smithery, extended for Agent-CoreX packs and MCP orchestration.
+
+**New files:**
 
 **What:** Declarative, AI-readable install spec system inspired by Smithery, extended for Agent-CoreX packs and MCP orchestration.
 
