@@ -78,7 +78,7 @@ TOOL_REGISTRY: dict[str, dict] = {
     # ── Free tools ─────────────────────────────────────────────────────────
     "retrieve_tools": {
         "type": "free",
-        "description": "Search for relevant MCP tools by natural-language query.",
+        "description": "Search for relevant MCP tools by natural-language query. Uses Qdrant-backed semantic search on the Agent-Corex backend.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -88,14 +88,8 @@ TOOL_REGISTRY: dict[str, dict] = {
                 },
                 "top_k": {
                     "type": "integer",
-                    "description": "Max results to return (default 5)",
+                    "description": "Max results to return (1-20, default 5)",
                     "default": 5,
-                },
-                "method": {
-                    "type": "string",
-                    "enum": ["keyword", "hybrid", "embedding"],
-                    "description": "Ranking method (default hybrid)",
-                    "default": "hybrid",
                 },
             },
             "required": ["query"],
@@ -242,53 +236,44 @@ class ToolRouter:
         ]
 
         if len(mcp_tools_to_add) > max_mcp_tools:
-            # Use ranking to pick top tools
+            # Use lightweight keyword scoring — no ML models, no network calls.
+            # Heavy semantic ranking happens in _run_retrieve_tools() via the backend.
+            ranking_query = query or "general development file database web deploy build"
+            tokens = set(ranking_query.lower().split())
+
+            def _kw_score(name: str, desc: str) -> float:
+                text = f"{name} {desc}".lower()
+                return sum(1 for tok in tokens if tok in text) / max(len(tokens), 1)
+
+            scored_mcp = sorted(
+                mcp_tools_to_add,
+                key=lambda item: _kw_score(item[0], item[1].get("description", "")),
+                reverse=True,
+            )
+            selected_names = {item[0] for item in scored_mcp[:max_mcp_tools]}
+            rejected_names = {name for name, _ in mcp_tools_to_add} - selected_names
+
+            # Track the filtering decision
             try:
-                from agent_core.retrieval.ranker import rank_tools
+                from agent_core.tools.observability.tool_selection_tracker import get_tracker
 
-                tool_dicts = [
-                    {"name": name, "description": meta.get("description", "")}
-                    for name, meta in mcp_tools_to_add
-                ]
-
-                # Use provided query, or fall back to default context
-                ranking_query = query or "general development file database web deploy build"
-                ranking_method = "hybrid" if query else "keyword"
-
-                ranked = rank_tools(
-                    ranking_query,
-                    tool_dicts,
-                    top_k=max_mcp_tools,
-                    method=ranking_method,
+                tracker = get_tracker()
+                tracker.track(
+                    f"tools/list ({ranking_query})" if query else "tools/list (default)",
+                    list(selected_names),
+                    list(rejected_names),
+                    scores={
+                        "reason": "max_tools_threshold",
+                        "threshold": max_mcp_tools,
+                        "query": query,
+                    },
                 )
-                selected_names = {t["name"] for t in ranked}
-                rejected_names = {name for name, _ in mcp_tools_to_add} - selected_names
-
-                # Track the filtering decision
-                try:
-                    from agent_core.tools.observability.tool_selection_tracker import get_tracker
-
-                    tracker = get_tracker()
-                    tracker.track(
-                        f"tools/list ({ranking_query})" if query else "tools/list (default)",
-                        list(selected_names),
-                        list(rejected_names),
-                        scores={
-                            "reason": "max_tools_threshold",
-                            "threshold": max_mcp_tools,
-                            "query": query,
-                        },
-                    )
-                except Exception:
-                    pass  # Observability is optional
-
-                # Keep only selected MCP tools
-                mcp_tools_to_add = [
-                    (name, meta) for name, meta in mcp_tools_to_add if name in selected_names
-                ]
             except Exception:
-                # If ranking fails, just take first max_mcp_tools
-                mcp_tools_to_add = mcp_tools_to_add[:max_mcp_tools]
+                pass  # Observability is optional
+
+            mcp_tools_to_add = [
+                (name, meta) for name, meta in mcp_tools_to_add if name in selected_names
+            ]
 
         # 3. Add filtered MCP tools to result
         for name, meta in mcp_tools_to_add:
@@ -349,61 +334,107 @@ class ToolRouter:
     # ── Built-in free tool implementations ────────────────────────────────
 
     def _run_retrieve_tools(self, args: dict) -> str:
+        """
+        Retrieve tools via the enterprise backend (Qdrant-backed).
+        No local ML models — all ranking runs server-side.
+        Falls back to local keyword search if the backend is unreachable.
+        """
         query = args.get("query", "")
         top_k = int(args.get("top_k", 5))
-        method = args.get("method", "hybrid")
+        top_k = max(1, min(top_k, 20))
 
+        if not query.strip():
+            return "Error: query is required"
+
+        # ── Primary: call enterprise backend ──────────────────────────────────
         try:
-            from agent_core.retrieval.ranker import rank_tools
-            from agent_core.tools.registry import ToolRegistry
+            import json as _json
+            import ssl
+            import urllib.parse
+            import urllib.request
 
-            registry = ToolRegistry()
-            tools = registry.get_all_tools()
+            from agent_core import local_config
 
-            # Also include tools from our gateway registry
-            gateway_tools = [
-                {"name": n, "description": m["description"]} for n, m in self._registry.items()
-            ]
-            all_tools = tools + [
-                t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in tools}
-            ]
+            base_url = local_config.get_base_url().rstrip("/")
+            api_key = local_config.get_api_key() or ""
 
-            if not all_tools:
-                return "No tools found."
-
-            results = rank_tools(query, all_tools, top_k=top_k, method=method)
-
-            # Track tool selection
+            params = urllib.parse.urlencode({"query": query, "top_k": top_k})
+            url = f"{base_url}/retrieve_tools?{params}"
+            req = urllib.request.Request(
+                url,
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
             try:
-                from agent_core.tools.observability.tool_selection_tracker import get_tracker
-
-                selected_names = [t["name"] for t in results] if results else []
-                rejected_names = [t["name"] for t in all_tools if t["name"] not in selected_names]
-                tracker = get_tracker()
-                tracker.track(
-                    query, selected_names, rejected_names, scores={"method": method, "top_k": top_k}
-                )
+                import certifi
+                ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
-                pass  # Observability is optional
+                ctx = ssl.create_default_context()
 
-            if not results:
-                return f"No tools matched query: {query!r}"
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
+                tools = _json.loads(resp.read())
 
-            # ── Log query + selected tools to enterprise backend (non-blocking) ──
-            selected_names = [t["name"] for t in results]
-            score_map = {t["name"]: float(t.get("score", 0.0)) for t in results}
+            if not isinstance(tools, list):
+                raise ValueError(f"unexpected backend response: {tools}")
+
+            # Build nested score map for the DB
+            score_map: dict = {}
+            for t in tools:
+                if not isinstance(t, dict) or not t.get("name"):
+                    continue
+                score_map[t["name"]] = {
+                    "score":            t.get("score", 0.0),
+                    "semantic_score":   t.get("semantic_score", t.get("score", 0.0)),
+                    "capability_score": t.get("capability_score", 0.0),
+                    "success_rate":     t.get("success_rate", 0.5),
+                }
+
+            selected_names = [t["name"] for t in tools if isinstance(t, dict) and t.get("name")]
             _fire_and_forget_log(query, selected_names, score_map)
-            # ─────────────────────────────────────────────────────────────────────
 
-            lines = [f"Top {len(results)} tool(s) for {query!r}:\n"]
-            for i, t in enumerate(results, 1):
-                tier = self._registry.get(t["name"], {}).get("type", "free")
+            if not tools:
+                return f"No tools found for query: {query!r}"
+
+            lines = [f"Top {len(tools)} tool(s) for {query!r}:\n"]
+            for i, t in enumerate(tools, 1):
+                score_pct = int(t.get("score", 0) * 100)
+                tier = self._registry.get(t["name"], {}).get("type", "")
                 label = " [enterprise]" if tier == "enterprise" else ""
-                lines.append(f"{i}. {t['name']}{label}")
-                lines.append(f"   {t.get('description', '')}")
+                lines.append(f"{i}. {t['name']}{label}  ({score_pct}% match)")
+                if t.get("description"):
+                    lines.append(f"   {t['description']}")
             return "\n".join(lines)
-        except Exception as exc:
-            return f"Error during retrieval: {exc}"
+
+        except Exception as backend_exc:
+            # ── Fallback: local keyword search (offline / backend down) ─────────
+            try:
+                from agent_core.retrieval.ranker import rank_tools
+                from agent_core.tools.registry import ToolRegistry
+
+                registry = ToolRegistry()
+                all_tools = registry.get_all_tools()
+                gateway_tools = [
+                    {"name": n, "description": m["description"]}
+                    for n, m in self._registry.items()
+                ]
+                all_tools += [
+                    t for t in gateway_tools
+                    if t["name"] not in {t2["name"] for t2 in all_tools}
+                ]
+                results = rank_tools(query, all_tools, top_k=top_k, method="keyword")
+                selected_names = [t["name"] for t in results]
+                _fire_and_forget_log(query, selected_names, {})
+
+                if not results:
+                    return f"No tools matched query: {query!r} (backend offline)"
+
+                lines = [f"Top {len(results)} tool(s) for {query!r} (local fallback):\n"]
+                for i, t in enumerate(results, 1):
+                    lines.append(f"{i}. {t['name']}")
+                    if t.get("description"):
+                        lines.append(f"   {t['description']}")
+                return "\n".join(lines)
+            except Exception:
+                return f"Error during retrieval: {backend_exc}"
 
     def _run_list_mcp_servers(self) -> str:
         config_path = pathlib.Path.home() / ".agent-corex" / "config.json"
