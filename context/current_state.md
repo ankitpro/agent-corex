@@ -5,15 +5,25 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-29** — CLI gateway usage reporting to backend (v1.2.9)
+**2026-03-30** — skill.md install system + `agent-corex apply` command (unreleased, pending v1.3.0)
 
 ---
 
 ## Current Status
 
-**Version:** 1.2.6
+**Version:** 1.2.9 (PyPI/binary) — next release will be **v1.3.0**
 
-**State:** ✅ **COMPLETE** — CLI gateway usage reporting added:
+**Unreleased (on `main`, not yet tagged):**
+- ✅ `agent_core/skill_parser.py` — parse skill.md YAML front matter + markdown body
+- ✅ `agent_core/skill_installer.py` — 7-step apply flow (install → env → MCP inject → mcp.json → test → backend sync)
+- ✅ `agent-corex apply <url_or_file> [--yes]` CLI command
+- ✅ `examples/vibe_coding.skill.md`, `deploy_pack.skill.md`, `custom_server.skill.md`
+- Backend sync uses existing `POST /user/servers` endpoint (no new backend routes needed)
+- To release: bump `__init__.py` + `pyproject.toml` to `1.3.0`, tag `v1.3.0`
+
+---
+
+**v1.2.9 State:** ✅ **COMPLETE** — CLI gateway usage reporting added:
 - ✅ `_report_usage()` helper in `gateway_server.py` — POSTs to `/usage/event` in a daemon thread after every `tools/call` (success or failure)
 - ✅ Auth header read from `local_config.get_auth_header()` (JWT or API key)
 - ✅ Non-blocking — daemon thread, errors silently swallowed, never affects tool execution

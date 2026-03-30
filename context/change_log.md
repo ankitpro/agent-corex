@@ -4,6 +4,35 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-30 — v1.3.0 (unreleased) — skill.md install system + `agent-corex apply`
+
+**What:** Declarative, AI-readable install spec system inspired by Smithery, extended for Agent-CoreX packs and MCP orchestration.
+
+**New files:**
+- `agent_core/skill_parser.py` — Parses YAML front matter + markdown body from skill.md files into a `SkillSpec` dataclass. Works with PyYAML if installed, falls back to a built-in minimal YAML parser (zero extra deps).
+- `agent_core/skill_installer.py` — Orchestrates 7-step apply flow: run install command → collect/save env vars → inject MCP servers (pack or single server) → regenerate mcp.json → show test prompt → sync to backend via `POST /user/servers`.
+- `examples/vibe_coding.skill.md` — Pack: github + railway + supabase + filesystem + redis
+- `examples/deploy_pack.skill.md` — Pack: railway + render, with npm pre-install command
+- `examples/custom_server.skill.md` — Single server: postgres via connect block
+
+**Modified files:**
+- `agent_core/cli/main.py` — Added `apply` command (before `generate-mcp-config`); updated module docstring
+
+**New CLI command:**
+```
+agent-corex apply <url_or_file> [--yes]
+```
+
+**Backend sync:** Uses existing `POST /user/servers` endpoint — no new backend routes needed.
+
+**To release as v1.3.0:**
+1. Bump `agent_core/__init__.py` → `"1.3.0"`
+2. Bump `pyproject.toml` → `"1.3.0"`
+3. Update `homebrew/Formula/agent-corex.rb` → `version "1.3.0"`
+4. Commit + push + `git tag v1.3.0 && git push origin v1.3.0`
+
+---
+
 ## 2026-03-29 — v1.2.5 — Fix: non-daemon logging thread in binary
 
 **What:** Changed `daemon=True` → `daemon=False` in `_fire_and_forget_log()` inside `tool_router.py`.

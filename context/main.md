@@ -286,32 +286,84 @@ Return result to client
 
 ## Version Increment Checklist
 
-**EVERY TIME you release a new version** (e.g. v1.2.4 → v1.2.5), update ALL of these files:
-
-### Source files (code)
-| File | What to change |
-|------|---------------|
-| `agent_core/__init__.py` | `__version__ = "X.Y.Z"` |
-| `pyproject.toml` | `version = "X.Y.Z"` under `[project]` |
-| `homebrew/Formula/agent-corex.rb` | `version "X.Y.Z"` |
-
-### Context files (docs)
-| File | What to change |
-|------|---------------|
-| `context/current_state.md` | Update "**Version:** X.Y.Z" and "Last Updated" date |
-| `context/change_log.md` | Append new `## YYYY-MM-DD — vX.Y.Z — <title>` entry |
-| `context/main.md` | Update "**Last Updated:**" footer date |
-
-### Git / GitHub
-1. `git add` all changed files
-2. `git commit -m "release: vX.Y.Z — <short description>"`
-3. `git push origin main`
-4. `git tag vX.Y.Z && git push origin vX.Y.Z`  ← triggers GitHub Actions binary build
-
-### After the release
-- GitHub Actions (`build-binaries.yml`) automatically builds Linux/macOS/Windows binaries and attaches them to the GitHub Release.
-- Update `homebrew/Formula/agent-corex.rb` SHA256 placeholders once binaries are published (get hashes from the `.sha256` files in the release).
+**EVERY TIME you release a new version** (e.g. v1.2.9 → v1.3.0), follow these steps in order.
 
 ---
 
-**Last Updated:** 2026-03-29
+### 1. Versioning scheme (SemVer)
+
+| Bump | When | Example |
+|------|------|---------|
+| **patch** `Z` | Bug fix, non-breaking tweak, minor improvement | `1.2.9 → 1.2.10` |
+| **minor** `Y` | New command, new module, backward-compatible feature | `1.2.9 → 1.3.0` |
+| **major** `X` | Breaking change in CLI interface or config format | `1.2.9 → 2.0.0` |
+
+---
+
+### 2. Update source files (code)
+
+| File | What to change | Note |
+|------|---------------|------|
+| `agent_core/__init__.py` | `__version__ = "X.Y.Z"` | **Required** — read at runtime by `agent-corex version` |
+| `pyproject.toml` | `version = "X.Y.Z"` under `[project]` | Keep in sync; CI **overrides** this from the tag anyway |
+| `homebrew/Formula/agent-corex.rb` | `version "X.Y.Z"` | CI also auto-updates this, but keep it in sync locally |
+
+> **Note:** The `test-and-release.yml` workflow runs `sed` to set `pyproject.toml` version from the git tag automatically. So even if `pyproject.toml` is behind, the PyPI release will use the correct version. Still best to keep it in sync manually.
+
+---
+
+### 3. Update context files (docs)
+
+| File | What to change |
+|------|---------------|
+| `context/current_state.md` | Update "**Version:** X.Y.Z" line and "**Last Updated**" date |
+| `context/change_log.md` | Prepend new `## YYYY-MM-DD — vX.Y.Z — <title>` entry at the top |
+| `context/main.md` | Update "**Last Updated:**" footer date |
+
+---
+
+### 4. Commit, tag, and push
+
+```bash
+# Stage everything
+git add agent_core/__init__.py pyproject.toml homebrew/Formula/agent-corex.rb \
+        context/current_state.md context/change_log.md context/main.md
+
+# Commit
+git commit -m "release: vX.Y.Z — <short description>"
+
+# Push commit to main
+git push origin main
+
+# Create and push tag — THIS triggers all GitHub Actions pipelines
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+---
+
+### 5. What happens automatically after the tag push
+
+Three GitHub Actions workflows fire in sequence:
+
+| Workflow | File | What it does |
+|----------|------|-------------|
+| **Test + PyPI** | `test-and-release.yml` | Runs pytest on Python 3.9/3.10/3.11, then publishes to PyPI |
+| **Build Binaries** | `build-binaries.yml` | Builds standalone binaries for Linux x86_64, macOS arm64, Windows x86_64 via PyInstaller; attaches them + `.sha256` files to the GitHub Release |
+| **Update Homebrew Tap** | `update-homebrew-tap.yml` | Runs after Build Binaries succeeds; downloads `.sha256` files and patches `homebrew-agent-corex` tap repo with the new version + hashes automatically |
+
+> You do **not** need to manually update SHA256 hashes in the Homebrew formula — the CI does it.
+
+---
+
+### 6. Verify the release
+
+After ~10 minutes, check:
+- [ ] GitHub Release at `github.com/ankitpro/agent-corex/releases/tag/vX.Y.Z` has 3 binary assets + 3 `.sha256` files
+- [ ] PyPI: `pip install agent-corex==X.Y.Z` works
+- [ ] Homebrew: `brew upgrade agent-corex` picks up the new version
+- [ ] `agent-corex version` reports `X.Y.Z` after install
+
+---
+
+**Last Updated:** 2026-03-30
