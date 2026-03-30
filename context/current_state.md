@@ -5,15 +5,19 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-30** — skill.md install system + `agent-corex apply` command (unreleased, pending v1.3.0)
+**2026-03-30** — add packages/mcp_server (stdio MCP protocol server)
 
 ---
 
 ## Current Status
 
-**Version:** 1.3.0
+**Version:** 1.3.1
 
-**Released (tagged `v1.3.0`):**
+**Released (tagged `v1.3.1`):**
+- ✅ `packages/mcp_server/` — new stdlib stdio MCP protocol server (server.py, protocol.py, tool_adapter.py)
+- ✅ Updated docs: implementation and testing.md (Ollama Colab URL note), nextFeatures.MD (formatting + feature notes)
+
+**Previous (tagged `v1.3.0`):**
 - ✅ `agent_core/skill_parser.py` — parse skill.md YAML front matter + markdown body
 - ✅ `agent_core/skill_installer.py` — 7-step apply flow (install → env → MCP inject → mcp.json → test → backend sync)
 - ✅ `agent-corex apply <url_or_file> [--yes]` CLI command

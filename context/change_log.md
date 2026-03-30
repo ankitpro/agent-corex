@@ -4,6 +4,20 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-30 — v1.3.1 — packages/mcp_server stdlib stdio protocol server
+
+**What:** Added `packages/mcp_server/` — a minimal stdlib stdio MCP protocol server exposing `retrieve_tools` and `execute_tool` over JSON-RPC 2.0, no external dependencies.
+
+**Files changed:**
+- `packages/mcp_server/__init__.py` — package init
+- `packages/mcp_server/server.py` — stdio JSON-RPC 2.0 loop
+- `packages/mcp_server/protocol.py` — MCP protocol helpers
+- `packages/mcp_server/tool_adapter.py` — tool adapter utilities
+- `implementation and testing.md` — add Ollama Colab URL note
+- `nextFeatures.MD` — formatting + tool ranking / caching / auto-install notes
+
+---
+
 ## 2026-03-30 — v1.3.0 — slim deps + skill.md install system
 
 ### Dependency cleanup
