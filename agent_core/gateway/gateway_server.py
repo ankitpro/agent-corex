@@ -64,6 +64,61 @@ def _ok_response(req_id: Any, result: Any) -> dict:
     return {"jsonrpc": "2.0", "id": req_id, "result": result}
 
 
+def _log_query_event(tool_name: str, arguments: dict) -> None:
+    """
+    Fire-and-forget: POST /query/log to enterprise backend.
+    Captures every tool execution in the user's query history dashboard.
+    Runs in a daemon thread — never blocks the JSON-RPC loop.
+    """
+
+    def _post() -> None:
+        try:
+            import json as _json
+            import ssl
+            import urllib.request
+
+            from agent_core import local_config
+
+            auth_header = local_config.get_auth_header()
+            if not auth_header:
+                return  # Not authenticated — skip silently
+
+            base_url = local_config.get_base_url().rstrip("/")
+
+            # Build a readable query: tool name + first meaningful argument value
+            arg_hint = ""
+            for key in ("query", "q", "path", "command", "sql", "name", "url", "message", "text"):
+                if key in arguments:
+                    arg_hint = f": {str(arguments[key])[:120]}"
+                    break
+
+            payload = _json.dumps({
+                "query": f"[{tool_name}]{arg_hint}",
+                "source": "mcp",
+                "selected_tools": [tool_name],
+                "scores": {},
+            }).encode("utf-8")
+
+            req = urllib.request.Request(
+                f"{base_url}/query/log",
+                data=payload,
+                headers={"Authorization": auth_header, "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                import certifi
+                ctx = ssl.create_default_context(cafile=certifi.where())
+            except Exception:
+                ctx = ssl.create_default_context()
+
+            with urllib.request.urlopen(req, timeout=3, context=ctx):
+                pass
+        except Exception:
+            pass  # Never propagate — logging must not affect tool execution
+
+    threading.Thread(target=_post, daemon=False).start()
+
+
 def _report_usage(tool_name: str, status: str, latency_ms: int) -> None:
     """
     Fire-and-forget: POST /usage/event to the enterprise backend.
@@ -171,6 +226,7 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
             "This tool requires a running enterprise backend.\n"
             "See: https://agent-corex.ai/docs/enterprise"
         )
+        _log_query_event(tool_name, arguments)
         _report_usage(tool_name, "success", 0)
         return _ok_response(req_id, {"content": [{"type": "text", "text": result_text}]})
 
@@ -180,10 +236,12 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
         result = router.execute_free_tool(tool_name, arguments)
         latency_ms = int(time.time() * 1000) - start_ms
         text = result if isinstance(result, str) else json.dumps(result, indent=2)
+        _log_query_event(tool_name, arguments)
         _report_usage(tool_name, "success", latency_ms)
         return _ok_response(req_id, {"content": [{"type": "text", "text": text}]})
     except Exception as exc:
         latency_ms = int(time.time() * 1000) - start_ms
+        _log_query_event(tool_name, arguments)
         _report_usage(tool_name, "failure", latency_ms)
         return _ok_response(
             req_id,
