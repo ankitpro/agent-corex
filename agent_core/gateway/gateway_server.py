@@ -92,12 +92,14 @@ def _log_query_event(tool_name: str, arguments: dict) -> None:
                     arg_hint = f": {str(arguments[key])[:120]}"
                     break
 
-            payload = _json.dumps({
-                "query": f"[{tool_name}]{arg_hint}",
-                "source": "mcp",
-                "selected_tools": [tool_name],
-                "scores": {},
-            }).encode("utf-8")
+            payload = _json.dumps(
+                {
+                    "query": f"[{tool_name}]{arg_hint}",
+                    "source": "mcp",
+                    "selected_tools": [tool_name],
+                    "scores": {},
+                }
+            ).encode("utf-8")
 
             req = urllib.request.Request(
                 f"{base_url}/query/log",
@@ -107,6 +109,7 @@ def _log_query_event(tool_name: str, arguments: dict) -> None:
             )
             try:
                 import certifi
+
                 ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
                 ctx = ssl.create_default_context()
