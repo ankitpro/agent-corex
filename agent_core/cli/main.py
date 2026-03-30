@@ -28,6 +28,7 @@ Diagnostics:
 Registry / install:
   registry      Browse the installable MCP server catalog
   install-mcp   Install an MCP server from the registry into all detected tools
+  apply         Apply a skill.md file (install packs + env + MCP, end-to-end)
 """
 
 from __future__ import annotations
@@ -1751,6 +1752,101 @@ def _notify_backend_pack_installed(pack_name: str, server_names: list) -> None:
         )
     except Exception:
         pass  # Non-fatal
+
+
+@app.command(name="apply")
+def apply_skill(
+    source: str = typer.Argument(
+        ...,
+        help="Path to a local skill.md file, or a URL to fetch it from.",
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip all confirmation prompts"),
+):
+    """
+    Apply a skill.md file — install packs, configure env, and set up MCP.
+
+    A skill.md is a declarative install spec inspired by Smithery, extended for
+    Agent-CoreX packs and MCP orchestration. It can be a local file or a URL.
+
+    \\b
+    What this does:
+      1. Fetch (or load) the skill.md
+      2. Parse name, type, env requirements, MCP servers, and connect block
+      3. Run optional pre-install command (e.g. npm install)
+      4. Prompt for any missing environment variables
+      5. Save env vars to ~/.agent-corex/.env
+      6. Inject MCP servers into all detected AI tools (Claude, Cursor, VS Code…)
+      7. Regenerate ~/.agent-corex/mcp.json
+      8. Display test prompt so you can verify the skill works
+      9. Sync install metadata to backend (if logged in)
+
+    \\b
+    Examples:
+        agent-corex apply ./vibe_coding.skill.md
+        agent-corex apply https://skills.agent-corex.com/vibe_coding.md
+        agent-corex apply ./deploy.skill.md --yes
+    """
+    from agent_core import skill_parser, skill_installer
+
+    # ── Load skill.md ────────────────────────────────────────────────────────
+    is_url = source.startswith("http://") or source.startswith("https://")
+
+    typer.echo(f"\nLoading skill from {'URL' if is_url else 'file'}: {source}")
+
+    try:
+        if is_url:
+            spec = skill_parser.fetch_and_parse(source)
+        else:
+            import pathlib
+
+            path = pathlib.Path(source)
+            if not path.exists():
+                typer.echo(f"\n✗ File not found: {source}", err=True)
+                raise typer.Exit(1)
+            spec = skill_parser.parse_file(str(path))
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        typer.echo(f"\n✗ Failed to load skill.md: {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"  ✓ Parsed skill: {spec.name!r} (type={spec.type})")
+
+    # Show summary before proceeding
+    if spec.requires:
+        typer.echo(f"  Servers: {', '.join(spec.requires)}")
+    if spec.env:
+        req = [k for k, v in spec.env.items() if v == "required"]
+        opt = [k for k, v in spec.env.items() if v == "optional"]
+        if req:
+            typer.echo(f"  Env required: {', '.join(req)}")
+        if opt:
+            typer.echo(f"  Env optional: {', '.join(opt)}")
+    if spec.install:
+        typer.echo(f"  Install cmd: {spec.install}")
+    if spec.test:
+        typer.echo(f"  Test: {spec.test!r}")
+
+    if not yes:
+        confirmed = typer.confirm("\nProceed with installation?", default=True)
+        if not confirmed:
+            typer.echo("Aborted.")
+            raise typer.Exit(0)
+
+    # ── Run installer ─────────────────────────────────────────────────────────
+    try:
+        installer = skill_installer.SkillInstaller(spec, yes=yes, verbose=True)
+        success = installer.run()
+        if not success:
+            typer.echo("\nInstallation aborted by user.", err=True)
+            raise typer.Exit(1)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        typer.echo(f"\n✗ Installation failed: {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo("Restart your AI tools for MCP changes to take effect.\n")
 
 
 @app.command(name="generate-mcp-config")
