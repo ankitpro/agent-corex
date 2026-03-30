@@ -38,7 +38,6 @@ import re
 from typing import Any, Dict, List, Literal, Optional
 from dataclasses import dataclass, field
 
-
 # ── Data model ────────────────────────────────────────────────────────────────
 
 
@@ -94,7 +93,7 @@ def parse(content: str) -> SkillSpec:
         )
 
     yaml_text = match.group(1)
-    body = content[match.end():].strip()
+    body = content[match.end() :].strip()
 
     # Parse YAML — try PyYAML, fall back to basic parser
     try:
@@ -169,7 +168,9 @@ def fetch_and_parse(url: str, timeout: float = 15.0) -> SkillSpec:
     try:
         import httpx
     except ImportError as exc:
-        raise RuntimeError("httpx is required to fetch remote skill.md files. Run: pip install httpx") from exc
+        raise RuntimeError(
+            "httpx is required to fetch remote skill.md files. Run: pip install httpx"
+        ) from exc
 
     with httpx.Client(timeout=timeout, follow_redirects=True) as client:
         resp = client.get(url)
@@ -301,7 +302,11 @@ def _minimal_yaml_parse(text: str) -> Dict[str, Any]:
         # Inline list: [a, b, c]
         if rest.startswith("[") and rest.endswith("]"):
             inner = rest[1:-1]
-            items = [_parse_scalar(x.strip().strip('"').strip("'")) for x in inner.split(",") if x.strip()]
+            items = [
+                _parse_scalar(x.strip().strip('"').strip("'"))
+                for x in inner.split(",")
+                if x.strip()
+            ]
             result[key] = items
             i += 1
             continue

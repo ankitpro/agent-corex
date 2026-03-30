@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from agent_core.skill_parser import SkillSpec
 
-
 # ── Public entry point ────────────────────────────────────────────────────────
 
 
@@ -56,9 +55,7 @@ class SkillInstaller:
 
         if spec.description:
             # Print first non-empty paragraph
-            first_para = next(
-                (p.strip() for p in spec.description.split("\n\n") if p.strip()), ""
-            )
+            first_para = next((p.strip() for p in spec.description.split("\n\n") if p.strip()), "")
             if first_para:
                 self._echo(f"  {first_para}\n")
 
@@ -109,6 +106,7 @@ class SkillInstaller:
         if not self.yes:
             try:
                 import typer
+
                 confirmed = typer.confirm("  Run this command?", default=True)
                 if not confirmed:
                     self._echo("  Skipped.\n")
@@ -129,6 +127,7 @@ class SkillInstaller:
                 if not self.yes:
                     try:
                         import typer
+
                         if not typer.confirm("  Continue anyway?", default=False):
                             return False
                     except Exception:
@@ -153,6 +152,7 @@ class SkillInstaller:
             return {}
 
         from agent_core.env_manager import EnvManager
+
         existing = EnvManager.load_env()
 
         required_missing: List[str] = []
@@ -214,7 +214,9 @@ class SkillInstaller:
             self._echo("[4/7] No servers to install.\n")
             return []
 
-        self._echo(f"[4/7] Installing {len(server_names)} MCP server(s): {', '.join(server_names)}\n")
+        self._echo(
+            f"[4/7] Installing {len(server_names)} MCP server(s): {', '.join(server_names)}\n"
+        )
 
         from agent_core import local_config
         from agent_core.env_manager import EnvManager
