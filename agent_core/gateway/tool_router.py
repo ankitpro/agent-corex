@@ -366,6 +366,7 @@ class ToolRouter:
             )
             try:
                 import certifi
+
                 ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
                 ctx = ssl.create_default_context()
@@ -382,10 +383,10 @@ class ToolRouter:
                 if not isinstance(t, dict) or not t.get("name"):
                     continue
                 score_map[t["name"]] = {
-                    "score":            t.get("score", 0.0),
-                    "semantic_score":   t.get("semantic_score", t.get("score", 0.0)),
+                    "score": t.get("score", 0.0),
+                    "semantic_score": t.get("semantic_score", t.get("score", 0.0)),
                     "capability_score": t.get("capability_score", 0.0),
-                    "success_rate":     t.get("success_rate", 0.5),
+                    "success_rate": t.get("success_rate", 0.5),
                 }
 
             selected_names = [t["name"] for t in tools if isinstance(t, dict) and t.get("name")]
@@ -413,12 +414,10 @@ class ToolRouter:
                 registry = ToolRegistry()
                 all_tools = registry.get_all_tools()
                 gateway_tools = [
-                    {"name": n, "description": m["description"]}
-                    for n, m in self._registry.items()
+                    {"name": n, "description": m["description"]} for n, m in self._registry.items()
                 ]
                 all_tools += [
-                    t for t in gateway_tools
-                    if t["name"] not in {t2["name"] for t2 in all_tools}
+                    t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in all_tools}
                 ]
                 results = rank_tools(query, all_tools, top_k=top_k, method="keyword")
                 selected_names = [t["name"] for t in results]
