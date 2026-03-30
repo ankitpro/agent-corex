@@ -45,25 +45,17 @@ jobs:
           # Install package without pulling heavy ML transitive deps
           pip install --no-deps --no-build-isolation .
 
-      - name: Stamp version from tag (Linux / macOS)
-        if: runner.os != 'Windows'
+      - name: Stamp version from tag
+        shell: python
         run: |
-          TAG="${{ github.ref_name }}"
-          [ -z "$TAG" ] && TAG="${{ github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" agent_core/__init__.py
-          echo "Stamped __version__ = \"$VERSION\""
-
-      - name: Stamp version from tag (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $Tag = "${{ github.ref_name }}"
-          if (-not $Tag) { $Tag = "${{ github.event.inputs.tag }}" }
-          $Version = $Tag.TrimStart('v')
-          (Get-Content agent_core/__init__.py) -replace '__version__ = ".*"', "__version__ = `"$Version`"" |
-            Set-Content agent_core/__init__.py
-          Write-Host "Stamped __version__ = `"$Version`""
+          import re, os
+          tag = os.environ.get("GITHUB_REF_NAME", "") or "${{ github.event.inputs.tag }}"
+          version = tag.lstrip("v")
+          path = "agent_core/__init__.py"
+          text = open(path).read()
+          text = re.sub(r'__version__ = "[^"]+"', f'__version__ = "{version}"', text)
+          open(path, "w").write(text)
+          print(f"Stamped __version__ = \"{version}\"")
 
       - name: Build binary (Linux / macOS)
         if: runner.os != 'Windows'
