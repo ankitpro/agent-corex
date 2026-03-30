@@ -5,15 +5,32 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-30** — add packages/mcp_server (stdio MCP protocol server)
+**2026-03-30** — V2 intelligent retrieval system (Qdrant + OpenAI + Supabase)
 
 ---
 
 ## Current Status
 
-**Version:** 1.3.1
+**Version:** 1.4.0
 
-**Released (tagged `v1.3.1`):**
+**Released (tagged `v1.4.0`):**
+- ✅ `packages/vector/` — V2 retrieval module: embeddings.py, llm_enricher.py, qdrant_store.py, indexer.py, retriever.py
+- ✅ `apps/api/main.py` — `/v2/retrieve_tools`, `/v2/index_tools`, `/v2/track_installation`, `/v2/index_loaded_tools` endpoints
+- ✅ `scripts/test_v2.py` — integration test script
+- ✅ `pyproject.toml` — v1.4.0, new `[v2]` extras group (qdrant-client, openai, supabase, redis)
+- ✅ `agent_core/__init__.py` — `__version__ = "1.4.0"` (was missing, caused binary to show old version)
+- ✅ `.github/workflows/build-binaries.yml` — added "Stamp version from tag" step so binaries always show correct version
+
+**⚠️ RELEASE PROCESS — MUST FOLLOW:**
+Every release requires ALL of these to be updated before tagging:
+1. `agent_core/__init__.py` → `__version__ = "X.Y.Z"` (this is what `--version` reads)
+2. `pyproject.toml` → `version = "X.Y.Z"` (PyPI metadata)
+3. `context/current_state.md` → update version + status
+4. `context/change_log.md` → append entry
+5. Commit to main, push, then `git tag vX.Y.Z && git push origin vX.Y.Z`
+The workflow stamps `__init__.py` from the tag as a safety net, but the file MUST be updated in source too.
+
+**Previous (tagged `v1.3.1`):**
 - ✅ `packages/mcp_server/` — new stdlib stdio MCP protocol server (server.py, protocol.py, tool_adapter.py)
 - ✅ Updated docs: implementation and testing.md (Ollama Colab URL note), nextFeatures.MD (formatting + feature notes)
 

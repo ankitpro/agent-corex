@@ -4,6 +4,27 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-30 — v1.4.0 — V2 intelligent retrieval (Qdrant + OpenAI + Supabase)
+
+**What:** Added complete V2 retrieval pipeline — Qdrant Cloud vector DB, OpenAI embeddings (text-embedding-3-small), LLM enrichment (gpt-4o-mini), and per-user tool filtering via Supabase.
+
+**Files changed:**
+- `agent_core/__init__.py` — bumped `__version__` to 1.4.0 (**required for binary --version**)
+- `packages/vector/__init__.py` — new module init
+- `packages/vector/embeddings.py` — OpenAI embeddings with Redis/memory cache
+- `packages/vector/llm_enricher.py` — gpt-4o-mini generates summary/tags/examples per tool
+- `packages/vector/qdrant_store.py` — Qdrant Cloud client (COSINE collection, batch upsert)
+- `packages/vector/indexer.py` — tool enrichment + embedding + upsert pipeline (batch 50)
+- `packages/vector/retriever.py` — hybrid scoring (0.7 vector + 0.3 keyword), user_tools filter
+- `apps/api/main.py` — /v2/retrieve_tools, /v2/index_tools, /v2/track_installation, /v2/index_loaded_tools
+- `scripts/test_v2.py` — integration test
+- `pyproject.toml` — v1.4.0, [v2] extras group
+- `.github/workflows/build-binaries.yml` — added "Stamp version from tag" step (bug fix: binaries were showing old version)
+
+**Root cause fix:** Binary was showing 1.3.1 because `agent_core/__init__.py.__version__` was never updated. PyInstaller bundles the source at build time — `pyproject.toml` version is irrelevant to the binary. The workflow now stamps `__init__.py` from the git tag as a safety net, and the source file is always updated manually too.
+
+---
+
 ## 2026-03-30 — v1.3.1 — packages/mcp_server stdlib stdio protocol server
 
 **What:** Added `packages/mcp_server/` — a minimal stdlib stdio MCP protocol server exposing `retrieve_tools` and `execute_tool` over JSON-RPC 2.0, no external dependencies.
