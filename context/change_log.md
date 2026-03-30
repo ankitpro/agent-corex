@@ -4,6 +4,22 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-31 — v1.5.0 — MCP tool execution captured in enterprise dashboard
+
+**What:** Every `tools/call` through the gateway now fires a POST to `/query/log` on the enterprise backend, so tool executions appear on the dashboard's Queries, Usage, and Overview pages.
+
+**Files changed:**
+- `agent_core/gateway/gateway_server.py` — added `_log_query_event()`: fire-and-forget POST to `/query/log` called after every `tools/call` (free tools + enterprise tools, success + failure). Query label: `[tool_name]: arg_hint` (extracts first meaningful argument). Same stdlib-only urllib pattern as `_report_usage()` for PyInstaller binary compatibility.
+- `agent_core/__init__.py` — bumped `__version__` to 1.5.0
+- `pyproject.toml` — bumped version to 1.5.0
+
+**Dashboard pages now receiving data:**
+- `/dashboard/queries` — full query history with tool name + arg hint
+- `/dashboard/usage` — 30-day chart (reads from `query_events`)
+- `/dashboard` (Overview) — queries-this-month count
+
+---
+
 ## 2026-03-30 — v1.4.0 — V2 intelligent retrieval (Qdrant + OpenAI + Supabase)
 
 **What:** Added complete V2 retrieval pipeline — Qdrant Cloud vector DB, OpenAI embeddings (text-embedding-3-small), LLM enrichment (gpt-4o-mini), and per-user tool filtering via Supabase.

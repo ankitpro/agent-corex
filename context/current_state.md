@@ -5,15 +5,32 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-30** — V2 intelligent retrieval system (Qdrant + OpenAI + Supabase)
+**2026-03-31** — v1.5.0 MCP tool execution query capture for enterprise dashboard
 
 ---
 
 ## Current Status
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 
-**Released (tagged `v1.4.0`):**
+**Released (tagged `v1.5.0`):**
+- ✅ `agent_core/gateway/gateway_server.py` — added `_log_query_event()`: POSTs to `/query/log` after every MCP `tools/call`. Query label: `[tool_name]: arg_hint`. Fire-and-forget daemon thread, stdlib only (PyInstaller safe).
+- ✅ `agent_core/__init__.py` — `__version__ = "1.5.0"`
+- ✅ `pyproject.toml` — version 1.5.0
+
+**Dashboard impact:** All MCP tool executions via the gateway now appear on `/dashboard/queries`, `/dashboard/usage` (30-day chart), and the Overview queries count.
+
+**⚠️ RELEASE PROCESS — MUST FOLLOW:**
+Every release requires ALL of these to be updated before tagging:
+1. `agent_core/__init__.py` → `__version__ = "X.Y.Z"` (this is what `--version` reads)
+2. `pyproject.toml` → `version = "X.Y.Z"` (PyPI metadata)
+3. `context/current_state.md` → update version + status
+4. `context/change_log.md` → prepend new entry
+5. `context/main.md` → update "Last Updated" date
+6. Commit to main, push, then `git tag vX.Y.Z && git push origin vX.Y.Z`
+The workflow stamps `__init__.py` from the tag as a safety net, but the file MUST be updated in source too.
+
+**Previous (tagged `v1.4.0`):**
 - ✅ `packages/vector/` — V2 retrieval module: embeddings.py, llm_enricher.py, qdrant_store.py, indexer.py, retriever.py
 - ✅ `apps/api/main.py` — `/v2/retrieve_tools`, `/v2/index_tools`, `/v2/track_installation`, `/v2/index_loaded_tools` endpoints
 - ✅ `scripts/test_v2.py` — integration test script
