@@ -4,7 +4,7 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
-## 2026-03-30 — v1.3.0 (unreleased) — slim deps + skill.md install system
+## 2026-03-30 — v1.3.0 — slim deps + skill.md install system
 
 ### Dependency cleanup
 

@@ -4,7 +4,7 @@ Agent-Core: Fast, accurate MCP tool retrieval engine for LLMs with semantic sear
 Provides multiple ranking methods for selecting the most relevant tools from large sets.
 """
 
-__version__ = "1.2.9"
+__version__ = "1.3.0"
 __author__ = "Ankit Agarwal"
 __email__ = "ankitagarwalpro@gmail.com"
 

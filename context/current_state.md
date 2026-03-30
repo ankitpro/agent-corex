@@ -11,9 +11,9 @@ Recent changes, active work, and next steps.
 
 ## Current Status
 
-**Version:** 1.2.9 (PyPI/binary) — next release will be **v1.3.0**
+**Version:** 1.3.0
 
-**Unreleased (on `main`, not yet tagged):**
+**Released (tagged `v1.3.0`):**
 - ✅ `agent_core/skill_parser.py` — parse skill.md YAML front matter + markdown body
 - ✅ `agent_core/skill_installer.py` — 7-step apply flow (install → env → MCP inject → mcp.json → test → backend sync)
 - ✅ `agent-corex apply <url_or_file> [--yes]` CLI command
@@ -24,7 +24,7 @@ Recent changes, active work, and next steps.
   - `[server]` extra: fastapi + uvicorn (for `start` cmd)
   - `[full]` extra: everything
 - Backend sync uses existing `POST /user/servers` endpoint (no new backend routes needed)
-- To release: bump `__init__.py` + `pyproject.toml` to `1.3.0`, tag `v1.3.0`
+- Released as `v1.3.0` — tag pushed, GitHub Actions building binaries + PyPI publish
 
 ---
 
