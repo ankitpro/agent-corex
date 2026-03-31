@@ -4,6 +4,25 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-31 — v1.6.0 — Backend-driven Qdrant retrieval, no local ML models
+
+**What:** `retrieve_tools` now calls the enterprise backend's `/retrieve_tools` endpoint
+(Qdrant-backed, multi-signal scoring) instead of loading sentence-transformers locally.
+Scores logged as nested objects so Query History score bars populate in the dashboard.
+
+**Files changed:**
+- `agent_core/gateway/tool_router.py` — `_run_retrieve_tools()` rewritten to HTTP GET
+  `{base_url}/retrieve_tools`; logs nested `{score, semantic_score, capability_score,
+  success_rate}` per tool via `_fire_and_forget_log()`. Offline fallback to keyword ranker.
+  `tools_list()` ranking replaced with lightweight keyword token scoring (no ML model load).
+  `retrieve_tools` schema: removed `method` parameter (backend decides ranking strategy).
+- `agent_core/__init__.py` — `__version__ = "1.6.0"`
+- `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.1.0"`
+- `pyproject.toml` — version 1.6.0
+- `CLAUDE.md` — created: Claude rules for OSS repo (workflow, version bump files, pitfalls)
+
+---
+
 ## 2026-03-31 — v1.5.0 — MCP tool execution captured in enterprise dashboard
 
 **What:** Every `tools/call` through the gateway now fires a POST to `/query/log` on the enterprise backend, so tool executions appear on the dashboard's Queries, Usage, and Overview pages.

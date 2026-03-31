@@ -5,20 +5,36 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-31** — v1.5.0 MCP tool execution query capture for enterprise dashboard
+**2026-03-31** — v1.6.0 Backend-driven Qdrant retrieval, no local ML models
 
 ---
 
 ## Current Status
 
-**Version:** 1.5.0
+**Version:** 1.6.0
 
-**Released (tagged `v1.5.0`):**
-- ✅ `agent_core/gateway/gateway_server.py` — added `_log_query_event()`: POSTs to `/query/log` after every MCP `tools/call`. Query label: `[tool_name]: arg_hint`. Fire-and-forget daemon thread, stdlib only (PyInstaller safe).
-- ✅ `agent_core/__init__.py` — `__version__ = "1.5.0"`
-- ✅ `pyproject.toml` — version 1.5.0
+**Released (tagged `v1.6.0`):**
+- ✅ `agent_core/gateway/tool_router.py` — `_run_retrieve_tools()` now calls enterprise backend `/retrieve_tools` (Qdrant-backed). Logs nested score objects `{score, semantic_score, capability_score, success_rate}` per tool. `tools_list()` ranking uses lightweight keyword scoring — no ML models. Removed `method` param from retrieve_tools schema.
+- ✅ `agent_core/__init__.py` — `__version__ = "1.6.0"`
+- ✅ `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.1.0"`
+- ✅ `pyproject.toml` — version 1.6.0
+- ✅ `CLAUDE.md` — created at repo root with full Claude rules, workflow, and version bump checklist
 
-**Dashboard impact:** All MCP tool executions via the gateway now appear on `/dashboard/queries`, `/dashboard/usage` (30-day chart), and the Overview queries count.
+**Dashboard impact:** `retrieve_tools` queries now show real score breakdowns (embedding match %, capability match %, success rate %) in the Query History dashboard instead of zeros.
+
+**⚠️ RELEASE PROCESS — MUST FOLLOW:**
+Every release requires ALL of these to be updated before tagging:
+1. `agent_core/__init__.py` → `__version__ = "X.Y.Z"` (what `--version` reads at runtime)
+2. `agent_core/gateway/gateway_server.py` → `SERVER_VERSION = "X.Y.Z"` (MCP initialize response)
+3. `pyproject.toml` → `version = "X.Y.Z"` (PyPI metadata)
+4. `homebrew/Formula/agent-corex.rb` → `version "X.Y.Z"` (CI also patches, keep in sync)
+5. `context/current_state.md` → update version + status
+6. `context/change_log.md` → prepend new entry
+7. `context/main.md` → update "Last Updated" date
+8. Commit, push to main with `refs/heads/main`, then `git tag vX.Y.Z && git push origin vX.Y.Z`
+9. Merge to prod: `git checkout prod && git merge refs/heads/main && git push origin refs/heads/prod:refs/heads/prod`
+
+See `CLAUDE.md` at repo root for the full checklist and git command sequence.
 
 **⚠️ RELEASE PROCESS — MUST FOLLOW:**
 Every release requires ALL of these to be updated before tagging:
