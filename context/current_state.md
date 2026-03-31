@@ -5,15 +5,21 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-31** — v1.6.0 Backend-driven Qdrant retrieval, no local ML models
+**2026-03-31** — v1.7.0 Custom Pack + Custom MCP Server system
 
 ---
 
 ## Current Status
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 
-**Released (tagged `v1.6.0`):**
+**Released (tagged `v1.7.0`):**
+- ✅ `apps/cli/commands/install.py` — UUID detection: custom packs call `GET /custom/packs/{id}/install` with auth; writes custom server definitions into `~/.agent-corex/mcp.json`
+- ✅ `agent_core/__init__.py` — `__version__ = "1.7.0"`
+- ✅ `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.7.0"`
+- ✅ `pyproject.toml` — version 1.7.0
+
+**Previous (tagged `v1.6.0`):**
 - ✅ `agent_core/gateway/tool_router.py` — `_run_retrieve_tools()` now calls enterprise backend `/retrieve_tools` (Qdrant-backed). Logs nested score objects `{score, semantic_score, capability_score, success_rate}` per tool. `tools_list()` ranking uses lightweight keyword scoring — no ML models. Removed `method` param from retrieve_tools schema.
 - ✅ `agent_core/__init__.py` — `__version__ = "1.6.0"`
 - ✅ `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.1.0"`

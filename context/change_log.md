@@ -4,6 +4,24 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-03-31 — v1.7.0 — Custom Pack + Custom MCP Server install support
+
+**What:** `install-pack` now detects UUID-format pack IDs and routes them to the new
+`/custom/packs/{id}/install` endpoint (auth required). Custom servers are installed via
+their stored `install_command + args` and written into `~/.agent-corex/mcp.json`.
+
+**Files changed:**
+- `apps/cli/commands/install.py` — UUID detection via regex; `_run_custom_pack()` fetches
+  pack from backend with auth headers, installs registry servers as before, installs custom
+  servers via stored `install_command + args`. `_write_custom_servers_to_mcp_config()` merges
+  custom server definitions into `~/.agent-corex/mcp.json`.
+- `agent_core/__init__.py` — `__version__ = "1.7.0"`
+- `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.7.0"`
+- `pyproject.toml` — version 1.7.0
+- `homebrew/Formula/agent-corex.rb` — version 1.7.0
+
+---
+
 ## 2026-03-31 — v1.6.0 — Backend-driven Qdrant retrieval, no local ML models
 
 **What:** `retrieve_tools` now calls the enterprise backend's `/retrieve_tools` endpoint
