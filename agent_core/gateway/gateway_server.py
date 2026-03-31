@@ -97,7 +97,14 @@ def _log_query_event(tool_name: str, arguments: dict) -> None:
                     "query": f"[{tool_name}]{arg_hint}",
                     "source": "mcp",
                     "selected_tools": [tool_name],
-                    "scores": {},
+                    "scores": {
+                        tool_name: {
+                            "score": 1.0,
+                            "semantic_score": 1.0,
+                            "capability_score": 1.0,
+                            "success_rate": 0.5,
+                        }
+                    },
                 }
             ).encode("utf-8")
 
