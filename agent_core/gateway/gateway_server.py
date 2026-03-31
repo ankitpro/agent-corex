@@ -43,7 +43,7 @@ logging.basicConfig(
 )
 
 SERVER_NAME = "agent-corex"
-SERVER_VERSION = "1.0.3"
+SERVER_VERSION = "1.1.0"
 PROTOCOL_VERSION = "2024-11-05"
 
 
