@@ -5,15 +5,27 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-03-31** — v1.7.0 Custom Pack + Custom MCP Server system
+**2026-04-01** — v1.8.0 uvx-native system: pack manager, MCP manager, executor, mcp-config
 
 ---
 
 ## Current Status
 
-**Version:** 1.7.0
+**Version:** 1.8.0
 
-**Released (tagged `v1.7.0`):**
+**Released (tagged `v1.8.0`):**
+- ✅ `agent_core/uvx/__init__.py` — new uvx sub-package
+- ✅ `agent_core/uvx/registry.py` — `~/.agent-corex/registry.json` for packs + MCP servers
+- ✅ `agent_core/uvx/pack_manager.py` — `PackManager`: install/remove/list via `GET /packs/<name>`
+- ✅ `agent_core/uvx/mcp_manager.py` — `MCPManager`: add/remove/list via `GET /mcp_servers/<name>`
+- ✅ `agent_core/uvx/executor.py` — `Executor`: execute_task + get_tool_plan via API
+- ✅ `agent_core/cli/main.py` — `pack list/install/remove`, `mcp list/add/remove`, `execute`, `plan`, `mcp-config` commands; `init --uvx` flag
+- ✅ `agent_core/local_config.py` — `get_api_key()` checks `AGENT_COREX_API_KEY` env var first
+- ✅ `agent_core/gateway/auth_middleware.py` — error messages point to dashboard/keys URL
+- ✅ `pyproject.toml` — version 1.8.0 + uvx comment block
+- ✅ `homebrew/Formula/agent-corex.rb` — version 1.8.0
+
+**Previously released (tagged `v1.7.0`):**
 - ✅ `apps/cli/commands/install.py` — UUID detection: custom packs call `GET /custom/packs/{id}/install` with auth; writes custom server definitions into `~/.agent-corex/mcp.json`
 - ✅ `agent_core/__init__.py` — `__version__ = "1.7.0"`
 - ✅ `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.7.0"`

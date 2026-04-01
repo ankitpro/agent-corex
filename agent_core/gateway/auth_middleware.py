@@ -17,12 +17,16 @@ from __future__ import annotations
 
 from agent_core import local_config
 
+_KEYS_URL = "https://www.agent-corex.com/dashboard/keys"
+
 AUTH_ERROR_RESPONSE = {
     "error": {
         "code": "AUTH_REQUIRED",
         "message": (
-            "Enterprise tool requires authentication. "
-            "Run: agent-corex login  or visit https://agent-corex.ai/login"
+            "Enterprise tool requires authentication.\n"
+            f"  Get your API key : {_KEYS_URL}\n"
+            "  Then set it via  : AGENT_COREX_API_KEY env var  "
+            "or  agent-corex login --key <key>"
         ),
     }
 }
@@ -31,7 +35,10 @@ INVALID_KEY_RESPONSE = {
     "error": {
         "code": "AUTH_INVALID",
         "message": (
-            "API key is invalid or empty. " "Run: agent-corex login  to refresh your credentials."
+            "API key is invalid or empty.\n"
+            f"  Get a valid key at : {_KEYS_URL}\n"
+            "  Then set it via    : AGENT_COREX_API_KEY env var  "
+            "or  agent-corex login --key <key>"
         ),
     }
 }

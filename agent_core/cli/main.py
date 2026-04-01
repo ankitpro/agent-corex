@@ -326,6 +326,15 @@ def serve():
 @app.command()
 def init(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+    uvx: bool = typer.Option(
+        False,
+        "--uvx",
+        help=(
+            "Inject a uvx-based entry (recommended for users without a global install). "
+            "Uses 'uvx agent-corex mcp' instead of 'agent-corex serve' and passes "
+            "AGENT_COREX_API_KEY via the MCP config env block."
+        ),
+    ),
 ):
     """
     Detect Claude Desktop / Cursor / VS Code and inject Agent-Corex as an MCP server.
@@ -337,15 +346,42 @@ def init(
       3. Creates a timestamped backup of each config before writing
       4. Merges the agent-corex entry — never overwrites existing servers
 
-    Example:
-        agent-corex init
-        agent-corex init --yes
+    \\b
+    Examples:
+        agent-corex init                  # uses installed binary
+        agent-corex init --uvx            # uses uvx (no global install needed)
+        agent-corex init --uvx --yes      # skip confirmations
     """
     SERVER_NAME = "agent-corex"
-
-    CLAUDE_CURSOR_DEF = {"command": "agent-corex", "args": ["serve"]}
-    VSCODE_DEF = {"type": "stdio", "command": "agent-corex", "args": ["serve"]}
     _VSCODE_NAMES = {"VS Code", "VS Code Insiders", "VSCodium"}
+
+    if uvx:
+        # Resolve the API key to embed in the env block.
+        # If the user already has a key stored, pre-fill it so the config is
+        # immediately functional.  Otherwise use a placeholder that they can
+        # replace later.
+        from agent_core import local_config as _lc
+
+        _stored_key = _lc.get_api_key()
+        if not _stored_key:
+            typer.echo(
+                "\n  No API key found. The MCP config will contain a placeholder.\n"
+                "  Get your key at: https://www.agent-corex.com/dashboard/keys\n"
+                "  Then re-run:     agent-corex init --uvx  (after agent-corex login --key <key>)\n"
+            )
+        _api_key_value = _stored_key or "<YOUR_AGENT_COREX_API_KEY>"
+
+        _env_block = {"AGENT_COREX_API_KEY": _api_key_value}
+        CLAUDE_CURSOR_DEF = {"command": "uvx", "args": ["agent-corex", "mcp"], "env": _env_block}
+        VSCODE_DEF = {
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["agent-corex", "mcp"],
+            "env": _env_block,
+        }
+    else:
+        CLAUDE_CURSOR_DEF = {"command": "agent-corex", "args": ["serve"]}
+        VSCODE_DEF = {"type": "stdio", "command": "agent-corex", "args": ["serve"]}
 
     # Build (detector, adapter, server_def) triples from the shared helper
     pairs = [
@@ -1992,6 +2028,475 @@ def setup_env():
     except Exception as e:
         typer.echo(f"\n✗ Error saving environment: {e}", err=True)
         raise typer.Exit(1)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# uvx-native commands: pack · mcp (group) · execute · plan
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Pack sub-app ──────────────────────────────────────────────────────────────
+
+_pack_app = typer.Typer(
+    name="pack",
+    help="Manage Agent-CoreX packs (install curated MCP server bundles).",
+    no_args_is_help=True,
+)
+app.add_typer(_pack_app, name="pack")
+
+
+@_pack_app.command("list")
+def pack_list() -> None:
+    """List all installed packs.
+
+    Example:
+        uvx agent-corex pack list
+    """
+    from agent_core.uvx.pack_manager import PackManager
+
+    packs = PackManager().list_packs()
+
+    if not packs:
+        typer.echo("No packs installed.")
+        typer.echo("Install one:  uvx agent-corex pack install <name>")
+        return
+
+    typer.echo(f"\nInstalled packs  ({len(packs)})\n")
+    for name, meta in packs.items():
+        servers = meta.get("mcp_servers", [])
+        desc = meta.get("description", "")
+        installed_at = meta.get("installed_at", "")[:10]
+        typer.echo(f"  {name}")
+        if desc:
+            typer.echo(f"    {desc}")
+        typer.echo(f"    MCP servers : {', '.join(servers) if servers else '—'}")
+        typer.echo(f"    Installed   : {installed_at}")
+        typer.echo("")
+
+
+@_pack_app.command("install")
+def pack_install(
+    name: str = typer.Argument(..., help="Pack name to install, e.g. 'youtube-productivity'"),
+) -> None:
+    """Fetch a pack definition from the API and install its MCP servers.
+
+    Example:
+        uvx agent-corex pack install youtube-productivity
+    """
+    from agent_core.uvx.pack_manager import PackManager
+
+    typer.echo(f"\nInstalling pack '{name}'...")
+
+    try:
+        result = PackManager().install_pack(name)
+    except PermissionError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except ValueError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except RuntimeError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"\n✓ Pack '{result['display_name']}' installed")
+    if result.get("description"):
+        typer.echo(f"  {result['description']}")
+
+    added = result.get("servers_added", [])
+    skipped = result.get("servers_skipped", [])
+
+    if added:
+        typer.echo(f"\n  MCP servers added   : {', '.join(added)}")
+    if skipped:
+        typer.echo(f"  MCP servers skipped : {', '.join(skipped)} (already installed)")
+
+    if result.get("tools"):
+        typer.echo(f"\n  Tools available: {', '.join(result['tools'])}")
+
+    typer.echo(
+        "\nNext step:  uvx agent-corex mcp list  to verify installed servers."
+    )
+
+
+@_pack_app.command("remove")
+def pack_remove(
+    name: str = typer.Argument(..., help="Pack name to remove"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+) -> None:
+    """Remove a pack from the local registry.
+
+    Note: MCP servers added by the pack are NOT removed automatically.
+    Use  uvx agent-corex mcp remove <server>  to remove individual servers.
+
+    Example:
+        uvx agent-corex pack remove youtube-productivity
+    """
+    from agent_core.uvx.pack_manager import PackManager
+
+    if not yes:
+        confirmed = typer.confirm(f"Remove pack '{name}'?", default=True)
+        if not confirmed:
+            typer.echo("Aborted.")
+            return
+
+    removed = PackManager().remove_pack(name)
+
+    if removed:
+        typer.echo(f"✓ Pack '{name}' removed from registry.")
+        typer.echo(
+            "  MCP servers installed by this pack are still active.\n"
+            "  Remove them with:  uvx agent-corex mcp remove <server>"
+        )
+    else:
+        typer.echo(f"Pack '{name}' is not installed.", err=True)
+        raise typer.Exit(1)
+
+
+# ── MCP registry sub-app ──────────────────────────────────────────────────────
+# ``uvx agent-corex mcp``          → starts the MCP gateway server (stdio)
+# ``uvx agent-corex mcp list``     → lists registry servers
+# ``uvx agent-corex mcp add <n>``  → installs server from API
+# ``uvx agent-corex mcp remove <n>``
+
+_mcp_app = typer.Typer(
+    name="mcp",
+    help=(
+        "Manage MCP servers in the local registry, "
+        "or start the MCP gateway (no subcommand)."
+    ),
+    invoke_without_command=True,
+)
+app.add_typer(_mcp_app, name="mcp")
+
+
+@_mcp_app.callback()
+def _mcp_callback(ctx: typer.Context) -> None:
+    """
+    Manage MCP servers — or start the MCP gateway when called with no subcommand.
+
+    \\b
+    With no subcommand:
+        uvx agent-corex mcp        → starts the MCP gateway server (stdio mode)
+
+    Subcommands:
+        uvx agent-corex mcp list
+        uvx agent-corex mcp add <name>
+        uvx agent-corex mcp remove <name>
+    """
+    if ctx.invoked_subcommand is None:
+        # No subcommand → start MCP gateway server (reuse existing gateway_server)
+        from agent_core.gateway.gateway_server import run
+
+        run()
+
+
+@_mcp_app.command("list")
+def mcp_registry_list() -> None:
+    """List all MCP servers in the local registry.
+
+    Example:
+        uvx agent-corex mcp list
+    """
+    from agent_core.uvx.mcp_manager import MCPManager
+
+    servers = MCPManager().list_servers()
+
+    if not servers:
+        typer.echo("No MCP servers installed in registry.")
+        typer.echo("Add one:  uvx agent-corex mcp add <name>")
+        return
+
+    typer.echo(f"\nInstalled MCP servers  ({len(servers)})\n")
+    for name, cfg in servers.items():
+        cmd_str = cfg.get("command", "") + " " + " ".join(cfg.get("args", []))
+        source = cfg.get("source", "manual")
+        desc = cfg.get("description", "")
+        env_req = cfg.get("env_required", [])
+        installed_at = cfg.get("installed_at", "")[:10]
+
+        typer.echo(f"  {name}")
+        if desc:
+            typer.echo(f"    {desc}")
+        typer.echo(f"    Command  : {cmd_str.strip()}")
+        typer.echo(f"    Source   : {source}")
+        if env_req:
+            typer.echo(f"    Env keys : {', '.join(env_req)}")
+        typer.echo(f"    Added    : {installed_at}")
+        typer.echo("")
+
+
+@_mcp_app.command("add")
+def mcp_registry_add(
+    name: str = typer.Argument(..., help="Server name to add, e.g. 'filesystem'"),
+) -> None:
+    """Fetch an MCP server config from the API and add it to the registry.
+
+    Example:
+        uvx agent-corex mcp add filesystem
+        uvx agent-corex mcp add github
+    """
+    from agent_core.uvx.mcp_manager import MCPManager
+
+    typer.echo(f"\nFetching MCP server '{name}' from registry...")
+
+    try:
+        result = MCPManager().add_server(name)
+    except PermissionError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except ValueError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except RuntimeError as exc:
+        typer.echo(f"\n✗ {exc}", err=True)
+        raise typer.Exit(1)
+
+    cmd_str = result["command"] + " " + " ".join(result.get("args", []))
+    typer.echo(f"\n✓ MCP server '{name}' added to registry")
+    typer.echo(f"  Command : {cmd_str.strip()}")
+    if result.get("description"):
+        typer.echo(f"  Info    : {result['description']}")
+    if result.get("env_required"):
+        typer.echo(f"  Needs   : {', '.join(result['env_required'])}")
+    typer.echo(
+        "\nTo start the gateway with all registry servers:\n"
+        "  uvx agent-corex mcp"
+    )
+
+
+@_mcp_app.command("remove")
+def mcp_registry_remove(
+    name: str = typer.Argument(..., help="Server name to remove"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+) -> None:
+    """Remove an MCP server from the local registry.
+
+    Example:
+        uvx agent-corex mcp remove filesystem
+    """
+    from agent_core.uvx.mcp_manager import MCPManager
+
+    if not yes:
+        confirmed = typer.confirm(f"Remove MCP server '{name}' from registry?", default=True)
+        if not confirmed:
+            typer.echo("Aborted.")
+            return
+
+    removed = MCPManager().remove_server(name)
+
+    if removed:
+        typer.echo(f"✓ MCP server '{name}' removed from registry.")
+    else:
+        typer.echo(f"MCP server '{name}' is not in the registry.", err=True)
+        raise typer.Exit(1)
+
+
+# ── execute ───────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def execute(
+    task: str = typer.Argument(..., help="Natural-language task description"),
+    tool: Optional[str] = typer.Option(
+        None, "--tool", "-t", help="Force a specific tool name (auto-selected if omitted)"
+    ),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Candidate tool pool size"),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON result"),
+) -> None:
+    """Execute a task via the Agent-CoreX backend.
+
+    Auto-selects the best tool via semantic retrieval, then calls /execute_tool.
+
+    \\b
+    Examples:
+        uvx agent-corex execute "summarize my latest YouTube video"
+        uvx agent-corex execute "list files in /tmp" --tool filesystem_list
+        uvx agent-corex execute "deploy my app" --json
+    """
+    from agent_core.uvx.executor import Executor
+
+    typer.echo(f"\nExecuting: {task!r}\n")
+
+    try:
+        result = Executor().execute_task(task, tool_name=tool, top_k=top_k)
+    except PermissionError as exc:
+        typer.echo(f"✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except RuntimeError as exc:
+        typer.echo(f"✗ {exc}", err=True)
+        raise typer.Exit(1)
+
+    if json_output:
+        import json as _json
+
+        typer.echo(_json.dumps(result, indent=2))
+        return
+
+    status_icon = "✓" if result.get("status") == "success" else "✗"
+    typer.echo(f"{status_icon} Tool: {result['tool']}\n")
+
+    output = result.get("result", "")
+    if isinstance(output, str):
+        typer.echo(output)
+    else:
+        import json as _json
+
+        typer.echo(_json.dumps(output, indent=2))
+
+
+# ── plan ──────────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def plan(
+    task: str = typer.Argument(..., help="Natural-language task description"),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Number of candidate tools to show"),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON plan"),
+) -> None:
+    """Generate a tool execution plan for a task (no execution, dry-run only).
+
+    Retrieves the most relevant tools from the backend and shows them as
+    ordered steps — useful for understanding what will run before you commit.
+
+    \\b
+    Examples:
+        uvx agent-corex plan "summarize my latest YouTube video"
+        uvx agent-corex plan "deploy my app to Railway" --top-k 3
+        uvx agent-corex plan "analyse sales data" --json
+    """
+    from agent_core.uvx.executor import Executor
+
+    typer.echo(f"\nGenerating plan for: {task!r}\n")
+
+    try:
+        result = Executor().get_tool_plan(task, top_k=top_k)
+    except PermissionError as exc:
+        typer.echo(f"✗ {exc}", err=True)
+        raise typer.Exit(1)
+    except RuntimeError as exc:
+        typer.echo(f"✗ {exc}", err=True)
+        raise typer.Exit(1)
+
+    if json_output:
+        import json as _json
+
+        typer.echo(_json.dumps(result, indent=2))
+        return
+
+    steps = result.get("steps", [])
+    if not steps:
+        note = result.get("note", "No tools found.")
+        typer.echo(f"  {note}")
+        return
+
+    typer.echo(f"  {len(steps)} tool(s) selected\n")
+    for step in steps:
+        score_pct = int(step.get("score", 0) * 100)
+        server = f"  [{step['server']}]" if step.get("server") else ""
+        typer.echo(f"  Step {step['step']}: {step['tool']}{server}  ({score_pct}% match)")
+        if step.get("description"):
+            typer.echo(f"           {step['description']}")
+        typer.echo("")
+
+    typer.echo(f"Run it:  uvx agent-corex execute \"{task}\"")
+
+
+@app.command(name="mcp-config")
+def mcp_config(
+    uvx: bool = typer.Option(
+        True,
+        "--uvx/--binary",
+        help="Show uvx-based config (default) or installed-binary config.",
+    ),
+    key: Optional[str] = typer.Option(
+        None,
+        "--key",
+        "-k",
+        help="API key to embed in the config (default: reads from stored credentials).",
+    ),
+) -> None:
+    """
+    Print ready-to-paste MCP config snippets for Claude / Cursor / VS Code.
+
+    The AGENT_COREX_API_KEY value is read from your stored credentials
+    (agent-corex login) or can be supplied with --key.
+    If no key is available a placeholder is shown instead.
+
+    \\b
+    Get your API key at: https://www.agent-corex.com/dashboard/keys
+
+    \\b
+    Examples:
+        agent-corex mcp-config              # uvx variant (default)
+        agent-corex mcp-config --binary     # installed-binary variant
+        agent-corex mcp-config --key acx_abc123
+    """
+    import json as _json
+
+    from agent_core import local_config
+
+    _KEYS_URL = "https://www.agent-corex.com/dashboard/keys"
+
+    # Resolve API key
+    api_key = key or local_config.get_api_key()
+    if not api_key:
+        typer.echo(
+            f"\n  No API key configured.\n"
+            f"  Get yours at: {_KEYS_URL}\n"
+            f"  Then run:     agent-corex login --key <key>\n"
+            f"  Or pass it directly: agent-corex mcp-config --key acx_...\n",
+            err=True,
+        )
+        api_key = "<YOUR_AGENT_COREX_API_KEY>"
+
+    if uvx:
+        claude_cursor_def = {
+            "command": "uvx",
+            "args": ["agent-corex", "mcp"],
+            "env": {"AGENT_COREX_API_KEY": api_key},
+        }
+        vscode_def = {
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["agent-corex", "mcp"],
+            "env": {"AGENT_COREX_API_KEY": api_key},
+        }
+        launch_note = "uvx  (no global install of agent-corex required)"
+    else:
+        claude_cursor_def = {"command": "agent-corex", "args": ["serve"]}
+        vscode_def = {"type": "stdio", "command": "agent-corex", "args": ["serve"]}
+        launch_note = "installed binary  (agent-corex must be on PATH)"
+
+    server_block_cc = {"mcpServers": {"agent-corex": claude_cursor_def}}
+    server_block_vs = {"mcpServers": {"agent-corex": vscode_def}}
+
+    typer.echo(f"\nAgent-CoreX MCP config  [{launch_note}]\n")
+    typer.echo("─" * 60)
+
+    typer.echo("\n Claude Desktop  (~/.claude/claude_desktop_config.json)")
+    typer.echo(" Cursor          (~/.cursor/mcp.json)\n")
+    typer.echo(_json.dumps(server_block_cc, indent=2))
+
+    typer.echo("\n─" * 1 + "─" * 59)
+    typer.echo("\n VS Code / Cursor settings.json  (\"mcp\" block)\n")
+    typer.echo(_json.dumps(server_block_vs, indent=2))
+
+    typer.echo("\n─" * 1 + "─" * 59)
+
+    if uvx and api_key != "<YOUR_AGENT_COREX_API_KEY>":
+        masked = api_key[:10] + "..." + api_key[-4:] if len(api_key) > 14 else "***"
+        typer.echo(f"\n  API key : {masked}  (from stored credentials)")
+    elif uvx:
+        typer.echo(f"\n  API key : placeholder — replace before use")
+        typer.echo(f"  Get key : {_KEYS_URL}")
+
+    typer.echo(
+        "\nPaste the relevant block into your tool's config, then restart the tool."
+    )
+    if uvx:
+        typer.echo(
+            "Tip: auto-inject with  agent-corex init --uvx  instead of pasting manually."
+        )
 
 
 if __name__ == "__main__":

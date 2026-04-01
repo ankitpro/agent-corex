@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-corex"
-version = "1.7.0"
-description = "Fast, accurate MCP tool retrieval engine for LLMs with semantic search"
+version = "1.8.0"
+description = "Fast, accurate MCP tool retrieval engine for LLMs — with pack manager, MCP gateway, and uvx support"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -106,6 +106,16 @@ agent-corex = "agent_core.cli.main:app"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["agent_core*"]
+
+# ── uv / uvx configuration ───────────────────────────────────────────────────
+# Allows:  uvx agent-corex [command]
+# uvx resolves the entry point "agent-corex" from [project.scripts] below.
+# No special [tool.uv] block is required — uvx uses [project.scripts] by default.
+#
+# The package can also be run as a one-shot ephemeral tool:
+#   uvx agent-corex --help
+#   uvx agent-corex pack install youtube-productivity
+#   uvx agent-corex mcp          # starts MCP gateway (stdio)
 
 [tool.setuptools.package-data]
 agent_core = ["py.typed"]

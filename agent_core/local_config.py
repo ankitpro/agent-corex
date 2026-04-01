@@ -100,6 +100,32 @@ def get_login_url() -> str:
 
 
 def get_api_key() -> Optional[str]:
+    """
+    Return the active API key.
+
+    Priority:
+      1. AGENT_COREX_API_KEY environment variable  (MCP config env injection, CI/CD)
+      2. ~/.agent-corex/config.json                (stored via ``agent-corex login``)
+
+    This means a key passed via the MCP config ``env`` block — e.g. when the
+    gateway is launched by Claude Desktop / Cursor with::
+
+        {
+          "agent-corex": {
+            "command": "uvx",
+            "args": ["agent-corex", "mcp"],
+            "env": {"AGENT_COREX_API_KEY": "acx_..."}
+          }
+        }
+
+    will automatically authenticate all gateway operations (tool auth, usage
+    logging, query logging) without requiring a separate ``agent-corex login``.
+    """
+    import os
+
+    env_key = os.environ.get("AGENT_COREX_API_KEY")
+    if env_key:
+        return env_key
     return get("api_key")
 
 

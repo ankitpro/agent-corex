@@ -366,4 +366,4 @@ After ~10 minutes, check:
 
 ---
 
-**Last Updated:** 2026-03-31 — v1.7.0
+**Last Updated:** 2026-04-01 — v1.8.0

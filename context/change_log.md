@@ -4,6 +4,42 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-01 — v1.8.0 — uvx-native system: pack manager, MCP registry, executor, mcp-config
+
+**What:** Full `uvx agent-corex` support — works as CLI, pack manager, MCP server manager,
+task executor, and stdio MCP server when launched by Claude Desktop / Cursor / VS Code.
+
+**New modules (`agent_core/uvx/`):**
+- `registry.py` — persistent `~/.agent-corex/registry.json` for installed packs + MCP servers
+- `pack_manager.py` — `PackManager`: fetches pack definitions from `GET /packs/<name>`, installs required MCP servers, persists to registry
+- `mcp_manager.py` — `MCPManager`: fetches server configs from `GET /mcp_servers/<name>`, persists to registry
+- `executor.py` — `Executor`: `execute_task` (retrieve + POST /execute_tool) and `get_tool_plan` (dry-run)
+
+**New CLI commands:**
+- `uvx agent-corex pack list / install <name> / remove <name>`
+- `uvx agent-corex mcp` — starts stdio MCP gateway (for Claude/Cursor/VSCode)
+- `uvx agent-corex mcp list / add <name> / remove <name>`
+- `uvx agent-corex execute "<task>"` — auto-selects tool + executes
+- `uvx agent-corex plan "<task>"` — dry-run plan with ranked tools
+- `uvx agent-corex mcp-config` — prints ready-to-paste MCP JSON for all tools
+
+**Auth improvements:**
+- `init --uvx` — injects uvx-based MCP entry with `AGENT_COREX_API_KEY` in the `env` block
+- `local_config.get_api_key()` now checks `AGENT_COREX_API_KEY` env var first (benefits gateway usage/query logging)
+- Auth error messages across all modules now link to `https://www.agent-corex.com/dashboard/keys`
+
+**Files changed:**
+- `agent_core/uvx/` (new directory — 5 files)
+- `agent_core/cli/main.py` — ~380 lines added (8 new commands + init --uvx)
+- `agent_core/local_config.py` — `get_api_key()` env-var priority
+- `agent_core/gateway/auth_middleware.py` — dashboard URL in error messages
+- `agent_core/gateway/gateway_server.py` — `SERVER_VERSION = "1.8.0"`
+- `agent_core/__init__.py` — `__version__ = "1.8.0"`
+- `pyproject.toml` — version 1.8.0 + uvx comment block
+- `homebrew/Formula/agent-corex.rb` — version 1.8.0
+
+---
+
 ## 2026-03-31 — v1.7.0 — Custom Pack + Custom MCP Server install support
 
 **What:** `install-pack` now detects UUID-format pack IDs and routes them to the new
