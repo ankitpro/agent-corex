@@ -88,9 +88,7 @@ class PackManager:
                 "  Then run         : uvx agent-corex login --key <key>"
             )
         if resp.status_code != 200:
-            raise RuntimeError(
-                f"API error {resp.status_code} fetching pack '{name}': {resp.text}"
-            )
+            raise RuntimeError(f"API error {resp.status_code} fetching pack '{name}': {resp.text}")
 
         return resp.json()
 

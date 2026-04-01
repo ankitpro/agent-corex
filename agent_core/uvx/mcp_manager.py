@@ -71,9 +71,7 @@ class MCPManager:
                 "Check your internet connection."
             ) from exc
         except httpx.TimeoutException as exc:
-            raise RuntimeError(
-                f"Request timed out fetching MCP server '{name}'."
-            ) from exc
+            raise RuntimeError(f"Request timed out fetching MCP server '{name}'.") from exc
 
         if resp.status_code == 404:
             raise ValueError(
@@ -122,9 +120,7 @@ class MCPManager:
         env: Dict[str, str] = config.get("env", {})
 
         if not command:
-            raise RuntimeError(
-                f"Invalid server config for '{name}': missing 'command' field."
-            )
+            raise RuntimeError(f"Invalid server config for '{name}': missing 'command' field.")
 
         registry.add_server(
             name=name,

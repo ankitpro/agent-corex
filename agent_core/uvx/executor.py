@@ -108,13 +108,9 @@ class Executor:
             raise RuntimeError(f"Request timed out retrieving tools for task.") from exc
 
         if resp.status_code == 401:
-            raise PermissionError(
-                "Authentication failed. Run:  uvx agent-corex login"
-            )
+            raise PermissionError("Authentication failed. Run:  uvx agent-corex login")
         if resp.status_code != 200:
-            raise RuntimeError(
-                f"API error {resp.status_code} retrieving tools: {resp.text}"
-            )
+            raise RuntimeError(f"API error {resp.status_code} retrieving tools: {resp.text}")
 
         data = resp.json()
         # The endpoint may return {"tools": [...]} or a bare list
@@ -179,13 +175,9 @@ class Executor:
             with httpx.Client(timeout=60.0) as client:
                 resp = client.post(url, json=payload, headers=self._auth_headers())
         except httpx.ConnectError as exc:
-            raise RuntimeError(
-                f"Cannot reach Agent-CoreX backend at {self._base_url}."
-            ) from exc
+            raise RuntimeError(f"Cannot reach Agent-CoreX backend at {self._base_url}.") from exc
         except httpx.TimeoutException as exc:
-            raise RuntimeError(
-                f"Execution timed out for tool '{tool_name}'."
-            ) from exc
+            raise RuntimeError(f"Execution timed out for tool '{tool_name}'.") from exc
 
         if resp.status_code == 401:
             raise PermissionError("Authentication failed. Run:  uvx agent-corex login")

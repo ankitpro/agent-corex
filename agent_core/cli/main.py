@@ -2113,9 +2113,7 @@ def pack_install(
     if result.get("tools"):
         typer.echo(f"\n  Tools available: {', '.join(result['tools'])}")
 
-    typer.echo(
-        "\nNext step:  uvx agent-corex mcp list  to verify installed servers."
-    )
+    typer.echo("\nNext step:  uvx agent-corex mcp list  to verify installed servers.")
 
 
 @_pack_app.command("remove")
@@ -2160,10 +2158,7 @@ def pack_remove(
 
 _mcp_app = typer.Typer(
     name="mcp",
-    help=(
-        "Manage MCP servers in the local registry, "
-        "or start the MCP gateway (no subcommand)."
-    ),
+    help=("Manage MCP servers in the local registry, " "or start the MCP gateway (no subcommand)."),
     invoke_without_command=True,
 )
 app.add_typer(_mcp_app, name="mcp")
@@ -2258,10 +2253,7 @@ def mcp_registry_add(
         typer.echo(f"  Info    : {result['description']}")
     if result.get("env_required"):
         typer.echo(f"  Needs   : {', '.join(result['env_required'])}")
-    typer.echo(
-        "\nTo start the gateway with all registry servers:\n"
-        "  uvx agent-corex mcp"
-    )
+    typer.echo("\nTo start the gateway with all registry servers:\n" "  uvx agent-corex mcp")
 
 
 @_mcp_app.command("remove")
@@ -2398,7 +2390,7 @@ def plan(
             typer.echo(f"           {step['description']}")
         typer.echo("")
 
-    typer.echo(f"Run it:  uvx agent-corex execute \"{task}\"")
+    typer.echo(f'Run it:  uvx agent-corex execute "{task}"')
 
 
 @app.command(name="mcp-config")
@@ -2478,7 +2470,7 @@ def mcp_config(
     typer.echo(_json.dumps(server_block_cc, indent=2))
 
     typer.echo("\n─" * 1 + "─" * 59)
-    typer.echo("\n VS Code / Cursor settings.json  (\"mcp\" block)\n")
+    typer.echo('\n VS Code / Cursor settings.json  ("mcp" block)\n')
     typer.echo(_json.dumps(server_block_vs, indent=2))
 
     typer.echo("\n─" * 1 + "─" * 59)
@@ -2490,13 +2482,9 @@ def mcp_config(
         typer.echo(f"\n  API key : placeholder — replace before use")
         typer.echo(f"  Get key : {_KEYS_URL}")
 
-    typer.echo(
-        "\nPaste the relevant block into your tool's config, then restart the tool."
-    )
+    typer.echo("\nPaste the relevant block into your tool's config, then restart the tool.")
     if uvx:
-        typer.echo(
-            "Tip: auto-inject with  agent-corex init --uvx  instead of pasting manually."
-        )
+        typer.echo("Tip: auto-inject with  agent-corex init --uvx  instead of pasting manually.")
 
 
 if __name__ == "__main__":
