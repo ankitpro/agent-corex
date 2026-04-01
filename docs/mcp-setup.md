@@ -31,9 +31,43 @@ The `agent-corex init` command writes a single entry into your tool's MCP config
 
 ## Step 1 — Install
 
+Choose any method:
+
+**Homebrew** (macOS / Linux):
+```bash
+brew tap ankitpro/agent-corex && brew install agent-corex
+```
+
+**Direct binary** (macOS arm64):
+```bash
+curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-macos-arm64 \
+  -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
+```
+
+**Direct binary** (Linux x86_64):
+```bash
+curl -fsSL https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-linux-x86_64 \
+  -o /usr/local/bin/agent-corex && chmod +x /usr/local/bin/agent-corex
+```
+
+**Windows** (PowerShell as Administrator):
+```powershell
+Invoke-WebRequest `
+  -Uri https://github.com/ankitpro/agent-corex/releases/latest/download/agent-corex-windows-x86_64.exe `
+  -OutFile "$env:SystemRoot\System32\agent-corex.exe"
+```
+
+**pip** (Python 3.8+):
 ```bash
 pip install agent-corex
 ```
+
+**uvx** (no install — requires [uv](https://docs.astral.sh/uv/)):
+```bash
+uvx agent-corex init   # run any command without installing
+```
+
+> If you use uvx, skip to [Manual config — uvx](#manual-config--uvx) below — the `init` command auto-injects the binary path, not the uvx path.
 
 Verify:
 
@@ -203,6 +237,49 @@ All existing settings are preserved. Only the `mcp.servers.agent-corex` entry is
 
 ---
 
+## Manual config — uvx
+
+If you prefer not to install `agent-corex` globally (using [uv](https://docs.astral.sh/uv/) instead), point the MCP config at `uvx` directly. The AI tool will download and cache `agent-corex` automatically on first launch.
+
+**Claude Desktop / Cursor** (`claude_desktop_config.json` / `mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "uvx",
+      "args": ["agent-corex", "serve"]
+    }
+  }
+}
+```
+
+**VS Code** (`settings.json`):
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "agent-corex": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["agent-corex", "serve"]
+      }
+    }
+  }
+}
+```
+
+**Pin to a specific version** (recommended for reproducible team setups):
+
+```json
+"args": ["agent-corex@1.8.0", "serve"]
+```
+
+> `uvx` must be on your PATH for this to work. Run `which uvx` (macOS/Linux) or `where uvx` (Windows) to verify. Install uv from [astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+---
+
 ## Config file locations
 
 | Tool | Platform | Path |
@@ -270,6 +347,32 @@ This opens `https://agent-corex.ai/login` in your browser. Log in, copy your API
 ---
 
 ## Troubleshooting
+
+### `uvx: command not found` in AI tool logs
+
+The AI tool inherits the system PATH, which may differ from your terminal PATH. Make sure `uvx` is accessible system-wide:
+
+```bash
+# macOS / Linux — add to ~/.zshrc or ~/.bashrc then restart your terminal and the AI tool
+export PATH="$HOME/.local/bin:$PATH"
+
+# Verify
+which uvx
+uvx --version
+```
+
+On macOS, if you installed uv via `curl`, it goes to `~/.local/bin/uvx`. If your AI tool still can't find it, use the full path in the config:
+
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "/Users/you/.local/bin/uvx",
+      "args": ["agent-corex", "serve"]
+    }
+  }
+}
+```
 
 ### `agent-corex: command not found` after init
 

@@ -55,7 +55,24 @@ No admin access? See the [per-user install →](https://ankitpro.github.io/agent
 pip install agent-corex
 ```
 
-> All three methods give you the same `agent-corex` CLI. Homebrew and the binary downloads require no Python installation.
+### Option 4 — uvx (no install, always latest)
+
+[uv](https://docs.astral.sh/uv/) users can run agent-corex as an ephemeral tool — no pip install, no PATH setup:
+
+```bash
+uvx agent-corex --help
+uvx agent-corex login
+uvx agent-corex init
+uvx agent-corex serve        # starts the MCP gateway
+```
+
+Pin to a specific version:
+
+```bash
+uvx agent-corex@1.8.0 serve
+```
+
+> All four methods give you the same `agent-corex` CLI. Homebrew and the binary downloads require no Python installation. uvx requires only [uv](https://docs.astral.sh/uv/getting-started/installation/) and is ideal for one-shot or CI use.
 
 ---
 
@@ -230,6 +247,86 @@ agent-corex set-url http://localhost:8000
 | VS Code | macOS, Windows, Linux |
 | VS Code Insiders | macOS, Windows, Linux |
 | VSCodium | macOS, Windows, Linux |
+
+---
+
+## Using Agent-CoreX as an MCP Server
+
+### Automatic setup (recommended)
+
+```bash
+agent-corex init          # detects Claude Desktop, Cursor, VS Code and injects the entry
+agent-corex status        # verify injection
+```
+
+### Manual MCP config — installed binary
+
+If you installed via Homebrew, direct binary, or pip, add this to your tool's config:
+
+**Claude Desktop / Cursor** (`claude_desktop_config.json` / `mcp.json`):
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "agent-corex",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+**VS Code** (`settings.json`):
+```json
+{
+  "mcp": {
+    "servers": {
+      "agent-corex": {
+        "type": "stdio",
+        "command": "agent-corex",
+        "args": ["serve"]
+      }
+    }
+  }
+}
+```
+
+### Manual MCP config — uvx (no install required)
+
+If you use [uv](https://docs.astral.sh/uv/) and don't want a global install, point the MCP config at `uvx` instead:
+
+**Claude Desktop / Cursor**:
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "uvx",
+      "args": ["agent-corex", "serve"]
+    }
+  }
+}
+```
+
+**VS Code**:
+```json
+{
+  "mcp": {
+    "servers": {
+      "agent-corex": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["agent-corex", "serve"]
+      }
+    }
+  }
+}
+```
+
+Pin to a specific release (useful for reproducible setups):
+```json
+"args": ["agent-corex@1.8.0", "serve"]
+```
+
+> `uvx` fetches and caches the package automatically on first launch. Restart Claude Desktop / Cursor / VS Code after saving the config.
 
 ---
 

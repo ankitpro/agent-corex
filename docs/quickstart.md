@@ -46,6 +46,12 @@ No admin? See the [per-user install in the full guide](installation.md#per-user-
 pip install agent-corex
 ```
 
+**uvx** (no install — requires [uv](https://docs.astral.sh/uv/)):
+```bash
+uvx agent-corex --version
+```
+With uvx you can run any `agent-corex` command without installing it. See [uvx MCP config](#manual-mcp-config--uvx-no-install) below if you want your AI tools to use uvx to launch the gateway.
+
 ---
 
 ## Step 2 — Verify
@@ -126,6 +132,41 @@ agent-corex install-mcp postgres  # install Postgres
 agent-corex list                  # see all currently installed servers
 agent-corex update                # pull latest configs from registry
 ```
+
+---
+
+## Manual MCP config — uvx (no install)
+
+If you use [uv](https://docs.astral.sh/uv/) and prefer not to install `agent-corex` globally, configure your AI tool to launch it via `uvx`:
+
+**Claude Desktop / Cursor:**
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "uvx",
+      "args": ["agent-corex", "serve"]
+    }
+  }
+}
+```
+
+**VS Code (`settings.json`):**
+```json
+{
+  "mcp": {
+    "servers": {
+      "agent-corex": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["agent-corex", "serve"]
+      }
+    }
+  }
+}
+```
+
+Restart your AI tool after saving the config. See the [MCP Setup Guide](/mcp-setup) for full config file paths and troubleshooting.
 
 ---
 

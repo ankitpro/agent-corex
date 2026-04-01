@@ -143,7 +143,39 @@ pip install --upgrade agent-corex
 
 ---
 
-## Method 4: From Source
+## Method 4: uvx — No Install Required
+
+If you have [uv](https://docs.astral.sh/uv/) installed, you can run agent-corex as an ephemeral tool without a global install.
+
+**Install uv first (if you haven't):**
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Run any agent-corex command directly:**
+```bash
+uvx agent-corex --version
+uvx agent-corex login
+uvx agent-corex init
+uvx agent-corex serve       # starts the MCP gateway
+```
+
+**Pin to a specific version:**
+```bash
+uvx agent-corex@1.8.0 serve
+```
+
+uvx fetches the package from PyPI, caches it locally, and runs it in an isolated environment. No virtual environment or PATH changes needed.
+
+> **When to use uvx:** ideal for CI pipelines, one-off commands, or when you want to keep your global Python environment clean. For day-to-day CLI use, Homebrew or direct binary is faster (no startup overhead).
+
+---
+
+## Method 5: From Source
 
 For development or cutting-edge builds.
 
@@ -166,6 +198,39 @@ agent-corex detect                      # see which tools are installed
 agent-corex init                        # inject into all detected tools
 agent-corex status                      # verify injection
 ```
+
+### Using uvx instead of a global install
+
+If you installed via **Method 4 (uvx)** and want your AI tools to use uvx to launch the MCP gateway, add the following to your tool's config manually (or run `agent-corex init` — it auto-detects if `agent-corex` is on PATH, otherwise you'll need the manual snippet):
+
+**Claude Desktop / Cursor** (`claude_desktop_config.json` / `mcp.json`):
+```json
+{
+  "mcpServers": {
+    "agent-corex": {
+      "command": "uvx",
+      "args": ["agent-corex", "serve"]
+    }
+  }
+}
+```
+
+**VS Code** (`settings.json`):
+```json
+{
+  "mcp": {
+    "servers": {
+      "agent-corex": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["agent-corex", "serve"]
+      }
+    }
+  }
+}
+```
+
+See [MCP Setup Guide](/mcp-setup) for full config file paths per OS.
 
 ### Config file locations
 

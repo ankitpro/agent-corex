@@ -4,6 +4,19 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-01 — v1.8.1 — docs: uvx + binary MCP config across all documentation
+
+**What:** Added comprehensive uvx and binary MCP configuration documentation across README, GitHub Pages docs, quickstart, and wiki — covering all three install methods (binary/pip/uvx) for Claude Desktop, Cursor, and VS Code.
+
+**Files changed:**
+- `README.md` — Option 4 (uvx install), new "Using Agent-CoreX as an MCP Server" section with binary and uvx JSON config snippets for all supported tools
+- `docs/installation.md` — Method 4 (uvx), uv install instructions, per-version pinning, uvx MCP config in "After Installing"
+- `docs/mcp-setup.md` — All install methods in Step 1, new "Manual config — uvx" section, `uvx: command not found` troubleshooting entry
+- `docs/quickstart.md` — uvx option in Step 1, new "Manual MCP config — uvx" section
+- `agent-corex.wiki/MCP-Setup.md` — uvx callout after auto-setup, new "Manual Setup — uvx" section for all tools
+
+---
+
 ## 2026-04-01 — v1.8.0 — uvx-native system: pack manager, MCP registry, executor, mcp-config
 
 **What:** Full `uvx agent-corex` support — works as CLI, pack manager, MCP server manager,

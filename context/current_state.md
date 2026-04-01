@@ -5,15 +5,22 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-04-01** — v1.8.0 uvx-native system: pack manager, MCP manager, executor, mcp-config
+**2026-04-01** — v1.8.1 docs: uvx + binary MCP config across all documentation
 
 ---
 
 ## Current Status
 
-**Version:** 1.8.0
+**Version:** 1.8.1
 
-**Released (tagged `v1.8.0`):**
+**Released (tagged `v1.8.1`):**
+- ✅ `README.md` — Option 4 (uvx install), full "Using Agent-CoreX as an MCP Server" section with binary + uvx config for all tools
+- ✅ `docs/installation.md` — Method 4 (uvx), uvx MCP config snippets in "After Installing"
+- ✅ `docs/mcp-setup.md` — All install methods in Step 1, new "Manual config — uvx" section, uvx PATH troubleshooting
+- ✅ `docs/quickstart.md` — uvx install option, new "Manual MCP config — uvx" section
+- ✅ `agent-corex.wiki/MCP-Setup.md` — uvx note after auto-setup, new "Manual Setup — uvx" section
+
+**Previously released (tagged `v1.8.0`):**
 - ✅ `agent_core/uvx/__init__.py` — new uvx sub-package
 - ✅ `agent_core/uvx/registry.py` — `~/.agent-corex/registry.json` for packs + MCP servers
 - ✅ `agent_core/uvx/pack_manager.py` — `PackManager`: install/remove/list via `GET /packs/<name>`
