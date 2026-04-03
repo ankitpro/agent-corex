@@ -26,6 +26,7 @@ Diagnostics:
   doctor        Diagnose common setup issues (Python, PATH, config, backend)
 
 Registry / install:
+  mcp add       Enable an MCP server in your Agent-CoreX backend router
   registry      Browse the installable MCP server catalog
   install-mcp   Install an MCP server from the registry into all detected tools
   apply         Apply a skill.md file (install packs + env + MCP, end-to-end)
@@ -53,6 +54,14 @@ app = typer.Typer(
     help="Fast, accurate MCP tool retrieval engine — with gateway and enterprise support",
     no_args_is_help=True,
 )
+
+# ── mcp sub-app ───────────────────────────────────────────────────────────────
+mcp_app = typer.Typer(
+    name="mcp",
+    help="Manage MCP servers in your Agent-CoreX backend router.",
+    no_args_is_help=True,
+)
+app.add_typer(mcp_app)
 
 
 @app.callback()
@@ -964,7 +973,147 @@ def list_registry():
             typer.echo(f"    {s['name']:<22}  {desc}{env_note}")
         typer.echo("")
 
-    typer.echo("Install any:  agent-corex install-mcp <name>")
+    typer.echo("Add via Agent-CoreX:  uvx agent-corex mcp add <name>")
+
+
+# ── mcp add ───────────────────────────────────────────────────────────────────
+
+_CLIENT_SLUGS = {
+    "claude-code": "claude",
+    "claude": "claude",
+    "cursor": "cursor",
+    "vscode": "vscode",
+    "vscode-insiders": "vscode-insiders",
+    "vscodium": "vscodium",
+}
+
+
+@mcp_app.command(name="add")
+def mcp_add(
+    name: str = typer.Argument(..., help="Server slug to enable, e.g. 'fetch' or 'github'"),
+    client: Optional[str] = typer.Option(
+        None,
+        "--client",
+        "-c",
+        help=(
+            "AI tool to inject agent-corex gateway into: "
+            "claude-code | claude | cursor | vscode | vscode-insiders | vscodium | all. "
+            "Omit to only enable the server in the backend."
+        ),
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+):
+    """
+    Enable an MCP server in your Agent-CoreX backend router.
+
+    Unlike Smithery-style local installs, this enables the server centrally in
+    the Agent-CoreX MCP gateway so every AI tool using your API key gets access
+    without touching local configs.
+
+    Optionally pass --client to also inject the agent-corex gateway into a local
+    AI tool (one-time setup, safe to re-run).
+
+    \\b
+    Examples:
+        uvx agent-corex mcp add fetch
+        uvx agent-corex mcp add github --client claude-code
+        uvx agent-corex mcp add postgres --client cursor --yes
+    """
+    try:
+        import httpx
+    except ImportError:
+        typer.echo("httpx is required. Run: pip install httpx", err=True)
+        raise typer.Exit(1)
+
+    from agent_core import local_config
+
+    # ── Require login ───────────────────────────────────────────────────────
+    if not local_config.is_logged_in():
+        typer.echo("\nNot logged in. Run:\n\n    agent-corex login\n", err=True)
+        typer.echo("Or get your API key at https://www.agent-corex.com/dashboard/settings")
+        raise typer.Exit(1)
+
+    api_key = local_config.get_api_key()
+    base_url = local_config.get_base_url()
+
+    # ── Confirm ─────────────────────────────────────────────────────────────
+    if not yes:
+        typer.confirm(f"\nEnable '{name}' in your Agent-CoreX backend?", default=True, abort=True)
+
+    # ── Enable server in backend ─────────────────────────────────────────────
+    typer.echo(f"\nEnabling '{name}' in Agent-CoreX backend...")
+    try:
+        with httpx.Client(timeout=10.0) as client_http:
+            resp = client_http.post(
+                f"{base_url}/mcp_servers/toggle",
+                json={"server": name, "enabled": True},
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            if resp.status_code == 404:
+                typer.echo(
+                    f"\n  Server '{name}' not found in the registry.",
+                    err=True,
+                )
+                typer.echo("  Browse available servers:  agent-corex registry")
+                raise typer.Exit(1)
+            resp.raise_for_status()
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        typer.echo(f"\n  Failed to reach Agent-CoreX backend: {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"  ✓ '{name}' is now enabled in your Agent-CoreX router.")
+
+    # ── Optionally inject gateway into local tool ────────────────────────────
+    if client:
+        targets = list(_CLIENT_SLUGS.keys()) if client.lower() == "all" else [client.lower()]
+        invalid = [t for t in targets if t not in _CLIENT_SLUGS and t != "all"]
+        if invalid:
+            typer.echo(
+                f"\n  Unknown --client value(s): {', '.join(invalid)}. "
+                "Choose from: claude-code, claude, cursor, vscode, vscode-insiders, vscodium, all",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+        typer.echo("\nInjecting agent-corex gateway into local tool config...")
+        from agent_core import local_config as _lc
+
+        _uvx_flag = True  # always use uvx-based entry for `mcp add`
+        _stored_key = _lc.get_api_key() or "<YOUR_AGENT_COREX_API_KEY>"
+        server_def_base = {
+            "command": "uvx",
+            "args": ["agent-corex", "serve"],
+            "env": {"AGENT_COREX_API_KEY": _stored_key},
+        }
+        server_def_vscode = {"type": "stdio", **server_def_base}
+
+        _VSCODE_KEYS = {"vscode", "vscode-insiders", "vscodium"}
+        all_pairs = _tool_pairs()
+
+        slug_targets = {_CLIENT_SLUGS.get(t, t) for t in targets}
+
+        any_injected = False
+        for slug, detector, adapter in all_pairs:
+            if slug_targets and slug not in slug_targets and client.lower() != "all":
+                continue
+            if not detector.is_installed():
+                typer.echo(f"  [-] {detector.name}: not detected — skipping")
+                continue
+            sdef = server_def_vscode if slug in _VSCODE_KEYS else server_def_base
+            action, bak = adapter.inject("agent-corex", sdef, overwrite=False)
+            typer.echo(f"  [+] {action} in {detector.name}")
+            any_injected = True
+
+        if any_injected:
+            typer.echo("\n  Restart your AI tool for changes to take effect.")
+
+    typer.echo(
+        f"\nDone. '{name}' is active in your Agent-CoreX router.\n"
+        "All AI tools using your API key can now use it.\n"
+        "Run  agent-corex status  to verify.\n"
+    )
 
 
 @app.command(name="install-mcp")
