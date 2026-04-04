@@ -231,3 +231,5 @@ All backend calls are fire-and-forget daemon=False threads. They must never bloc
 ---
 
 **Last Updated:** 2026-03-31 — v1.6.0
+
+@.agent-memory/CLAUDE.md

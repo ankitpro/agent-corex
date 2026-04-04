@@ -4,6 +4,15 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-04 — v1.8.1 — retrieve_tools: server prefix + score % in output
+
+**What:** Both the backend and local fallback paths of `retrieve_tools` now show the server name as a prefix (`server.toolname  score%`) and include a `Server: <name>` line per result, so users can see which MCP server each tool belongs to and its relevance score.
+
+**Files changed:**
+- `agent_core/gateway/tool_router.py` — backend path: added `_server` lookup for `server.name` prefix and `Server:` line; fallback path: added inline `keyword_score` call to compute and display `score%`, plus same server prefix/line
+
+---
+
 ## 2026-04-01 — v1.8.1 — docs: uvx + binary MCP config across all documentation
 
 **What:** Added comprehensive uvx and binary MCP configuration documentation across README, GitHub Pages docs, quickstart, and wiki — covering all three install methods (binary/pip/uvx) for Claude Desktop, Cursor, and VS Code.

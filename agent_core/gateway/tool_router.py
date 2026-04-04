@@ -398,9 +398,14 @@ class ToolRouter:
             lines = [f"Top {len(tools)} tool(s) for {query!r}:\n"]
             for i, t in enumerate(tools, 1):
                 score_pct = int(t.get("score", 0) * 100)
-                tier = self._registry.get(t["name"], {}).get("type", "")
+                meta = self._registry.get(t["name"], {})
+                server = meta.get("_server", "")
+                tier = meta.get("type", "")
                 label = " [enterprise]" if tier == "enterprise" else ""
-                lines.append(f"{i}. {t['name']}{label}  ({score_pct}% match)")
+                prefix = f"{server}.{t['name']}" if server else t["name"]
+                lines.append(f"{i}. {prefix}{label}  {score_pct}%")
+                if server:
+                    lines.append(f"   Server: {server}")
                 if t.get("description"):
                     lines.append(f"   {t['description']}")
             return "\n".join(lines)
@@ -426,9 +431,17 @@ class ToolRouter:
                 if not results:
                     return f"No tools matched query: {query!r} (backend offline)"
 
+                from agent_core.retrieval.scorer import score as _kw_score
+
                 lines = [f"Top {len(results)} tool(s) for {query!r} (local fallback):\n"]
                 for i, t in enumerate(results, 1):
-                    lines.append(f"{i}. {t['name']}")
+                    score_pct = int(_kw_score(query, t) * 100)
+                    meta = self._registry.get(t["name"], {})
+                    server = meta.get("_server", t.get("server", ""))
+                    prefix = f"{server}.{t['name']}" if server else t["name"]
+                    lines.append(f"{i}. {prefix}  {score_pct}%")
+                    if server:
+                        lines.append(f"   Server: {server}")
                     if t.get("description"):
                         lines.append(f"   {t['description']}")
                 return "\n".join(lines)

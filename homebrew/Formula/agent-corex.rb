@@ -12,7 +12,7 @@
 class AgentCorex < Formula
   desc "Fast, accurate MCP tool router — detect, inject, and manage MCP servers for AI agents"
   homepage "https://github.com/ankitpro/agent-corex"
-  version "1.8.1"
+  version "1.9.1"
   license "MIT"
 
   on_macos do

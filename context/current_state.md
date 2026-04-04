@@ -5,13 +5,13 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-04-01** — v1.8.1 docs: uvx + binary MCP config across all documentation
+**2026-04-04** — v1.8.1 retrieve_tools output: server prefix + score % in both backend and fallback paths
 
 ---
 
 ## Current Status
 
-**Version:** 1.8.1
+**Version:** 1.9.1
 
 **Released (tagged `v1.8.1`):**
 - ✅ `README.md` — Option 4 (uvx install), full "Using Agent-CoreX as an MCP Server" section with binary + uvx config for all tools
