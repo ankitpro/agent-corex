@@ -431,11 +431,15 @@ class ToolRouter:
                 if not results:
                     return f"No tools matched query: {query!r} (backend offline)"
 
-                from agent_core.retrieval.scorer import score as _kw_score
+                def _inline_score(q: str, name: str, desc: str) -> int:
+                    import re
+                    tokens = set(re.findall(r"\w+", q.lower()))
+                    text = f"{name} {desc}".lower()
+                    return int(sum(1 for tok in tokens if tok in text) / max(len(tokens), 1) * 100)
 
                 lines = [f"Top {len(results)} tool(s) for {query!r} (local fallback):\n"]
                 for i, t in enumerate(results, 1):
-                    score_pct = int(_kw_score(query, t) * 100)
+                    score_pct = _inline_score(query, t.get("name", ""), t.get("description", ""))
                     meta = self._registry.get(t["name"], {})
                     server = meta.get("_server", t.get("server", ""))
                     prefix = f"{server}.{t['name']}" if server else t["name"]
