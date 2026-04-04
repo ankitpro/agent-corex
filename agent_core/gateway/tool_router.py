@@ -433,6 +433,7 @@ class ToolRouter:
 
                 def _inline_score(q: str, name: str, desc: str) -> int:
                     import re
+
                     tokens = set(re.findall(r"\w+", q.lower()))
                     text = f"{name} {desc}".lower()
                     return int(sum(1 for tok in tokens if tok in text) / max(len(tokens), 1) * 100)
