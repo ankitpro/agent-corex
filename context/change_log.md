@@ -4,6 +4,29 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-06 — v2.2.0 — User-Aware Tool Retrieval & MCP Recommendation Engine
+
+**What:** Major feature release — tool retrieval is now user-aware and filtering-aware. Added 3 new public tools for better MCP discovery.
+
+**Key features:**
+- **User-aware retrieval** — `retrieve_tools` now calls `/v2/retrieve_tools` with user auth header, backend filters to user's installed MCPs only
+- **MCP recommendation engine** — new `recommend_mcps` tool suggests servers based on query intent; new `recommend_mcps_from_stack` suggests complementary servers based on tech stack
+- **Enhanced get_capabilities** — shows installed vs available MCPs
+- **Recommendations on fallback** — when no tools found, automatically includes MCP recommendations in response
+- **Enterprise backend filtering** — `EnhancedRetriever` now filters candidates to user's installed servers, returns `recommended_mcps` field
+
+**Files created:**
+- `agent_core/gateway/mcp_recommender.py` — local MCP recommendation with `MCP_CATALOG` (20+ servers), keyword-based matching
+- `agent_core/gateway/user_mcp_tracker.py` — user MCP state management (local cache + backend sync)
+- `packages/tools/user_mcp_service.py` — backend service for fetching user's installed servers from Supabase with Redis caching
+
+**Files modified:**
+- `agent_core/gateway/tool_router.py` — added 3 new public tools to `TOOL_REGISTRY`; updated `_run_retrieve_tools()` to use `/v2/retrieve_tools`; added `_run_get_capabilities()`, `_run_recommend_mcps()`, `_run_recommend_mcps_from_stack()`
+- `packages/vector/enhanced_retriever.py` — added `installed_servers` parameter; filters candidates to user's MCPs; returns `recommended_mcps` when empty
+- `apps/api/routes/v2_retrieval.py` — wires `user_mcp_service` to fetch user's installed servers; passes to retriever
+
+---
+
 ## 2026-04-06 — v2.0.1 — MCP Resources and Prompts
 
 **What:** Added MCP resources (static guides) and prompts (workflow suggestions) to help Claude understand and use the 2-tool workflow.

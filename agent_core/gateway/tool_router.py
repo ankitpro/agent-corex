@@ -69,16 +69,30 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Public tool registry — the ONLY 2 tools exposed to Claude
+# Public tool registry — 5 tools exposed to Claude
 # ---------------------------------------------------------------------------
 
 TOOL_REGISTRY: dict[str, dict] = {
+    "get_capabilities": {
+        "type": "free",
+        "description": (
+            "Discover what MCP server capabilities are installed and what's available to install. "
+            "Shows which MCPs you have configured and which others are available in the ecosystem. "
+            "Use this to understand what's available before calling retrieve_tools."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
     "retrieve_tools": {
         "type": "free",
         "description": (
             "Search for the right tool by describing what you want to do. "
             "Available capability domains: {capabilities}. "
             "Returns tool names, what they do, and required inputs. "
+            "If no tools are found, suggests MCPs you can install. "
             "Always call this before execute_tool."
         ),
         "inputSchema": {
@@ -113,6 +127,43 @@ TOOL_REGISTRY: dict[str, dict] = {
                 },
             },
             "required": ["tool_name"],
+        },
+    },
+    "recommend_mcps": {
+        "type": "free",
+        "description": (
+            "Recommend MCP servers to install for a specific task. "
+            "Useful when retrieve_tools returns no results or when you want to know what MCPs support a capability. "
+            "Returns suggestions with descriptions and example tasks."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Description of what you want to accomplish (e.g., 'deploy to AWS', 'search GitHub issues')",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    "recommend_mcps_from_stack": {
+        "type": "free",
+        "description": (
+            "Recommend complementary MCP servers based on your current tech stack. "
+            "Provide the technologies you're using and get suggestions for MCPs that integrate with them. "
+            "Useful for discovering tools that work well with your existing setup."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "stack": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of technologies/MCPs you're using (e.g., ['github', 'docker', 'aws'])",
+                },
+            },
+            "required": ["stack"],
         },
     },
 }
@@ -295,15 +346,21 @@ class ToolRouter:
 
     def execute_free_tool(self, tool_name: str, arguments: dict) -> Any:
         """
-        Execute a public tool — retrieve_tools or execute_tool.
-        Both are free-tier (no auth check here).
+        Execute a public tool — all 5 publicly exposed tools.
+        All are free-tier (no auth check here).
         Enterprise auth is checked inside _run_execute_tool() when the target
         tool_name resolves to an enterprise tool.
         """
+        if tool_name == "get_capabilities":
+            return self._run_get_capabilities(arguments)
         if tool_name == "retrieve_tools":
             return self._run_retrieve_tools(arguments)
         if tool_name == "execute_tool":
             return self._run_execute_tool(arguments)
+        if tool_name == "recommend_mcps":
+            return self._run_recommend_mcps(arguments)
+        if tool_name == "recommend_mcps_from_stack":
+            return self._run_recommend_mcps_from_stack(arguments)
         raise ValueError(f"No executor for public tool: {tool_name!r}")
 
     def _run_execute_tool(self, args: dict) -> Any:
@@ -375,11 +432,122 @@ class ToolRouter:
 
     # ── Built-in free tool implementations ────────────────────────────────
 
+    def _run_get_capabilities(self, args: dict) -> str:
+        """
+        Return list of installed and available MCP server capabilities.
+
+        Response format:
+        {
+            "installed": ["github", "railway", ...],
+            "available_but_not_installed": ["aws", "database", ...],
+        }
+        """
+        try:
+            # Get installed servers from MCP registry
+            installed_servers = {
+                meta.get("_server")
+                for meta in self._mcp_registry.values()
+                if meta.get("_server")
+            }
+            installed_servers.discard(None)  # Remove None if present
+            installed_list = sorted(installed_servers)
+
+            # Get all known MCPs from the recommender catalog
+            from agent_core.gateway.mcp_recommender import get_all_known_mcps
+            all_known = set(get_all_known_mcps())
+            available_list = sorted(all_known - installed_servers)
+
+            result = {
+                "installed": installed_list,
+                "available_but_not_installed": available_list,
+            }
+
+            return json.dumps(result, indent=2)
+
+        except Exception as e:
+            return json.dumps({"error": f"Failed to get capabilities: {e}"})
+
+    def _run_recommend_mcps(self, args: dict) -> str:
+        """
+        Recommend MCP servers based on a query.
+
+        Input: {query: "string"}
+        Output: {recommendations: [{name, reason, example_tasks}, ...]}
+        """
+        try:
+            query = args.get("query", "").strip()
+            if not query:
+                return json.dumps({"error": "query is required"})
+
+            # Get installed MCPs
+            installed = {
+                meta.get("_server")
+                for meta in self._mcp_registry.values()
+                if meta.get("_server")
+            }
+            installed.discard(None)
+
+            # Get recommendations from local recommender
+            from agent_core.gateway.mcp_recommender import recommend_from_query
+            recommendations = recommend_from_query(query, installed)
+
+            if not recommendations:
+                return json.dumps({
+                    "recommendations": [],
+                    "message": "No additional MCPs found for this query",
+                })
+
+            return json.dumps({"recommendations": recommendations}, indent=2)
+
+        except Exception as e:
+            return json.dumps({"error": f"Recommendation failed: {e}"})
+
+    def _run_recommend_mcps_from_stack(self, args: dict) -> str:
+        """
+        Recommend MCP servers based on a tech stack.
+
+        Input: {stack: ["github", "docker", "aws", ...]}
+        Output: {recommendations: [{name, reason, example_tasks}, ...]}
+        """
+        try:
+            stack = args.get("stack", [])
+            if not isinstance(stack, list) or not stack:
+                return json.dumps({"error": "stack must be a non-empty array"})
+
+            # Get installed MCPs
+            installed = {
+                meta.get("_server")
+                for meta in self._mcp_registry.values()
+                if meta.get("_server")
+            }
+            installed.discard(None)
+
+            # Get recommendations from local recommender
+            from agent_core.gateway.mcp_recommender import recommend_from_stack
+            recommendations = recommend_from_stack(stack, installed)
+
+            if not recommendations:
+                return json.dumps({
+                    "recommendations": [],
+                    "message": "No complementary MCPs found for this stack",
+                })
+
+            return json.dumps({"recommendations": recommendations}, indent=2)
+
+        except Exception as e:
+            return json.dumps({"error": f"Recommendation failed: {e}"})
+
     def _run_retrieve_tools(self, args: dict) -> str:
         """
-        Retrieve tools via the enterprise backend (Qdrant-backed).
-        No local ML models — all ranking runs server-side.
-        Falls back to local keyword search if the backend is unreachable.
+        Retrieve tools via the enterprise backend (Qdrant-backed, user-aware).
+
+        Pipeline:
+        1. Call /v2/retrieve_tools with auth header (includes user_id)
+        2. Backend filters results to user's installed MCPs
+        3. If no tools found, recommendations are included in response
+        4. Fallback to local keyword search if backend unreachable
+
+        Returns formatted text with tool list or recommendations.
         """
         query = args.get("query", "")
         top_k = int(args.get("top_k", 5))
@@ -388,7 +556,7 @@ class ToolRouter:
         if not query.strip():
             return "Error: query is required"
 
-        # ── Primary: call enterprise backend ──────────────────────────────────
+        # ── Primary: call enterprise backend (v2 with user-aware filtering) ────
         try:
             import json as _json
             import ssl
@@ -398,73 +566,55 @@ class ToolRouter:
             from agent_core import local_config
 
             base_url = local_config.get_base_url().rstrip("/")
-            api_key = local_config.get_api_key() or ""
+            auth_header = local_config.get_auth_header()
 
+            # Call /v2/retrieve_tools with user_id from auth header
             params = urllib.parse.urlencode({"query": query, "top_k": top_k})
-            url = f"{base_url}/retrieve_tools?{params}"
-            req = urllib.request.Request(
-                url,
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
+            url = f"{base_url}/v2/retrieve_tools?{params}"
+            headers = {}
+            if auth_header:
+                headers["Authorization"] = auth_header
+
+            req = urllib.request.Request(url, headers=headers)
             try:
                 import certifi
-
                 ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
                 ctx = ssl.create_default_context()
 
             with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-                tools = _json.loads(resp.read())
+                response = _json.loads(resp.read())
 
+            # Handle v2 response format: {tools: [...], recommended_mcps: [...], ...}
+            tools = response.get("tools", []) if isinstance(response, dict) else response
             if not isinstance(tools, list):
-                raise ValueError(f"unexpected backend response: {tools}")
+                raise ValueError(f"unexpected backend response format: {type(response)}")
 
-            # Build nested score map for the DB
+            # Build score map for logging
             score_map: dict = {}
             for t in tools:
-                if not isinstance(t, dict) or not t.get("name"):
+                if not isinstance(t, dict) or not t.get("tool_name"):
                     continue
-                score_map[t["name"]] = {
-                    "score": t.get("score", 0.0),
-                    "semantic_score": t.get("semantic_score", t.get("score", 0.0)),
-                    "capability_score": t.get("capability_score", 0.0),
+                tool_name = t.get("tool_name") or t.get("name", "")
+                score_map[tool_name] = {
+                    "score": t.get("confidence_score", 0.0),
+                    "semantic_score": t.get("confidence_score", 0.0),
+                    "capability_score": 0.0,
                     "success_rate": t.get("success_rate", 0.5),
                 }
 
-            selected_names = [t["name"] for t in tools if isinstance(t, dict) and t.get("name")]
+            selected_names = [
+                t.get("tool_name") or t.get("name", "")
+                for t in tools if isinstance(t, dict)
+            ]
             _fire_and_forget_log(query, selected_names, score_map)
 
-            if not tools:
-                return f"No tools found for query: {query!r}"
-
-            # Build capability header
-            capabilities = self.get_capabilities()
-            cap_header = (
-                f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+            # Format response with tools or recommendations
+            return self._format_retrieve_tools_response(
+                tools=tools,
+                recommended_mcps=response.get("recommended_mcps", []),
+                query=query,
             )
-
-            lines = []
-            if cap_header:
-                lines.append(cap_header)
-                lines.append("")
-
-            lines.append(f"Top {len(tools)} matching tools for {query!r}:")
-            for i, t in enumerate(tools, 1):
-                name = t.get("name", "")
-                desc = t.get("description", "")
-
-                # Get required inputs from the internal registry
-                with self._registry_lock:
-                    meta = self._mcp_registry.get(name, {})
-                schema = meta.get("inputSchema") or {}
-                required = schema.get("required") or []
-                inputs_str = f"inputs: {', '.join(required)}" if required else "no required inputs"
-
-                lines.append(f"{i}. {name} — {desc} ({inputs_str})")
-
-            lines.append("")
-            lines.append("Use execute_tool with the exact tool_name and required arguments.")
-            return "\n".join(lines)
 
         except Exception as backend_exc:
             # ── Fallback: local keyword search (offline / backend down) ─────────
@@ -486,34 +636,75 @@ class ToolRouter:
                 selected_names = [t["name"] for t in results]
                 _fire_and_forget_log(query, selected_names, {})
 
-                if not results:
-                    return f"No tools matched query: {query!r} (backend offline)"
-
-                capabilities = self.get_capabilities()
-                cap_header = (
-                    f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+                return self._format_retrieve_tools_response(
+                    tools=results,
+                    recommended_mcps=[],
+                    query=query,
+                    is_fallback=True,
                 )
-
-                lines = []
-                if cap_header:
-                    lines.append(cap_header)
-                    lines.append("")
-
-                lines.append(f"Top {len(results)} matching tools for {query!r} (local fallback):")
-                for i, t in enumerate(results, 1):
-                    name = t.get("name", "")
-                    desc = t.get("description", "")
-                    with self._registry_lock:
-                        meta = self._mcp_registry.get(name, {})
-                    schema = meta.get("inputSchema") or {}
-                    required = schema.get("required") or []
-                    inputs_str = (
-                        f"inputs: {', '.join(required)}" if required else "no required inputs"
-                    )
-                    lines.append(f"{i}. {name} — {desc} ({inputs_str})")
-
-                lines.append("")
-                lines.append("Use execute_tool with the exact tool_name and required arguments.")
-                return "\n".join(lines)
             except Exception:
                 return f"Error during retrieval: {backend_exc}"
+
+    def _format_retrieve_tools_response(
+        self,
+        tools: list,
+        recommended_mcps: list,
+        query: str,
+        is_fallback: bool = False,
+    ) -> str:
+        """Format tools and recommendations into readable text response."""
+        lines = []
+
+        # Add capability header (get_capabilities() returns list of capability labels)
+        capabilities = self.get_capabilities()
+        cap_header = (
+            f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+        )
+
+        if cap_header:
+            lines.append(cap_header)
+            lines.append("")
+
+        # Add tools if found
+        if tools:
+            fallback_suffix = " (local fallback)" if is_fallback else ""
+            lines.append(f"Top {len(tools)} matching tools for {query!r}{fallback_suffix}:")
+            for i, t in enumerate(tools, 1):
+                # Handle both {"name": ...} and {"tool_name": ...} formats
+                name = t.get("tool_name") or t.get("name", "")
+                desc = t.get("description", "")
+
+                # Get required inputs from internal registry
+                with self._registry_lock:
+                    meta = self._mcp_registry.get(name, {})
+                schema = meta.get("inputSchema") or {}
+                required = schema.get("required") or []
+                inputs_str = f"inputs: {', '.join(required)}" if required else "no required inputs"
+
+                lines.append(f"{i}. {name} — {desc} ({inputs_str})")
+
+            lines.append("")
+            lines.append("Use execute_tool with the exact tool_name and required arguments.")
+
+        # Add recommendations if tools not found
+        elif recommended_mcps:
+            lines.append(f"No tools found for: {query!r}")
+            lines.append("")
+            lines.append("Recommended MCP servers to install:")
+            for rec in recommended_mcps[:3]:
+                name = rec.get("name", "")
+                reason = rec.get("reason", "")
+                examples = rec.get("example_tasks", [])[:2]
+                example_str = ", ".join(examples) if examples else ""
+
+                lines.append(f"• {name} — {reason}")
+                if example_str:
+                    lines.append(f"  Examples: {example_str}")
+
+            lines.append("")
+            lines.append("Use recommend_mcps(query) or recommend_mcps_from_stack(stack) to get installation help.")
+
+        else:
+            lines.append(f"No tools found for query: {query!r}")
+
+        return "\n".join(lines)

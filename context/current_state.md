@@ -5,13 +5,13 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-04-06** — v2.0.1 MCP resources and prompts: static guides + workflow suggestions
+**2026-04-06** — v2.2.0 User-aware tool retrieval + MCP recommendation engine
 
 ---
 
 ## Current Status
 
-**Version:** 2.0.1
+**Version:** 2.2.0
 
 **Released (tagged `v1.8.1`):**
 - ✅ `README.md` — Option 4 (uvx install), full "Using Agent-CoreX as an MCP Server" section with binary + uvx config for all tools
