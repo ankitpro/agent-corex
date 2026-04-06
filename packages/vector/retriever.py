@@ -23,26 +23,14 @@ logger = logging.getLogger(__name__)
 
 # ── result cache ──────────────────────────────────────────────────────────────
 _mem_cache: dict = {}
-_redis_client = None
 
 RESULT_CACHE_TTL = 300  # 5 minutes
 
 
 def _get_redis():
-    global _redis_client
-    if _redis_client is not None:
-        return _redis_client
-    redis_url = os.getenv("REDIS_URL")
-    if not redis_url:
-        return None
-    try:
-        import redis
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-        _redis_client.ping()
-        return _redis_client
-    except Exception as e:
-        logger.warning(f"Redis unavailable for retrieval cache: {e}")
-        return None
+    """Get Redis client (decode_responses=True) from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_redis_str()
 
 
 def _result_cache_key(query: str, user_id: str, top_k: int) -> str:
@@ -76,18 +64,11 @@ def _set_cached_result(query: str, user_id: str, top_k: int, results: List[dict]
 
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
-_supabase_client = None
-
 
 def _get_supabase():
-    global _supabase_client
-    if _supabase_client is not None:
-        return _supabase_client
-    from supabase import create_client
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
-    _supabase_client = create_client(url, key)
-    return _supabase_client
+    """Get Supabase client from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_supabase_client()
 
 
 def _get_user_installed_tools(user_id: str) -> Set[Tuple[str, str]]:
