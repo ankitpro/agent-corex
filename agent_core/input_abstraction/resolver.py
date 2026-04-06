@@ -116,6 +116,7 @@ class ContextResolver:
         """
         try:
             from agent_core import local_config
+
             config = local_config.get_config()
             return config.get("user", {}).get("user_id")
         except Exception:

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from .models import InputField, InternalParam, ToolInputSchema
 
-
 # Rules applied in order; first match wins.
 # Each rule: (pattern_type, value, resolution_strategy)
 INTERNAL_PATTERNS: list[tuple[str, str, str]] = [
@@ -21,7 +20,6 @@ INTERNAL_PATTERNS: list[tuple[str, str, str]] = [
     ("exact", "workspace_path", "workspace_path"),
     ("exact", "userId", "user_id"),
     ("exact", "user_id", "user_id"),
-
     # Suffix patterns (case-insensitive, but matched case-sensitively on the suffix)
     # These catch projectId, project_id, organizationId, organization_id, etc.
     ("suffix", "Id", "context_id"),
@@ -29,7 +27,6 @@ INTERNAL_PATTERNS: list[tuple[str, str, str]] = [
     ("suffix", "Token", "auth_token"),
     ("suffix", "Secret", "auth_secret"),
     ("suffix", "Key", "auth_key"),
-
     # Prefix patterns (case-insensitive)
     ("prefix_ci", "workspace", "workspace_path"),
 ]
