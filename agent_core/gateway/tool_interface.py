@@ -263,13 +263,7 @@ class ToolInterface:
         return sorted(capabilities)
 
 
-# Global singleton
-_tool_interface: Optional[ToolInterface] = None
-
-
 def get_tool_interface() -> ToolInterface:
-    """Get or create the global tool interface."""
-    global _tool_interface
-    if _tool_interface is None:
-        _tool_interface = ToolInterface()
-    return _tool_interface
+    """Get or create the global tool interface from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_tool_interface()

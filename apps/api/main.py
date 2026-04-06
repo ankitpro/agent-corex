@@ -7,9 +7,9 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
-from agent_core.tools.registry import ToolRegistry
 from agent_core.tools.mcp.mcp_loader import MCPLoader
 from agent_core.retrieval.ranker import rank_tools
+from infrastructure.container import get_container
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,6 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Initialize tool registry
-tool_registry = ToolRegistry()
 all_tools = []
 
 
@@ -31,6 +29,9 @@ def load_tools():
     2. MCP servers (from config/mcp.json or env-specified config)
     """
     global all_tools
+
+    # Get tool registry from DI container
+    tool_registry = get_container().get_tool_registry()
 
     # Load example/local tools
     tool_registry.register({
@@ -164,10 +165,10 @@ def reload_tools():
     Returns:
         Status message with number of tools loaded
     """
-    global all_tools, tool_registry
+    global all_tools
 
-    # Reset
-    tool_registry = ToolRegistry()
+    # Reset tool registry via container
+    get_container().reset_tool_registry()
     all_tools = []
 
     # Reload

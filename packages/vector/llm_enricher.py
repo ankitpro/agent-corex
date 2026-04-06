@@ -20,24 +20,12 @@ logger = logging.getLogger(__name__)
 
 # ── caches ────────────────────────────────────────────────────────────────────
 _mem_cache: dict = {}
-_redis_client = None
 
 
 def _get_redis():
-    global _redis_client
-    if _redis_client is not None:
-        return _redis_client
-    redis_url = os.getenv("REDIS_URL")
-    if not redis_url:
-        return None
-    try:
-        import redis
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-        _redis_client.ping()
-        return _redis_client
-    except Exception as e:
-        logger.warning(f"Redis unavailable for enrichment cache: {e}")
-        return None
+    """Get Redis client (decode_responses=True) from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_redis_str()
 
 
 def _cache_key(tool_name: str, server: str) -> str:
@@ -71,16 +59,11 @@ def _set_cached(tool_name: str, server: str, result: dict) -> None:
 
 
 # ── OpenAI client (lazy) ──────────────────────────────────────────────────────
-_openai_client = None
-
 
 def _get_openai():
-    global _openai_client
-    if _openai_client is not None:
-        return _openai_client
-    from openai import OpenAI
-    _openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    return _openai_client
+    """Get OpenAI client from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_openai_client()
 
 
 _SYSTEM_PROMPT = """\

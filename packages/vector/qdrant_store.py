@@ -17,19 +17,11 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "tools"
 
-# ── singleton client ──────────────────────────────────────────────────────────
-_client: Optional[QdrantClient] = None
-
 
 def get_client() -> QdrantClient:
-    global _client
-    if _client is not None:
-        return _client
-    url = os.environ["QDRANT_URL"]
-    api_key = os.environ["QDRANT_API_KEY"]
-    _client = QdrantClient(url=url, api_key=api_key)
-    logger.info(f"Qdrant client initialised → {url}")
-    return _client
+    """Get the Qdrant client singleton from the DI container."""
+    from infrastructure.container import get_container
+    return get_container().get_qdrant_client()
 
 
 # ── collection management ─────────────────────────────────────────────────────
