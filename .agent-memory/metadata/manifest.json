@@ -1,0 +1,92 @@
+{
+  "config_files": [
+    ".github",
+    "pyproject.toml",
+    "requirements.txt",
+    "setup.py"
+  ],
+  "discovered_docs_dirs": [
+    "docs"
+  ],
+  "discovered_languages": [
+    "javascript",
+    "python",
+    "ruby"
+  ],
+  "discovered_test_dirs": [
+    "tests"
+  ],
+  "framework_hints": [
+    "FastAPI"
+  ],
+  "generated_artifacts": [
+    {
+      "artifact_id": "claude-md",
+      "artifact_type": "claude-md",
+      "relative_path": ".agent-memory/CLAUDE.md"
+    },
+    {
+      "artifact_id": "architecture",
+      "artifact_type": "architecture",
+      "relative_path": ".agent-memory/architecture.md"
+    },
+    {
+      "artifact_id": "changes:hotspots",
+      "artifact_type": "changes",
+      "relative_path": ".agent-memory/changes/hotspots.md"
+    },
+    {
+      "artifact_id": "feature:api",
+      "artifact_type": "feature",
+      "relative_path": ".agent-memory/features/api.md"
+    },
+    {
+      "artifact_id": "module:apps-api",
+      "artifact_type": "module",
+      "relative_path": ".agent-memory/modules/apps-api.md"
+    },
+    {
+      "artifact_id": "module:packages-mcp_server",
+      "artifact_type": "module",
+      "relative_path": ".agent-memory/modules/packages-mcp_server.md"
+    },
+    {
+      "artifact_id": "module:packages-retrieval",
+      "artifact_type": "module",
+      "relative_path": ".agent-memory/modules/packages-retrieval.md"
+    },
+    {
+      "artifact_id": "module:packages-tools",
+      "artifact_type": "module",
+      "relative_path": ".agent-memory/modules/packages-tools.md"
+    },
+    {
+      "artifact_id": "module:packages-vector",
+      "artifact_type": "module",
+      "relative_path": ".agent-memory/modules/packages-vector.md"
+    },
+    {
+      "artifact_id": "repo",
+      "artifact_type": "repo",
+      "relative_path": ".agent-memory/repo.md"
+    },
+    {
+      "artifact_id": "rules:conventions",
+      "artifact_type": "rules",
+      "relative_path": ".agent-memory/rules/conventions.md"
+    },
+    {
+      "artifact_id": "rules:safe-boundaries",
+      "artifact_type": "rules",
+      "relative_path": ".agent-memory/rules/safe-boundaries.md"
+    }
+  ],
+  "generated_at": "2026-04-03T16:02:19.057858+00:00",
+  "repo_root": "C:\\Users\\mail2\\OneDrive\\Documents\\Ankit\\projects\\Enterprise\\agent-corex",
+  "scan_confidence": 1.0,
+  "source_roots": [
+    "apps",
+    "packages"
+  ],
+  "version": "1"
+}

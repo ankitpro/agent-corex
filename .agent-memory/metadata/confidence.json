@@ -1,0 +1,54 @@
+{
+  "features": [
+    {
+      "confidence": 0.85,
+      "file_count": 2,
+      "name": "Api",
+      "slug": "api",
+      "test_count": 1,
+      "type": "feature"
+    }
+  ],
+  "modules": [
+    {
+      "confidence": 0.85,
+      "file_count": 2,
+      "name": "apps/api",
+      "slug": "apps-api",
+      "test_count": 1,
+      "type": "module"
+    },
+    {
+      "confidence": 0.85,
+      "file_count": 4,
+      "name": "packages/mcp_server",
+      "slug": "packages-mcp_server",
+      "test_count": 1,
+      "type": "module"
+    },
+    {
+      "confidence": 0.85,
+      "file_count": 5,
+      "name": "packages/retrieval",
+      "slug": "packages-retrieval",
+      "test_count": 2,
+      "type": "module"
+    },
+    {
+      "confidence": 0.85,
+      "file_count": 7,
+      "name": "packages/tools",
+      "slug": "packages-tools",
+      "test_count": 1,
+      "type": "module"
+    },
+    {
+      "confidence": 0.85,
+      "file_count": 6,
+      "name": "packages/vector",
+      "slug": "packages-vector",
+      "test_count": 1,
+      "type": "module"
+    }
+  ]
+}

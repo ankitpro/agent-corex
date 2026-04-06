@@ -1,0 +1,79 @@
+{
+  "file_count": 24,
+  "sources": {
+    "apps/api/__init__.py": [
+      "feature:Api",
+      "module:apps/api"
+    ],
+    "apps/api/main.py": [
+      "feature:Api",
+      "module:apps/api"
+    ],
+    "packages/mcp_server/__init__.py": [
+      "module:packages/mcp_server"
+    ],
+    "packages/mcp_server/protocol.py": [
+      "module:packages/mcp_server"
+    ],
+    "packages/mcp_server/server.py": [
+      "module:packages/mcp_server"
+    ],
+    "packages/mcp_server/tool_adapter.py": [
+      "module:packages/mcp_server"
+    ],
+    "packages/retrieval/__init__.py": [
+      "module:packages/retrieval"
+    ],
+    "packages/retrieval/embeddings.py": [
+      "module:packages/retrieval"
+    ],
+    "packages/retrieval/hybrid_scorer.py": [
+      "module:packages/retrieval"
+    ],
+    "packages/retrieval/ranker.py": [
+      "module:packages/retrieval"
+    ],
+    "packages/retrieval/scorer.py": [
+      "module:packages/retrieval"
+    ],
+    "packages/tools/__init__.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/base_tool.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/mcp/__init__.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/mcp/mcp_client.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/mcp/mcp_loader.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/mcp/mcp_manager.py": [
+      "module:packages/tools"
+    ],
+    "packages/tools/registry.py": [
+      "module:packages/tools"
+    ],
+    "packages/vector/__init__.py": [
+      "module:packages/vector"
+    ],
+    "packages/vector/embeddings.py": [
+      "module:packages/vector"
+    ],
+    "packages/vector/indexer.py": [
+      "module:packages/vector"
+    ],
+    "packages/vector/llm_enricher.py": [
+      "module:packages/vector"
+    ],
+    "packages/vector/qdrant_store.py": [
+      "module:packages/vector"
+    ],
+    "packages/vector/retriever.py": [
+      "module:packages/vector"
+    ]
+  }
+}
