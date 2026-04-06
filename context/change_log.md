@@ -4,6 +4,22 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-06 — v2.0.1 — MCP Resources and Prompts
+
+**What:** Added MCP resources (static guides) and prompts (workflow suggestions) to help Claude understand and use the 2-tool workflow.
+
+**Resources:**
+- `quick-start` — Crisp, token-efficient 2-tool workflow guide (generic for any MCP servers)
+
+**Prompts:**
+- `find-tools` — Discover available tools
+- `execute-workflow` — Execute tasks step by step
+
+**Files changed:**
+- `agent_core/gateway/gateway_server.py` — Added RESOURCES and PROMPTS dicts, handlers for resources/list, resources/read, prompts/list, updated initialize response to advertise capabilities
+
+---
+
 ## 2026-04-06 — v2.0.0 — Retrieval-first, token-efficient gateway
 
 **What:** Major breaking change — Claude now sees exactly 2 tools (`retrieve_tools`, `execute_tool`) instead of all 5 static + up to 512 MCP tools. Saves 20k+ tokens per session. All MCP tools are routed internally via a hidden registry.
