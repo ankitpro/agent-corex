@@ -8,7 +8,6 @@ Uses keyword matching against a comprehensive MCP catalog.
 import re
 from typing import Optional
 
-
 # =============================================================================
 # MCP CATALOG — All known MCP servers with metadata
 # =============================================================================
@@ -17,22 +16,52 @@ MCP_CATALOG = {
     "github": {
         "display_name": "GitHub",
         "description": "GitHub repository and issue management",
-        "capabilities": ["github", "version_control", "repository", "code_review", "issues", "pull_requests"],
-        "example_tasks": ["search issues", "create pull request", "list repositories", "view commits"],
+        "capabilities": [
+            "github",
+            "version_control",
+            "repository",
+            "code_review",
+            "issues",
+            "pull_requests",
+        ],
+        "example_tasks": [
+            "search issues",
+            "create pull request",
+            "list repositories",
+            "view commits",
+        ],
         "ecosystem_tags": ["dev", "vcs", "collaboration"],
     },
     "railway": {
         "display_name": "Railway",
         "description": "Deploy and manage applications on Railway",
         "capabilities": ["railway", "deployment", "devops", "infrastructure", "cloud", "services"],
-        "example_tasks": ["deploy service", "view logs", "manage environment variables", "restart service"],
+        "example_tasks": [
+            "deploy service",
+            "view logs",
+            "manage environment variables",
+            "restart service",
+        ],
         "ecosystem_tags": ["deployment", "devops", "cloud"],
     },
     "aws": {
         "display_name": "AWS",
         "description": "Amazon Web Services cloud infrastructure",
-        "capabilities": ["aws", "cloud", "infrastructure", "compute", "storage", "database", "serverless"],
-        "example_tasks": ["launch EC2 instance", "upload to S3", "create Lambda function", "manage RDS database"],
+        "capabilities": [
+            "aws",
+            "cloud",
+            "infrastructure",
+            "compute",
+            "storage",
+            "database",
+            "serverless",
+        ],
+        "example_tasks": [
+            "launch EC2 instance",
+            "upload to S3",
+            "create Lambda function",
+            "manage RDS database",
+        ],
         "ecosystem_tags": ["cloud", "infrastructure", "devops"],
     },
     "database": {
@@ -125,6 +154,7 @@ STACK_COMPLEMENT_MAP = {
 # RECOMMENDATION FUNCTIONS
 # =============================================================================
 
+
 def recommend_from_query(query: str, installed_mcps: set[str]) -> list[dict]:
     """
     Recommend MCP servers for a user query.
@@ -181,12 +211,14 @@ def recommend_from_query(query: str, installed_mcps: set[str]) -> list[dict]:
     results = []
     for server_name, score in ranked[:3]:
         server_data = MCP_CATALOG[server_name]
-        results.append({
-            "name": server_name,
-            "display_name": server_data.get("display_name", server_name.title()),
-            "reason": server_data.get("description", ""),
-            "example_tasks": server_data.get("example_tasks", [])[:3],
-        })
+        results.append(
+            {
+                "name": server_name,
+                "display_name": server_data.get("display_name", server_name.title()),
+                "reason": server_data.get("description", ""),
+                "example_tasks": server_data.get("example_tasks", [])[:3],
+            }
+        )
 
     return results
 
@@ -231,12 +263,14 @@ def recommend_from_stack(stack: list[str], installed_mcps: set[str]) -> list[dic
     for server_name, freq in ranked[:5]:
         if server_name in MCP_CATALOG:
             server_data = MCP_CATALOG[server_name]
-            results.append({
-                "name": server_name,
-                "display_name": server_data.get("display_name", server_name.title()),
-                "reason": server_data.get("description", ""),
-                "example_tasks": server_data.get("example_tasks", [])[:3],
-            })
+            results.append(
+                {
+                    "name": server_name,
+                    "display_name": server_data.get("display_name", server_name.title()),
+                    "reason": server_data.get("description", ""),
+                    "example_tasks": server_data.get("example_tasks", [])[:3],
+                }
+            )
 
     return results
 

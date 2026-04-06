@@ -445,15 +445,14 @@ class ToolRouter:
         try:
             # Get installed servers from MCP registry
             installed_servers = {
-                meta.get("_server")
-                for meta in self._mcp_registry.values()
-                if meta.get("_server")
+                meta.get("_server") for meta in self._mcp_registry.values() if meta.get("_server")
             }
             installed_servers.discard(None)  # Remove None if present
             installed_list = sorted(installed_servers)
 
             # Get all known MCPs from the recommender catalog
             from agent_core.gateway.mcp_recommender import get_all_known_mcps
+
             all_known = set(get_all_known_mcps())
             available_list = sorted(all_known - installed_servers)
 
@@ -481,21 +480,22 @@ class ToolRouter:
 
             # Get installed MCPs
             installed = {
-                meta.get("_server")
-                for meta in self._mcp_registry.values()
-                if meta.get("_server")
+                meta.get("_server") for meta in self._mcp_registry.values() if meta.get("_server")
             }
             installed.discard(None)
 
             # Get recommendations from local recommender
             from agent_core.gateway.mcp_recommender import recommend_from_query
+
             recommendations = recommend_from_query(query, installed)
 
             if not recommendations:
-                return json.dumps({
-                    "recommendations": [],
-                    "message": "No additional MCPs found for this query",
-                })
+                return json.dumps(
+                    {
+                        "recommendations": [],
+                        "message": "No additional MCPs found for this query",
+                    }
+                )
 
             return json.dumps({"recommendations": recommendations}, indent=2)
 
@@ -516,21 +516,22 @@ class ToolRouter:
 
             # Get installed MCPs
             installed = {
-                meta.get("_server")
-                for meta in self._mcp_registry.values()
-                if meta.get("_server")
+                meta.get("_server") for meta in self._mcp_registry.values() if meta.get("_server")
             }
             installed.discard(None)
 
             # Get recommendations from local recommender
             from agent_core.gateway.mcp_recommender import recommend_from_stack
+
             recommendations = recommend_from_stack(stack, installed)
 
             if not recommendations:
-                return json.dumps({
-                    "recommendations": [],
-                    "message": "No complementary MCPs found for this stack",
-                })
+                return json.dumps(
+                    {
+                        "recommendations": [],
+                        "message": "No complementary MCPs found for this stack",
+                    }
+                )
 
             return json.dumps({"recommendations": recommendations}, indent=2)
 
@@ -578,6 +579,7 @@ class ToolRouter:
             req = urllib.request.Request(url, headers=headers)
             try:
                 import certifi
+
                 ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
                 ctx = ssl.create_default_context()
@@ -604,8 +606,7 @@ class ToolRouter:
                 }
 
             selected_names = [
-                t.get("tool_name") or t.get("name", "")
-                for t in tools if isinstance(t, dict)
+                t.get("tool_name") or t.get("name", "") for t in tools if isinstance(t, dict)
             ]
             _fire_and_forget_log(query, selected_names, score_map)
 
@@ -657,9 +658,7 @@ class ToolRouter:
 
         # Add capability header (get_capabilities() returns list of capability labels)
         capabilities = self.get_capabilities()
-        cap_header = (
-            f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
-        )
+        cap_header = f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
 
         if cap_header:
             lines.append(cap_header)
@@ -702,7 +701,9 @@ class ToolRouter:
                     lines.append(f"  Examples: {example_str}")
 
             lines.append("")
-            lines.append("Use recommend_mcps(query) or recommend_mcps_from_stack(stack) to get installation help.")
+            lines.append(
+                "Use recommend_mcps(query) or recommend_mcps_from_stack(stack) to get installation help."
+            )
 
         else:
             lines.append(f"No tools found for query: {query!r}")

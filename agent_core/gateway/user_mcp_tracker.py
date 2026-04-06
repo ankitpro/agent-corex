@@ -52,6 +52,7 @@ def get_cached_mcps() -> list[str]:
     """
     try:
         from agent_core import local_config
+
         cached = local_config.get("installed_mcps", [])
         if isinstance(cached, list):
             return cached
@@ -70,6 +71,7 @@ def cache_installed_mcps(mcps: list[str]) -> None:
     """
     try:
         from agent_core import local_config
+
         local_config.set_key("installed_mcps", mcps)
         logger.info(f"[MCP] Cached {len(mcps)} installed MCPs locally")
     except Exception as e:
@@ -109,6 +111,7 @@ def sync_from_backend_async(base_url: str, auth_header: str) -> None:
             # SSL context
             try:
                 import certifi
+
                 ctx = ssl.create_default_context(cafile=certifi.where())
             except Exception:
                 ctx = ssl.create_default_context()
