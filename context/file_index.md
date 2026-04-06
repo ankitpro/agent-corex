@@ -7,7 +7,7 @@ Complete reference of all source files with functions, classes, and line numbers
 ## agent_core/
 
 ### `__init__.py`
-- `__version__` = "1.1.3"
+- `__version__` = "2.0.0"
 
 ### `pack_manager.py` (200 lines)
 **Pack installation and tracking**
@@ -106,27 +106,41 @@ Complete reference of all source files with functions, classes, and line numbers
 ### `__init__.py`
 (empty)
 
+### `capability_provider.py` — **[NEW]**
+- `SERVER_CAPABILITY_MAP` — List of (substring, label) tuples mapping server names to domains
+- `get_capabilities(server_names)` → list[str] — Map server names to capability labels
+
 ### `gateway_server.py` — **[ENHANCED]**
-- **`run()`** — **[ENHANCED]** Main entry point, start stdio MCP server
-  - Now loads ~/.agent-corex/.env and injects env vars into mcp.json
-  - Uses lazy_load=True by default
-  - Logs: "Loaded X tools from local MCP config (lazy loading enabled)"
+- **`SERVER_VERSION`** = "2.0.0" — MCP server version
+- **`run()`** — Main entry point, start stdio MCP server
+  - Loads ~/.agent-corex/mcp.json and env vars, routes requests via ToolRouter
 - `_send(obj)` — Write JSON-RPC message to stdout
 - `_error_response(req_id, code, message, data)` — Error response
 - `_ok_response(req_id, result)` — Success response
+- `_log_query_event(tool_name, arguments)` — Fire-and-forget log to /query/log
+- `_report_usage(tool_name, status, latency_ms)` — Fire-and-forget log to /usage/event
 - `_handle_initialize(req_id, params, router)` — Handle initialize request
-- `_handle_tools_list(req_id, params, router)` — Handle tools/list request
-- `_handle_tools_call(req_id, params, router)` — Handle tools/call request
+- `_handle_tools_list(req_id, params, router)` — **[SIMPLIFIED]** Returns only 2 tools
+- `_handle_tools_call(req_id, params, router)` — **[SIMPLIFIED]** Removed enterprise gate
 
-### `tool_router.py` — **[ENHANCED]**
-- `ToolRouter` — Tool registry facade with intelligent filtering
-  - `__init__(self)` — Load tools from registry
-  - **`tools_list(max_mcp_tools=10, query=None)`** — **[ENHANCED]** Get filtered tools
-    - Now accepts optional query parameter for context-aware filtering
-    - Uses hybrid ranking when query provided
-    - Falls back to keyword ranking for default context
-  - `get_tool_by_name(name)` → tool_schema | None
-  - `categorize_tools()` → dict[category, [tools]]
+### `tool_router.py` — **[MAJOR REFACTOR]**
+- `TOOL_REGISTRY` — **[CHANGED]** Now contains ONLY 2 tools: retrieve_tools, execute_tool
+- `_ENTERPRISE_TOOLS` — **[NEW]** Internal routing table for github_search, web_search, database_query
+- `ToolRouter` — Central tool router with internal MCP registry
+  - `__init__(extra_tools, mcp_manager)` — Initialize with 2 public tools + hidden MCP registry
+  - `_registry` — Public tools (2 only): retrieve_tools, execute_tool
+  - `_mcp_registry` — **[NEW]** Internal MCP tools (never sent to Claude)
+  - `add_mcp_tools(tools)` — **[CHANGED]** Adds to _mcp_registry only (not _registry)
+  - `tools_list()` — **[SIMPLIFIED]** Returns exactly 2 tools with capabilities injected
+  - `get_capabilities()` — **[NEW]** Derives capability domains from server names
+  - `get_meta(tool_name)` — **[ENHANCED]** Checks all 3 registries
+  - `get_server(tool_name)` — **[UPDATED]** Checks _mcp_registry only
+  - `is_enterprise(tool_name)` — **[UPDATED]** Checks _ENTERPRISE_TOOLS
+  - `execute_free_tool(tool_name, arguments)` — Routes to retrieve_tools or execute_tool
+  - `_run_execute_tool(args)` — **[NEW]** Central routing to MCP/enterprise tools
+  - `_run_retrieve_tools(args)` — **[UPDATED]** Returns minimal format with capability header
+  - `_run_mcp_tool(tool_name, server_name, arguments)` — Execute MCP tool via MCPManager
+  - `_run_list_mcp_servers()` — **[REMOVED]** No longer exposed
 
 ### `auth_middleware.py` — **[ENHANCED]**
 - **`get_stored_api_key()`** — **[ENHANCED]** Get API key from:
@@ -313,15 +327,19 @@ Complete reference of all source files with functions, classes, and line numbers
 
 ### `__init__.py`
 
-### `main.py` (500+ lines)
-**FastAPI retrieval server**
+### `main.py` — **[MAJOR REWRITE]**
+**FastAPI retrieval & execution server — wired to real MCP pool**
 
-- `app` — FastAPI instance
-- `@app.get("/health")` — Health check
-- `@app.get("/retrieve_tools")` — Semantic search for tools
-  - Parameters: `query`, `top_k`, `method`
-- `@app.get("/tools")` — List all tools
-- `@app.get("/mcp_registry")` — Get MCP registry
+- `_mcp_tool_pool` — Real MCP tools from ~/.agent-corex/mcp.json
+- `_mcp_manager` — MCPManager instance (lazy-loaded)
+- `_load_mcp_tools()` — Background thread: load MCP tools via MCPLoader
+- `ExecuteToolRequest` — Pydantic model: {tool_name: str, arguments: dict}
+- `@app.get("/health")` — Health check with real tool count
+- `@app.get("/tools")` — **[UPDATED]** Returns from real MCP pool with minimal metadata
+- `@app.get("/endpoints")` — List all available endpoints
+- `@app.get("/retrieve_tools")` — **[UPDATED]** Uses real MCP pool, keyword ranking only
+- `@app.post("/execute_tool")` — **[NEW]** Execute tool by name via MCPManager
+- `@app.get("/capabilities")` — **[NEW]** Return available capability domains
 
 ---
 

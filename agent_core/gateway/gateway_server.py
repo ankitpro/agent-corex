@@ -11,10 +11,11 @@ This is the process that Claude Desktop / Cursor launch when they see:
 
 Protocol:
   1. Claude sends  initialize   → we respond with server capabilities
-  2. Claude sends  tools/list   → we return ALL tools (free + enterprise)
+  2. Claude sends  tools/list   → we return ONLY retrieve_tools + execute_tool
   3. Claude sends  tools/call   → we route the call:
-       free tool      → execute locally
-       enterprise     → check API key first; return error if not authenticated
+       retrieve_tools → semantic search via enterprise backend / local fallback
+       execute_tool   → routes internally to MCP server or enterprise backend
+                        (enterprise auth gate is inside execute_tool routing)
 
 Run:
   agent-corex serve
@@ -33,7 +34,6 @@ import traceback
 from typing import Any
 
 from agent_core.gateway.tool_router import ToolRouter
-from agent_core.gateway.auth_middleware import check_auth
 
 # Route MCP lifecycle logs to stderr so they don't corrupt the JSON-RPC stdout stream
 logging.basicConfig(
@@ -43,7 +43,7 @@ logging.basicConfig(
 )
 
 SERVER_NAME = "agent-corex"
-SERVER_VERSION = "1.9.1"
+SERVER_VERSION = "2.0.0"
 PROTOCOL_VERSION = "2024-11-05"
 
 
@@ -197,10 +197,9 @@ def _handle_initialize(req_id: Any, _params: dict, router: ToolRouter) -> dict:
 
 
 def _handle_tools_list(req_id: Any, _params: dict, router: ToolRouter) -> dict:
-    # Pass a high limit so ranking is not triggered on the default tools/list call.
-    # Ranking (rank_tools) loads ML models which is slow on first call.
-    # Use retrieve_tools if you need context-filtered results.
-    return _ok_response(req_id, {"tools": router.tools_list(max_mcp_tools=512)})
+    # Returns only retrieve_tools and execute_tool — never exposes MCP tools directly.
+    # Capability domains are injected into the retrieve_tools description at call time.
+    return _ok_response(req_id, {"tools": router.tools_list()})
 
 
 def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
@@ -211,36 +210,8 @@ def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
     if meta is None:
         return _error_response(req_id, -32602, f"Unknown tool: {tool_name!r}")
 
-    # ── Enterprise gate ────────────────────────────────────────────────────
-    if router.is_enterprise(tool_name):
-        auth_err = check_auth()
-        if auth_err is not None:
-            # Return a structured tool result with the auth error — do NOT crash
-            return _ok_response(
-                req_id,
-                {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": json.dumps(auth_err, indent=2),
-                        }
-                    ],
-                    "isError": True,
-                },
-            )
-
-        # Auth passed — enterprise execution (stub: real backend call goes here)
-        result_text = (
-            f"[Enterprise tool: {tool_name}]\n"
-            f"Arguments: {json.dumps(arguments, indent=2)}\n\n"
-            "This tool requires a running enterprise backend.\n"
-            "See: https://agent-corex.ai/docs/enterprise"
-        )
-        _log_query_event(tool_name, arguments)
-        _report_usage(tool_name, "success", 0)
-        return _ok_response(req_id, {"content": [{"type": "text", "text": result_text}]})
-
-    # ── Free tool execution ────────────────────────────────────────────────
+    # All public tools are free-tier at the protocol layer.
+    # Enterprise auth is checked inside _run_execute_tool() when needed.
     start_ms = int(time.time() * 1000)
     try:
         result = router.execute_free_tool(tool_name, arguments)

@@ -69,16 +69,18 @@ def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Static tool registry
-# Extend this dict as new tools are added.  Enterprise tools get exposed in
-# tools/list but are gated at tools/call time.
+# Public tool registry — the ONLY 2 tools exposed to Claude
 # ---------------------------------------------------------------------------
 
 TOOL_REGISTRY: dict[str, dict] = {
-    # ── Free tools ─────────────────────────────────────────────────────────
     "retrieve_tools": {
         "type": "free",
-        "description": "Search for relevant MCP tools by natural-language query. Uses Qdrant-backed semantic search on the Agent-Corex backend.",
+        "description": (
+            "Search for the right tool by describing what you want to do. "
+            "Available capability domains: {capabilities}. "
+            "Returns tool names, what they do, and required inputs. "
+            "Always call this before execute_tool."
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -95,15 +97,32 @@ TOOL_REGISTRY: dict[str, dict] = {
             "required": ["query"],
         },
     },
-    "list_mcp_servers": {
+    "execute_tool": {
         "type": "free",
-        "description": "List all MCP servers configured in agent-corex.",
+        "description": "Execute a tool returned by retrieve_tools. Pass the exact tool_name and required arguments.",
         "inputSchema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "tool_name": {
+                    "type": "string",
+                    "description": "Exact tool name from retrieve_tools result",
+                },
+                "arguments": {
+                    "type": "object",
+                    "description": "Arguments required by the tool",
+                },
+            },
+            "required": ["tool_name"],
         },
     },
-    # ── Enterprise tools ────────────────────────────────────────────────────
+}
+
+# ---------------------------------------------------------------------------
+# Internal routing table for enterprise tools
+# NOT exposed via tools/list — routed internally by _run_execute_tool()
+# ---------------------------------------------------------------------------
+
+_ENTERPRISE_TOOLS: dict[str, dict] = {
     "github_search": {
         "type": "enterprise",
         "description": "Search GitHub repositories, issues, and pull requests.",
@@ -156,9 +175,12 @@ class ToolRouter:
     """
 
     def __init__(self, extra_tools: list[dict] | None = None, mcp_manager=None) -> None:
-        # Start with the static registry
+        # Public tools — the only 2 tools Claude ever sees
         self._registry: dict[str, dict] = dict(TOOL_REGISTRY)
         self._registry_lock = threading.Lock()
+
+        # Internal MCP tool registry — never sent to Claude via tools/list
+        self._mcp_registry: dict[str, dict] = {}
 
         # MCPManager for lazy-starting servers on tool call
         self._mcp_manager = mcp_manager
@@ -169,15 +191,16 @@ class ToolRouter:
 
     def add_mcp_tools(self, tools: list[dict]) -> None:
         """
-        Thread-safe: add dynamically discovered MCP tools to the registry.
+        Thread-safe: store dynamically discovered MCP tools in the internal registry.
+        These tools are NEVER exposed to Claude via tools/list.
         Called from the background discovery thread in MCPLoader.
         """
         added = 0
         with self._registry_lock:
             for tool in tools:
                 name = tool.get("name")
-                if name and name not in self._registry:
-                    self._registry[name] = {
+                if name and name not in self._mcp_registry:
+                    self._mcp_registry[name] = {
                         "type": "free",
                         "description": tool.get("description", ""),
                         "inputSchema": tool.get("input_schema") or tool.get("inputSchema") or {},
@@ -187,7 +210,9 @@ class ToolRouter:
         if added:
             import logging
 
-            logging.getLogger(__name__).info(f"[MCP] router: added {added} new tools")
+            logging.getLogger(__name__).info(
+                f"[MCP] router: added {added} tools to internal registry"
+            )
 
     def _format_tool(self, name: str, meta: dict) -> dict[str, Any]:
         """Format a single tool for MCP tools/list response."""
@@ -212,106 +237,123 @@ class ToolRouter:
 
     def tools_list(self, max_mcp_tools: int = 10, query: str | None = None) -> list[dict]:
         """
-        Return tools formatted for MCP tools/list response.
+        Return ONLY the 2 public tools for MCP tools/list response.
 
-        Intelligently filters MCP tools:
-        - Always includes all static built-in tools
-        - If extra MCP tools > max_mcp_tools: uses ranking to select top tools
-        - If query provided: ranks tools by relevance to query
-        - Tracks filtering decisions for observability
+        The retrieve_tools description is dynamically stamped with the
+        current capability domains derived from _mcp_registry server names.
+        This lets Claude know what is available before its first retrieve_tools call.
 
-        Args:
-            max_mcp_tools: Maximum MCP tools to include (default 10)
-            query: Optional context query for ranking (e.g., "deploy", "database")
+        max_mcp_tools and query parameters are kept for API compatibility
+        but are no longer used — tool filtering is now done inside retrieve_tools.
         """
+        capabilities = self.get_capabilities()
+        cap_str = ", ".join(capabilities) if capabilities else "general tools"
+
         result = []
-
-        # 1. Always include all static built-in tools first
         for name, meta in TOOL_REGISTRY.items():
-            result.append(self._format_tool(name, meta))
-
-        # 2. Filter extra MCP tools if there are too many
-        mcp_tools_to_add = [
-            (name, meta) for name, meta in self._registry.items() if name not in TOOL_REGISTRY
-        ]
-
-        if len(mcp_tools_to_add) > max_mcp_tools:
-            # Use lightweight keyword scoring — no ML models, no network calls.
-            # Heavy semantic ranking happens in _run_retrieve_tools() via the backend.
-            ranking_query = query or "general development file database web deploy build"
-            tokens = set(ranking_query.lower().split())
-
-            def _kw_score(name: str, desc: str) -> float:
-                text = f"{name} {desc}".lower()
-                return sum(1 for tok in tokens if tok in text) / max(len(tokens), 1)
-
-            scored_mcp = sorted(
-                mcp_tools_to_add,
-                key=lambda item: _kw_score(item[0], item[1].get("description", "")),
-                reverse=True,
-            )
-            selected_names = {item[0] for item in scored_mcp[:max_mcp_tools]}
-            rejected_names = {name for name, _ in mcp_tools_to_add} - selected_names
-
-            # Track the filtering decision
-            try:
-                from agent_core.tools.observability.tool_selection_tracker import get_tracker
-
-                tracker = get_tracker()
-                tracker.track(
-                    f"tools/list ({ranking_query})" if query else "tools/list (default)",
-                    list(selected_names),
-                    list(rejected_names),
-                    scores={
-                        "reason": "max_tools_threshold",
-                        "threshold": max_mcp_tools,
-                        "query": query,
-                    },
-                )
-            except Exception:
-                pass  # Observability is optional
-
-            mcp_tools_to_add = [
-                (name, meta) for name, meta in mcp_tools_to_add if name in selected_names
-            ]
-
-        # 3. Add filtered MCP tools to result
-        for name, meta in mcp_tools_to_add:
-            result.append(self._format_tool(name, meta))
-
+            formatted = self._format_tool(name, meta)
+            if name == "retrieve_tools":
+                # Stamp capabilities into description at call time
+                formatted["description"] = meta["description"].replace("{capabilities}", cap_str)
+            result.append(formatted)
         return result
 
+    def get_capabilities(self) -> list[str]:
+        """
+        Derive human-readable capability labels from the internal MCP registry.
+        Uses the server names stamped onto each tool by the discovery callback.
+        """
+        from agent_core.gateway.capability_provider import get_capabilities as _get_caps
+
+        with self._registry_lock:
+            server_names = {
+                meta.get("_server", "")
+                for meta in self._mcp_registry.values()
+                if meta.get("_server")
+            }
+        return _get_caps(list(server_names))
+
     def is_enterprise(self, tool_name: str) -> bool:
-        meta = self._registry.get(tool_name)
-        if meta is None:
-            return False
-        return meta.get("type") == "enterprise"
+        return tool_name in _ENTERPRISE_TOOLS
 
     def get_meta(self, tool_name: str) -> dict | None:
         with self._registry_lock:
-            return self._registry.get(tool_name)
+            # Check public tools first (retrieve_tools, execute_tool)
+            if tool_name in self._registry:
+                return self._registry[tool_name]
+            # Check internal MCP registry
+            if tool_name in self._mcp_registry:
+                return self._mcp_registry[tool_name]
+        # Check enterprise tools (immutable, no lock needed)
+        return _ENTERPRISE_TOOLS.get(tool_name)
 
     def get_server(self, tool_name: str) -> str | None:
-        """Return the backing MCP server name for dynamically loaded tools."""
-        meta = self._registry.get(tool_name, {})
+        """Return the backing MCP server name for a tool in the internal MCP registry."""
+        with self._registry_lock:
+            meta = self._mcp_registry.get(tool_name, {})
         return meta.get("_server")
 
     def execute_free_tool(self, tool_name: str, arguments: dict) -> Any:
         """
-        Execute a free tool — built-in or MCP-backed.
-        Returns the result payload (str or dict).
+        Execute a public tool — retrieve_tools or execute_tool.
+        Both are free-tier (no auth check here).
+        Enterprise auth is checked inside _run_execute_tool() when the target
+        tool_name resolves to an enterprise tool.
         """
         if tool_name == "retrieve_tools":
             return self._run_retrieve_tools(arguments)
-        if tool_name == "list_mcp_servers":
-            return self._run_list_mcp_servers()
+        if tool_name == "execute_tool":
+            return self._run_execute_tool(arguments)
+        raise ValueError(f"No executor for public tool: {tool_name!r}")
 
-        # Check if this is a dynamically loaded MCP tool
+    def _run_execute_tool(self, args: dict) -> Any:
+        """
+        Route execute_tool calls to the correct backend.
+
+        Routing priority:
+          1. MCP tool (in _mcp_registry)  → _run_mcp_tool()
+          2. Enterprise tool (in _ENTERPRISE_TOOLS) → auth gate → enterprise backend stub
+          3. Unknown → helpful error with list of known tools
+
+        Args:
+            args: {"tool_name": str, "arguments": dict}
+        """
+        tool_name = args.get("tool_name", "").strip()
+        arguments = args.get("arguments") or {}
+
+        if not tool_name:
+            return "Error: tool_name is required. Call retrieve_tools first to find the right tool."
+
+        # ── Route 1: MCP tool ─────────────────────────────────────────────────
         server_name = self.get_server(tool_name)
         if server_name is not None:
             return self._run_mcp_tool(tool_name, server_name, arguments)
 
-        raise ValueError(f"No executor for tool: {tool_name!r}")
+        # ── Route 2: Enterprise tool ──────────────────────────────────────────
+        if tool_name in _ENTERPRISE_TOOLS:
+            from agent_core.gateway.auth_middleware import check_auth
+
+            auth_err = check_auth()
+            if auth_err is not None:
+                return json.dumps(auth_err, indent=2)
+
+            # Auth passed — enterprise execution stub
+            return (
+                f"[Enterprise tool: {tool_name}]\n"
+                f"Arguments: {json.dumps(arguments, indent=2)}\n\n"
+                "This tool requires a running enterprise backend.\n"
+                "See: https://agent-corex.ai/docs/enterprise"
+            )
+
+        # ── Route 3: Unknown tool ─────────────────────────────────────────────
+        with self._registry_lock:
+            known_mcp = list(self._mcp_registry.keys())
+        known_enterprise = list(_ENTERPRISE_TOOLS.keys())
+        all_known = known_mcp + known_enterprise
+        hint = f" Known tools: {', '.join(all_known[:10])}" if all_known else ""
+        return f"Unknown tool: {tool_name!r}. " "Use retrieve_tools to find available tools." + (
+            f"\n{hint}" if hint else ""
+        )
 
     def _run_mcp_tool(self, tool_name: str, server_name: str, arguments: dict) -> Any:
         """Execute a tool on its backing MCP server, starting it lazily if needed."""
@@ -395,19 +437,33 @@ class ToolRouter:
             if not tools:
                 return f"No tools found for query: {query!r}"
 
-            lines = [f"Top {len(tools)} tool(s) for {query!r}:\n"]
+            # Build capability header
+            capabilities = self.get_capabilities()
+            cap_header = (
+                f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+            )
+
+            lines = []
+            if cap_header:
+                lines.append(cap_header)
+                lines.append("")
+
+            lines.append(f"Top {len(tools)} matching tools for {query!r}:")
             for i, t in enumerate(tools, 1):
-                score_pct = int(t.get("score", 0) * 100)
-                meta = self._registry.get(t["name"], {})
-                server = meta.get("_server", "")
-                tier = meta.get("type", "")
-                label = " [enterprise]" if tier == "enterprise" else ""
-                prefix = f"{server}.{t['name']}" if server else t["name"]
-                lines.append(f"{i}. {prefix}{label}  {score_pct}%")
-                if server:
-                    lines.append(f"   Server: {server}")
-                if t.get("description"):
-                    lines.append(f"   {t['description']}")
+                name = t.get("name", "")
+                desc = t.get("description", "")
+
+                # Get required inputs from the internal registry
+                with self._registry_lock:
+                    meta = self._mcp_registry.get(name, {})
+                schema = meta.get("inputSchema") or {}
+                required = schema.get("required") or []
+                inputs_str = f"inputs: {', '.join(required)}" if required else "no required inputs"
+
+                lines.append(f"{i}. {name} — {desc} ({inputs_str})")
+
+            lines.append("")
+            lines.append("Use execute_tool with the exact tool_name and required arguments.")
             return "\n".join(lines)
 
         except Exception as backend_exc:
@@ -418,9 +474,11 @@ class ToolRouter:
 
                 registry = ToolRegistry()
                 all_tools = registry.get_all_tools()
-                gateway_tools = [
-                    {"name": n, "description": m["description"]} for n, m in self._registry.items()
-                ]
+                with self._registry_lock:
+                    gateway_tools = [
+                        {"name": n, "description": m["description"]}
+                        for n, m in self._mcp_registry.items()
+                    ]
                 all_tools += [
                     t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in all_tools}
                 ]
@@ -431,42 +489,31 @@ class ToolRouter:
                 if not results:
                     return f"No tools matched query: {query!r} (backend offline)"
 
-                def _inline_score(q: str, name: str, desc: str) -> int:
-                    import re
+                capabilities = self.get_capabilities()
+                cap_header = (
+                    f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+                )
 
-                    tokens = set(re.findall(r"\w+", q.lower()))
-                    text = f"{name} {desc}".lower()
-                    return int(sum(1 for tok in tokens if tok in text) / max(len(tokens), 1) * 100)
+                lines = []
+                if cap_header:
+                    lines.append(cap_header)
+                    lines.append("")
 
-                lines = [f"Top {len(results)} tool(s) for {query!r} (local fallback):\n"]
+                lines.append(f"Top {len(results)} matching tools for {query!r} (local fallback):")
                 for i, t in enumerate(results, 1):
-                    score_pct = _inline_score(query, t.get("name", ""), t.get("description", ""))
-                    meta = self._registry.get(t["name"], {})
-                    server = meta.get("_server", t.get("server", ""))
-                    prefix = f"{server}.{t['name']}" if server else t["name"]
-                    lines.append(f"{i}. {prefix}  {score_pct}%")
-                    if server:
-                        lines.append(f"   Server: {server}")
-                    if t.get("description"):
-                        lines.append(f"   {t['description']}")
+                    name = t.get("name", "")
+                    desc = t.get("description", "")
+                    with self._registry_lock:
+                        meta = self._mcp_registry.get(name, {})
+                    schema = meta.get("inputSchema") or {}
+                    required = schema.get("required") or []
+                    inputs_str = (
+                        f"inputs: {', '.join(required)}" if required else "no required inputs"
+                    )
+                    lines.append(f"{i}. {name} — {desc} ({inputs_str})")
+
+                lines.append("")
+                lines.append("Use execute_tool with the exact tool_name and required arguments.")
                 return "\n".join(lines)
             except Exception:
                 return f"Error during retrieval: {backend_exc}"
-
-    def _run_list_mcp_servers(self) -> str:
-        config_path = pathlib.Path.home() / ".agent-corex" / "config.json"
-        mcp_config = pathlib.Path(__file__).parent.parent.parent / "config" / "mcp.json"
-
-        lines = ["Configured MCP servers:\n"]
-        if mcp_config.exists():
-            import json
-
-            try:
-                data = json.loads(mcp_config.read_text())
-                for name in data.get("mcpServers", {}):
-                    lines.append(f"  • {name}")
-            except Exception:
-                lines.append("  (error reading mcp.json)")
-        else:
-            lines.append("  No mcp.json found.")
-        return "\n".join(lines)

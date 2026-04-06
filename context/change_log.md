@@ -4,6 +4,27 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-06 — v2.0.0 — Retrieval-first, token-efficient gateway
+
+**What:** Major breaking change — Claude now sees exactly 2 tools (`retrieve_tools`, `execute_tool`) instead of all 5 static + up to 512 MCP tools. Saves 20k+ tokens per session. All MCP tools are routed internally via a hidden registry.
+
+**Architecture changes:**
+- New `agent_core/gateway/capability_provider.py` — derives human-readable capability domains from server names
+- `agent_core/gateway/tool_router.py` — split public (`TOOL_REGISTRY`: 2 tools) from internal (`_mcp_registry`, `_ENTERPRISE_TOOLS`); new `_run_execute_tool()` router; `tools_list()` returns only 2 tools with capabilities injected into description
+- `agent_core/gateway/gateway_server.py` — removed enterprise auth gate (now inside `_run_execute_tool()`); simplified `_handle_tools_call()`
+- `agent_core/api/main.py` — complete rewrite: wired MCPLoader for real MCP pool, added `POST /execute_tool`, added `GET /capabilities`
+
+**Tool output format:** `retrieve_tools` now returns minimal format with capability header: `name — description (inputs: x, y)` instead of `server.name  score%`
+
+**Files changed:**
+- `agent_core/gateway/capability_provider.py` — new file
+- `agent_core/gateway/tool_router.py` — major refactor
+- `agent_core/gateway/gateway_server.py` — minor updates
+- `agent_core/api/main.py` — complete rewrite
+- `agent_core/__init__.py`, `agent_core/gateway/gateway_server.py`, `pyproject.toml`, `homebrew/Formula/agent-corex.rb` — version bump to 2.0.0
+
+---
+
 ## 2026-04-04 — v1.8.1 — retrieve_tools: server prefix + score % in output
 
 **What:** Both the backend and local fallback paths of `retrieve_tools` now show the server name as a prefix (`server.toolname  score%`) and include a `Server: <name>` line per result, so users can see which MCP server each tool belongs to and its relevance score.
