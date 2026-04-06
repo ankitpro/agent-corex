@@ -249,6 +249,8 @@ def _handle_initialize(req_id: Any, _params: dict, router: ToolRouter) -> dict:
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {
                 "tools": {"listChanged": False},
+                "resources": {"subscribe": False},
+                "prompts": {"listChanged": False},
             },
             "serverInfo": {
                 "name": SERVER_NAME,
