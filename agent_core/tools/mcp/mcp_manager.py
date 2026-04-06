@@ -70,7 +70,7 @@ class MCPManager:
                     "server": server,
                     "name": tool["name"],
                     "description": tool.get("description", ""),
-                    "schema": tool.get("input_schema", {}),
+                    "inputSchema": tool.get("inputSchema") or tool.get("input_schema") or {},
                 }
             )
 

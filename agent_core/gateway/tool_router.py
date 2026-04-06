@@ -17,6 +17,12 @@ import threading
 import urllib.request
 from typing import Any
 
+from agent_core.input_abstraction import (
+    AbstractionRegistry,
+    ContextResolver,
+    ParamClassifier,
+)
+
 
 def _fire_and_forget_log(query: str, selected: list[str], scores: dict) -> None:
     """Non-blocking POST to /query/log — never blocks tool execution."""
@@ -236,6 +242,10 @@ class ToolRouter:
         # MCPManager for lazy-starting servers on tool call
         self._mcp_manager = mcp_manager
 
+        # Input abstraction layer — hides internal params from LLM
+        self._abstraction_registry = AbstractionRegistry(ParamClassifier())
+        self._context_resolver = ContextResolver()
+
         # Optionally merge in dynamically discovered MCP tools (all free)
         if extra_tools:
             self.add_mcp_tools(extra_tools)
@@ -247,6 +257,7 @@ class ToolRouter:
         Called from the background discovery thread in MCPLoader.
         """
         added = 0
+        added_names = []
         with self._registry_lock:
             for tool in tools:
                 name = tool.get("name")
@@ -258,6 +269,12 @@ class ToolRouter:
                         "_server": tool.get("server"),
                     }
                     added += 1
+                    added_names.append(name)
+
+        # Invalidate abstraction cache for newly added tools
+        for name in added_names:
+            self._abstraction_registry.invalidate(name)
+
         if added:
             import logging
 
@@ -413,21 +430,56 @@ class ToolRouter:
         )
 
     def _run_mcp_tool(self, tool_name: str, server_name: str, arguments: dict) -> Any:
-        """Execute a tool on its backing MCP server, starting it lazily if needed."""
+        """Execute a tool on its backing MCP server, starting it lazily if needed.
+
+        Includes input validation and internal parameter injection via the
+        input abstraction layer.
+        """
         if self._mcp_manager is None:
             raise RuntimeError("MCP manager not available")
 
         # Lazy-start the server if not running
         if not self._mcp_manager.ensure_server_running(server_name):
             raise RuntimeError(
-                f"MCP server {server_name!r} could not be started. " "Check logs for details."
+                f"MCP server {server_name!r} could not be started. Check logs for details."
             )
 
         client = self._mcp_manager.get_client(server_name)
         if client is None:
             raise RuntimeError(f"MCP server {server_name!r} has no active client")
 
-        result = client.call_tool(tool_name, arguments)
+        # ─────────────────────────────────────────────────────────────────
+        # Input Abstraction Layer: validate user inputs + inject internal params
+        # ─────────────────────────────────────────────────────────────────
+        with self._registry_lock:
+            meta = self._mcp_registry.get(tool_name, {})
+        raw_schema = meta.get("inputSchema") or {}
+        abstracted = self._abstraction_registry.get(tool_name, server_name, raw_schema)
+
+        # Step 1: Validate required user inputs
+        for field in abstracted.required_inputs:
+            if field.name not in arguments:
+                error_msg = f"Missing required input: '{field.name}'. {field.description}"
+                return json.dumps({"error": error_msg})
+            val = arguments[field.name]
+            if val is None or (isinstance(val, str) and not val.strip()):
+                error_msg = f"Required input '{field.name}' cannot be empty."
+                return json.dumps({"error": error_msg})
+
+        # Step 2: Resolve and inject internal parameters
+        server_config = self._mcp_manager.server_configs.get(server_name, {})
+        internal_resolved = self._context_resolver.resolve_all(
+            abstracted.internal_params, server_config
+        )
+
+        # Build final arguments: user inputs + auto-resolved internal params
+        final_arguments = {**arguments, **internal_resolved}
+
+        # ─────────────────────────────────────────────────────────────────
+        # End Input Abstraction Layer
+        # ─────────────────────────────────────────────────────────────────
+
+        result = client.call_tool(tool_name, final_arguments)
         return result
 
     # ── Built-in free tool implementations ────────────────────────────────
@@ -673,12 +725,23 @@ class ToolRouter:
                 name = t.get("tool_name") or t.get("name", "")
                 desc = t.get("description", "")
 
-                # Get required inputs from internal registry
+                # Get abstracted inputs from input abstraction layer
                 with self._registry_lock:
                     meta = self._mcp_registry.get(name, {})
-                schema = meta.get("inputSchema") or {}
-                required = schema.get("required") or []
-                inputs_str = f"inputs: {', '.join(required)}" if required else "no required inputs"
+                raw_schema = meta.get("inputSchema") or {}
+                server = meta.get("_server", "")
+                abstracted = self._abstraction_registry.get(name, server, raw_schema)
+
+                req_names = [f.name for f in abstracted.required_inputs]
+                opt_names = [f.name for f in abstracted.optional_inputs]
+
+                if req_names:
+                    inputs_str = f"required: {', '.join(req_names)}"
+                    if opt_names:
+                        # Show first 3 optional inputs to keep output readable
+                        inputs_str += f" | optional: {', '.join(opt_names[:3])}"
+                else:
+                    inputs_str = "no required inputs"
 
                 lines.append(f"{i}. {name} — {desc} ({inputs_str})")
 
