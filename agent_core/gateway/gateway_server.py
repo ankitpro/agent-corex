@@ -46,6 +46,68 @@ SERVER_NAME = "agent-corex"
 SERVER_VERSION = "2.0.0"
 PROTOCOL_VERSION = "2024-11-05"
 
+# ── Resources ────────────────────────────────────────────────────────────────
+# Static reference documents for Claude (generic, token-efficient)
+
+RESOURCES = {
+    "quick-start": {
+        "uri": "guide://quick-start",
+        "name": "Quick Start",
+        "description": "2-tool workflow for Agent-CoreX",
+        "contents": """## 2-Tool Workflow
+
+**Step 1: Find tools**
+retrieve_tools(query="describe your task", top_k=3)
+
+**Step 2: Execute**
+execute_tool(tool_name="<from step 1>", arguments={...})
+
+## Response Format
+```
+Available capabilities: [list of domains]
+
+Top N matching tools for '<query>':
+1. tool_name — description (inputs: arg1, arg2)
+2. tool_name — description (no required inputs)
+```
+
+## Key Points
+- Capabilities show available domains
+- Required inputs shown in parentheses
+- Call retrieve_tools first, always
+- Use tool_name exactly from retrieve_tools results
+""",
+    },
+}
+
+# ── Prompts ──────────────────────────────────────────────────────────────────
+# Suggested conversation starters (generic, server-agnostic)
+
+PROMPTS = {
+    "find-tools": {
+        "name": "Find Available Tools",
+        "description": "Discover what tools are available",
+        "arguments": [],
+        "content": """Let me find available tools for this task.
+
+1. retrieve_tools(query="describe what I need")
+2. Review the tools and their required inputs
+3. Call execute_tool with the tool name and arguments
+""",
+    },
+    "execute-workflow": {
+        "name": "Execute a Task",
+        "description": "Complete a task using available tools",
+        "arguments": [],
+        "content": """Execute a task step by step:
+
+1. retrieve_tools(query="<describe task>")
+2. execute_tool(tool_name="<from results>", arguments={...})
+
+Check the response for results or errors, then next steps if needed.""",
+    },
+}
+
 
 def _send(obj: dict) -> None:
     """Write a JSON-RPC message to stdout and flush."""
@@ -202,6 +264,37 @@ def _handle_tools_list(req_id: Any, _params: dict, router: ToolRouter) -> dict:
     return _ok_response(req_id, {"tools": router.tools_list()})
 
 
+def _handle_resources_list(req_id: Any, _params: dict) -> dict:
+    """List available resources."""
+    resources_list = [
+        {"uri": res["uri"], "name": res["name"], "description": res["description"]}
+        for res in RESOURCES.values()
+    ]
+    return _ok_response(req_id, {"resources": resources_list})
+
+
+def _handle_resources_read(req_id: Any, params: dict) -> dict:
+    """Read resource content by URI."""
+    uri = params.get("uri", "")
+    for res in RESOURCES.values():
+        if res["uri"] == uri:
+            return _ok_response(req_id, {"contents": res["contents"]})
+    return _error_response(req_id, -32602, f"Resource not found: {uri}")
+
+
+def _handle_prompts_list(req_id: Any, _params: dict) -> dict:
+    """List available prompts."""
+    prompts_list = [
+        {
+            "name": prompt["name"],
+            "description": prompt["description"],
+            "arguments": prompt.get("arguments", []),
+        }
+        for prompt in PROMPTS.values()
+    ]
+    return _ok_response(req_id, {"prompts": prompts_list})
+
+
 def _handle_tools_call(req_id: Any, params: dict, router: ToolRouter) -> dict:
     tool_name: str = params.get("name", "")
     arguments: dict = params.get("arguments") or {}
@@ -290,6 +383,12 @@ def run() -> None:
                     response = _handle_tools_list(req_id, params, router)
                 elif method == "tools/call":
                     response = _handle_tools_call(req_id, params, router)
+                elif method == "resources/list":
+                    response = _handle_resources_list(req_id, params)
+                elif method == "resources/read":
+                    response = _handle_resources_read(req_id, params)
+                elif method == "prompts/list":
+                    response = _handle_prompts_list(req_id, params)
                 elif method == "ping":
                     response = _ok_response(req_id, {})
                 else:
@@ -378,6 +477,12 @@ def run() -> None:
                     response = _handle_tools_list(req_id, params, router)
                 elif method == "tools/call":
                     response = _handle_tools_call(req_id, params, router)
+                elif method == "resources/list":
+                    response = _handle_resources_list(req_id, params)
+                elif method == "resources/read":
+                    response = _handle_resources_read(req_id, params)
+                elif method == "prompts/list":
+                    response = _handle_prompts_list(req_id, params)
                 elif method == "ping":
                     response = _ok_response(req_id, {})
                 else:
