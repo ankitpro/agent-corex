@@ -4,6 +4,27 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-07 — v2.4.1 — Phase 9 Admin RBAC + Bug Fixes
+
+**What:** Version bump for consistency across Enterprise repos (frontend, backend, and OSS gateway all at 2.4.1+). Fixed missing `/packs/enabled` endpoint in backend, improved Supabase error handling in frontend.
+
+**Files modified:**
+- `pyproject.toml` — bumped to 2.4.1
+- `agent_core/__init__.py` — bumped `__version__` to 2.4.1
+- `agent_core/gateway/gateway_server.py` — bumped `SERVER_VERSION` to 2.4.1
+- `homebrew/Formula/agent-corex.rb` — bumped to 2.4.1
+- `context/current_state.md` — updated version and last updated date
+
+**Backend changes (enterprise):**
+- Added `GET /packs/enabled` endpoint to return user-enabled packs from `user_packs` table
+- Improved error handling in AuthContext for `is_admin` column fetch failures
+
+**Frontend changes (next):**
+- Added error handling to profile fetch to prevent crashes on Supabase query failures
+- Updated PWA manifest `short_name` to "Agent-CoreX" for consistent mobile display
+
+---
+
 ## 2026-04-06 — v2.2.0 — User-Aware Tool Retrieval & MCP Recommendation Engine
 
 **What:** Major feature release — tool retrieval is now user-aware and filtering-aware. Added 3 new public tools for better MCP discovery.
