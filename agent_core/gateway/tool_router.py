@@ -24,7 +24,9 @@ from agent_core.input_abstraction import (
 )
 
 
-def _fire_and_forget_log(query: str, selected: list[str], scores: dict, retrieved_tools: list[dict] | None = None) -> None:
+def _fire_and_forget_log(
+    query: str, selected: list[str], scores: dict, retrieved_tools: list[dict] | None = None
+) -> None:
     """Non-blocking POST to /query/log — never blocks tool execution."""
 
     def _do():
@@ -667,16 +669,18 @@ class ToolRouter:
                     "success_rate": t.get("success_rate", 0.5),
                 }
                 # Capture full tool metadata for dashboard display
-                retrieved_tools_data.append({
-                    "name": tool_name,
-                    "server": t.get("server", tool_name),
-                    "category": t.get("category", ""),
-                    "capabilities": t.get("capabilities", []),
-                    "score": score,
-                    "semantic_score": score,
-                    "capability_score": 0.0,
-                    "success_rate": t.get("success_rate", 0.5),
-                })
+                retrieved_tools_data.append(
+                    {
+                        "name": tool_name,
+                        "server": t.get("server", tool_name),
+                        "category": t.get("category", ""),
+                        "capabilities": t.get("capabilities", []),
+                        "score": score,
+                        "semantic_score": score,
+                        "capability_score": 0.0,
+                        "success_rate": t.get("success_rate", 0.5),
+                    }
+                )
 
             selected_names = [
                 t.get("tool_name") or t.get("name", "") for t in tools if isinstance(t, dict)
