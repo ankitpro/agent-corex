@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-corex"
-version = "2.7.0"
+version = "2.8.0"
 description = "Fast, accurate MCP tool retrieval engine for LLMs — with pack manager, MCP gateway, and uvx support"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -68,6 +68,7 @@ full = [
 
 dev = [
     "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "flake8>=6.0.0",
@@ -153,6 +154,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+asyncio_mode = "auto"
 addopts = "--cov=agent_core --cov-report=html --cov-report=term-missing"
 
 [tool.ruff]

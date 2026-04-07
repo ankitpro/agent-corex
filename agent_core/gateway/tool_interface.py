@@ -207,6 +207,8 @@ class ToolInterface:
             return self._registry[tool_name]
         if tool_name in self._internal_tools:
             return self._internal_tools[tool_name]
+        if tool_name in self._mcp_tools:
+            return self._mcp_tools[tool_name]
         return None
 
     def is_public_tool(self, tool_name: str) -> bool:
