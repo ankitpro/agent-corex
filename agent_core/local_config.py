@@ -29,7 +29,8 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 
 # Internal API endpoint — not user-configurable, never shown in CLI output.
 # Use AGENT_COREX_API_URL env var to override for local development only.
-_API_URL = "https://agent-corex-enterprise-production.up.railway.app"
+# _API_URL = "https://app.agent-corex.com"
+_API_URL = "https://app.agent-corex.com"
 DEFAULT_FRONTEND_URL = "https://www.agent-corex.com"
 
 
