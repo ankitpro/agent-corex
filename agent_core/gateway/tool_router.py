@@ -23,67 +23,6 @@ from agent_core.input_abstraction import (
     ParamClassifier,
 )
 
-
-def _fire_and_forget_log(
-    query: str, selected: list[str], scores: dict, retrieved_tools: list[dict] | None = None
-) -> None:
-    """Non-blocking POST to /query/log — never blocks tool execution."""
-
-    def _do():
-        try:
-            import os
-            import ssl
-
-            from agent_core import local_config
-
-            base_url = local_config.get_base_url().rstrip("/")
-            api_key = local_config.get_api_key() or ""
-            payload_dict = {
-                "query": query,
-                "source": "mcp",
-                "selected_tools": selected,
-                "scores": scores,
-            }
-            # Include retrieved_tools if provided (all tools returned from retrieve_tools endpoint)
-            if retrieved_tools:
-                payload_dict["retrieved_tools"] = retrieved_tools
-
-            payload = json.dumps(payload_dict).encode("utf-8")
-            req = urllib.request.Request(
-                f"{base_url}/query/log",
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                method="POST",
-            )
-
-            # Build SSL context — try certifi bundle first (works in PyInstaller binary),
-            # fall back to default context (works in normal Python).
-            try:
-                import certifi
-
-                ctx = ssl.create_default_context(cafile=certifi.where())
-            except Exception:
-                ctx = ssl.create_default_context()
-
-            with urllib.request.urlopen(req, timeout=5, context=ctx):
-                pass
-        except Exception as exc:
-            # Write errors to ~/.agent-corex/query_log_debug.txt for diagnosing binary issues.
-            try:
-                import os
-
-                log = os.path.join(os.path.expanduser("~"), ".agent-corex", "query_log_debug.txt")
-                with open(log, "a") as fh:
-                    fh.write(f"{exc}\n")
-            except Exception:
-                pass
-
-    threading.Thread(target=_do, daemon=False).start()
-
-
 # ---------------------------------------------------------------------------
 # Public tool registry — 5 tools exposed to Claude
 # ---------------------------------------------------------------------------
@@ -654,38 +593,10 @@ class ToolRouter:
             if not isinstance(tools, list):
                 raise ValueError(f"unexpected backend response format: {type(response)}")
 
-            # Build score map and retrieved_tools data for logging
-            score_map: dict = {}
-            retrieved_tools_data: list[dict] = []
-            for t in tools:
-                if not isinstance(t, dict) or not t.get("tool_name"):
-                    continue
-                tool_name = t.get("tool_name") or t.get("name", "")
-                score = t.get("confidence_score", 0.0)
-                score_map[tool_name] = {
-                    "score": score,
-                    "semantic_score": score,
-                    "capability_score": 0.0,
-                    "success_rate": t.get("success_rate", 0.5),
-                }
-                # Capture full tool metadata for dashboard display
-                retrieved_tools_data.append(
-                    {
-                        "name": tool_name,
-                        "server": t.get("server", tool_name),
-                        "category": t.get("category", ""),
-                        "capabilities": t.get("capabilities", []),
-                        "score": score,
-                        "semantic_score": score,
-                        "capability_score": 0.0,
-                        "success_rate": t.get("success_rate", 0.5),
-                    }
-                )
-
+            # Backend now stores retrieved_tools directly, no client-side logging needed
             selected_names = [
                 t.get("tool_name") or t.get("name", "") for t in tools if isinstance(t, dict)
             ]
-            _fire_and_forget_log(query, selected_names, score_map, retrieved_tools_data)
 
             # Format response with tools or recommendations
             return self._format_retrieve_tools_response(
@@ -712,22 +623,7 @@ class ToolRouter:
                 ]
                 results = rank_tools(query, all_tools, top_k=top_k, method="keyword")
                 selected_names = [t["name"] for t in results]
-                # Build basic retrieved_tools data from fallback results
-                fallback_retrieved_tools = [
-                    {
-                        "name": t.get("name", ""),
-                        "server": t.get("server", t.get("name", "")),
-                        "category": t.get("category", ""),
-                        "capabilities": t.get("capabilities", []),
-                        "score": 0.0,  # No score available in fallback
-                        "semantic_score": 0.0,
-                        "capability_score": 0.0,
-                        "success_rate": 0.5,
-                    }
-                    for t in results
-                ]
-                _fire_and_forget_log(query, selected_names, {}, fallback_retrieved_tools)
-
+                # Fallback is offline - no network call to backend to log
                 return self._format_retrieve_tools_response(
                     tools=results,
                     recommended_mcps=[],
