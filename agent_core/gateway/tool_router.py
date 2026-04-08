@@ -573,7 +573,9 @@ class ToolRouter:
             # Call /v2/retrieve_tools with user_id from auth header
             params = urllib.parse.urlencode({"query": query, "top_k": top_k})
             url = f"{base_url}/v2/retrieve_tools?{params}"
-            headers = {}
+            headers = {
+                "X-Agent-Source": "mcp",  # Identify request from CLI/MCP gateway
+            }
             if auth_header:
                 headers["Authorization"] = auth_header
 
