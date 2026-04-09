@@ -113,7 +113,7 @@ Complete reference of all source files with functions, classes, and line numbers
 ### `gateway_server.py` — **[ENHANCED]**
 - **`SERVER_VERSION`** = "2.0.0" — MCP server version
 - **`run()`** — Main entry point, start stdio MCP server
-  - Loads ~/.agent-corex/mcp.json and env vars, routes requests via ToolRouter
+  - Loads ~/.agent-corex/mcp.json + ~/.agent-corex/registry.json and env vars, routes requests via ToolRouter
 - `_send(obj)` — Write JSON-RPC message to stdout
 - `_error_response(req_id, code, message, data)` — Error response
 - `_ok_response(req_id, result)` — Success response
@@ -132,7 +132,8 @@ Complete reference of all source files with functions, classes, and line numbers
   - `_mcp_registry` — **[NEW]** Internal MCP tools (never sent to Claude)
   - `add_mcp_tools(tools)` — **[CHANGED]** Adds to _mcp_registry only (not _registry)
   - `tools_list()` — **[SIMPLIFIED]** Returns exactly 2 tools with capabilities injected
-  - `get_capabilities()` — **[NEW]** Derives capability domains from server names
+  - `get_capabilities()` — Derives capability domains from server names
+  - `_run_get_capabilities(args)` — **[UPDATED]** Derives "installed" from runtime MCP registry + registry.json + MCPManager configs
   - `get_meta(tool_name)` — **[ENHANCED]** Checks all 3 registries
   - `get_server(tool_name)` — **[UPDATED]** Checks _mcp_registry only
   - `is_enterprise(tool_name)` — **[UPDATED]** Checks _ENTERPRISE_TOOLS
@@ -266,23 +267,21 @@ Complete reference of all source files with functions, classes, and line numbers
   - `shutdown_server(name)` → None
   - `_get_server_for_tool(name)` → server_name
 
-### `mcp_loader.py` — **[ENHANCED]** (200+ lines)
-**Load mcp.json config with lazy loading support**
+### `mcp_loader.py` — **[ENHANCED]** (330+ lines)
+**Load mcp.json + registry.json config with lazy loading support**
 
+- `TOOLS_CACHE_FILE` — Path to ~/.agent-corex/tools_cache.json
+- `REGISTRY_FILE` — Path to ~/.agent-corex/registry.json
 - `MCPLoader` — Config loader with lazy startup
   - `__init__(config_path)` — Load mcp.json
-  - **`load(lazy_load=True)`** — **[ENHANCED]** Load MCP servers
-    - New parameter: lazy_load (default True)
-    - If lazy_load=True:
-      - Servers NOT started immediately
-      - Server configs registered
-      - Tools metadata registered (started briefly to list tools, then stopped)
-      - Servers started on-demand when first tool used
-    - If lazy_load=False: Legacy behavior (all servers started immediately)
+  - `load_with_cache(add_tools_callback)` — Fast startup: cached tools + background discovery
+  - **`load_registry_servers(manager, add_tools_callback)`** — **[NEW]** Load CLI-added servers from registry.json into MCPManager. Skips duplicates already in mcp.json. Loads cached tool metadata and starts background discovery for uncached servers.
+  - `load(lazy_load=True)` — Synchronous load (legacy, non-gateway)
   - `_load_dotenv()` → dict — Load ~/.agent-corex/.env
-  - `validate_config()` → bool
-  - `_load_from_file(path)` → dict
-  - `_build_manager()` → MCPManager
+  - `_build_server_config(name, server, env_dict)` → dict | None
+  - `_read_cache()` → dict[str, list]
+  - `_write_cache(servers_tools)` → None
+  - `_background_discover(config, env_dict, add_tools_callback)` → None
 
 ---
 

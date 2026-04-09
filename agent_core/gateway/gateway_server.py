@@ -420,6 +420,14 @@ def run() -> None:
     # Build router immediately with built-in tools — no blocking I/O yet
     router = ToolRouter()
     mcp_manager = None
+    loader = None
+
+    def _on_tools_discovered(server_name: str, tools: list) -> None:
+        """Called by background discovery thread for each server."""
+        # Stamp server name onto each tool dict so router knows its origin
+        for t in tools:
+            t["server"] = server_name
+        router.add_mcp_tools(tools)
 
     # Load MCP tools from ~/.agent-corex/mcp.json using cache for instant startup.
     # Background thread runs live discovery and updates router as tools are found.
@@ -429,14 +437,6 @@ def run() -> None:
             from agent_core.tools.mcp.mcp_loader import MCPLoader
 
             loader = MCPLoader(str(local_mcp_config))
-
-            def _on_tools_discovered(server_name: str, tools: list) -> None:
-                """Called by background discovery thread for each server."""
-                # Stamp server name onto each tool dict so router knows its origin
-                for t in tools:
-                    t["server"] = server_name
-                router.add_mcp_tools(tools)
-
             mcp_manager = loader.load_with_cache(add_tools_callback=_on_tools_discovered)
             router._mcp_manager = mcp_manager
 
@@ -451,6 +451,40 @@ def run() -> None:
             )
         except Exception as e:
             log.warning(f"Could not load local MCP tools: {e}")
+
+    # Load MCP servers from ~/.agent-corex/registry.json (CLI-added servers).
+    # These are servers added via `agent-corex mcp add <name>` and stored in
+    # the local registry.  They are merged into the same MCPManager so they
+    # get the same lazy-start / LRU lifecycle as mcp.json servers.
+    try:
+        from agent_core.tools.mcp.mcp_loader import MCPLoader
+
+        # Create loader + manager if mcp.json didn't exist (registry-only case)
+        if loader is None:
+            loader = MCPLoader.__new__(MCPLoader)
+            loader.config_path = None
+            loader._env_cache = None
+        if mcp_manager is None:
+            from agent_core.tools.mcp.mcp_manager import MCPManager
+
+            mcp_manager = MCPManager(lazy_load=True)
+            router._mcp_manager = mcp_manager
+
+        registry_names = loader.load_registry_servers(
+            mcp_manager,
+            add_tools_callback=_on_tools_discovered,
+        )
+        if registry_names:
+            # Push any cached registry tools into the router immediately
+            cached_tools = mcp_manager.get_all_tools()
+            if cached_tools:
+                router.add_mcp_tools(cached_tools)
+            log.info(
+                f"[MCP] loaded {len(registry_names)} servers from registry.json: "
+                f"{', '.join(registry_names)}"
+            )
+    except Exception as e:
+        log.warning(f"Could not load registry servers: {e}")
 
     try:
         for raw_line in sys.stdin:

@@ -437,6 +437,11 @@ class ToolRouter:
         """
         Return list of installed and available MCP server capabilities.
 
+        "installed" is derived from three sources (union):
+          1. Runtime MCP registry — tools already discovered from mcp.json
+          2. ~/.agent-corex/registry.json — servers added via ``mcp add``
+          3. MCPManager server_configs — registered but not yet discovered
+
         Response format:
         {
             "installed": ["github", "railway", ...],
@@ -444,11 +449,28 @@ class ToolRouter:
         }
         """
         try:
-            # Get installed servers from MCP registry
-            installed_servers = {
-                meta.get("_server") for meta in self._mcp_registry.values() if meta.get("_server")
-            }
-            installed_servers.discard(None)  # Remove None if present
+            # Source 1: servers from runtime MCP registry (discovered tools)
+            with self._registry_lock:
+                installed_servers = {
+                    meta.get("_server")
+                    for meta in self._mcp_registry.values()
+                    if meta.get("_server")
+                }
+            installed_servers.discard(None)
+
+            # Source 2: servers from ~/.agent-corex/registry.json (CLI-added)
+            try:
+                from agent_core.uvx import registry
+
+                installed_servers |= set(registry.get_servers().keys())
+            except Exception:
+                pass
+
+            # Source 3: servers registered in MCPManager (configs loaded,
+            # tools may not be discovered yet)
+            if self._mcp_manager is not None:
+                installed_servers |= set(self._mcp_manager.server_configs.keys())
+
             installed_list = sorted(installed_servers)
 
             # Get all known MCPs from the recommender catalog
@@ -625,6 +647,28 @@ class ToolRouter:
                 ]
                 results = rank_tools(query, all_tools, top_k=top_k, method="keyword")
                 selected_names = [t["name"] for t in results]
+
+                # If no results and servers are registered but tools not yet
+                # discovered, give a helpful hint instead of an empty list.
+                if not results and self._mcp_manager:
+                    discovered = {
+                        t.get("server")
+                        for t in self._mcp_manager.tools
+                        if t.get("server")
+                    }
+                    pending = [
+                        name
+                        for name in self._mcp_manager.server_configs
+                        if name not in discovered
+                    ]
+                    if pending:
+                        return (
+                            f"MCP servers are registered but tools haven't been "
+                            f"discovered yet: {', '.join(pending)}. "
+                            "They should be available shortly. Try again in a "
+                            "few seconds."
+                        )
+
                 # Fallback is offline - no network call to backend to log
                 return self._format_retrieve_tools_response(
                     tools=results,

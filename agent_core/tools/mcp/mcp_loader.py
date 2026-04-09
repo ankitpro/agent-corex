@@ -10,6 +10,7 @@ from .mcp_manager import MCPManager
 logger = logging.getLogger(__name__)
 
 TOOLS_CACHE_FILE = pathlib.Path.home() / ".agent-corex" / "tools_cache.json"
+REGISTRY_FILE = pathlib.Path.home() / ".agent-corex" / "registry.json"
 SELF_COMMANDS = {"agent-corex", "agent_corex"}
 
 
@@ -130,6 +131,94 @@ class MCPLoader:
         thread.start()
 
         return manager
+
+    # ------------------------------------------------------------------ #
+    # Registry loading (servers added via CLI `mcp add`)                  #
+    # ------------------------------------------------------------------ #
+
+    def load_registry_servers(
+        self, manager: MCPManager, add_tools_callback=None
+    ) -> list[str]:
+        """
+        Load MCP servers from ~/.agent-corex/registry.json into the manager.
+
+        Registry servers are those added via ``agent-corex mcp add <name>``.
+        Servers already registered from mcp.json are skipped (mcp.json wins).
+
+        Returns list of server names that were newly registered.
+        """
+        if not REGISTRY_FILE.exists():
+            logger.info("[MCP] no registry.json found — skipping registry servers")
+            return []
+
+        try:
+            data = json.loads(REGISTRY_FILE.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning(f"[MCP] failed to read registry.json: {e}")
+            return []
+
+        env_dict = self._load_dotenv()
+        registered: list[str] = []
+
+        for name, server in data.get("mcp_servers", {}).items():
+            # mcp.json takes precedence — skip duplicates
+            if name in manager.server_configs:
+                logger.debug(
+                    f"[MCP] registry server {name!r} already loaded from mcp.json — skipping"
+                )
+                continue
+
+            server_config = self._build_server_config(name, server, env_dict)
+            if server_config:
+                manager.register_server_config(name, server_config)
+                registered.append(name)
+                logger.info(f"[MCP] registered from registry: {name}")
+
+        if not registered:
+            return []
+
+        logger.info(
+            f"[MCP] loaded {len(registered)} servers from registry.json: "
+            f"{', '.join(registered)}"
+        )
+
+        # Populate tool metadata from cache for registry servers
+        cached = self._read_cache()
+        for name in registered:
+            if name in cached:
+                tools = cached[name]
+                manager.register_tools(name, tools)
+                if add_tools_callback and tools:
+                    stamped = []
+                    for t in tools:
+                        t_copy = dict(t)
+                        t_copy["server"] = name
+                        stamped.append(t_copy)
+                    try:
+                        add_tools_callback(name, stamped)
+                    except Exception as e:
+                        logger.warning(f"[MCP] registry callback error for {name}: {e}")
+
+        # Background discovery for servers with no cached tools
+        uncached = [n for n in registered if n not in cached]
+        if uncached:
+            raw_data = data.get("mcp_servers", {})
+            registry_config = {
+                "mcpServers": {name: raw_data[name] for name in uncached}
+            }
+            thread = threading.Thread(
+                target=self._background_discover,
+                args=(registry_config, env_dict, add_tools_callback),
+                daemon=True,
+                name="mcp-registry-discovery",
+            )
+            thread.start()
+            logger.info(
+                f"[MCP] background discovery started for {len(uncached)} "
+                f"uncached registry servers: {', '.join(uncached)}"
+            )
+
+        return registered
 
     def _read_cache(self) -> dict[str, list]:
         """Read tools cache. Returns {server_name: [tool_dicts]} or {}."""

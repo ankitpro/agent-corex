@@ -4,6 +4,17 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-10 — Fix: MCP servers added via CLI not recognized at runtime
+
+**What:** CLI-added MCP servers (`agent-corex mcp add <name>`) were stored in `~/.agent-corex/registry.json` but never loaded by the gateway. The gateway only read `~/.agent-corex/mcp.json`, so `get_capabilities` showed them as "available_but_not_installed" and `retrieve_tools`/`execute_tool` couldn't reach them.
+
+**Files changed:**
+- `agent_core/tools/mcp/mcp_loader.py` — Added `load_registry_servers()` method to load MCP servers from `registry.json` into MCPManager with cached tool metadata and background discovery for uncached servers
+- `agent_core/gateway/gateway_server.py` — Gateway startup now loads registry.json servers after mcp.json, creating MCPManager if needed (registry-only case). Moved `_on_tools_discovered` callback to outer scope for reuse
+- `agent_core/gateway/tool_router.py` — `_run_get_capabilities()` now derives "installed" from 3 sources: runtime MCP registry, `registry.json`, and MCPManager configs. Added pending-server hint in `_run_retrieve_tools()` fallback when servers are registered but tools not yet discovered
+
+---
+
 ## 2026-04-07 — v2.4.1 — Phase 9 Admin RBAC + Bug Fixes
 
 **What:** Version bump for consistency across Enterprise repos (frontend, backend, and OSS gateway all at 2.4.1+). Fixed missing `/packs/enabled` endpoint in backend, improved Supabase error handling in frontend.

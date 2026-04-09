@@ -5,7 +5,7 @@ Recent changes, active work, and next steps.
 ---
 
 ## Last Updated
-**2026-04-07** — v2.4.1 Phase 9 admin RBAC + bug fixes
+**2026-04-10** — Fix: MCP servers added via CLI now recognized at runtime
 
 ---
 
