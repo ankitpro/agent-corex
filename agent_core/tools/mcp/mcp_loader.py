@@ -136,9 +136,7 @@ class MCPLoader:
     # Registry loading (servers added via CLI `mcp add`)                  #
     # ------------------------------------------------------------------ #
 
-    def load_registry_servers(
-        self, manager: MCPManager, add_tools_callback=None
-    ) -> list[str]:
+    def load_registry_servers(self, manager: MCPManager, add_tools_callback=None) -> list[str]:
         """
         Load MCP servers from ~/.agent-corex/registry.json into the manager.
 
@@ -203,9 +201,7 @@ class MCPLoader:
         uncached = [n for n in registered if n not in cached]
         if uncached:
             raw_data = data.get("mcp_servers", {})
-            registry_config = {
-                "mcpServers": {name: raw_data[name] for name in uncached}
-            }
+            registry_config = {"mcpServers": {name: raw_data[name] for name in uncached}}
             thread = threading.Thread(
                 target=self._background_discover,
                 args=(registry_config, env_dict, add_tools_callback),

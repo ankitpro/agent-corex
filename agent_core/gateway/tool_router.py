@@ -652,14 +652,10 @@ class ToolRouter:
                 # discovered, give a helpful hint instead of an empty list.
                 if not results and self._mcp_manager:
                     discovered = {
-                        t.get("server")
-                        for t in self._mcp_manager.tools
-                        if t.get("server")
+                        t.get("server") for t in self._mcp_manager.tools if t.get("server")
                     }
                     pending = [
-                        name
-                        for name in self._mcp_manager.server_configs
-                        if name not in discovered
+                        name for name in self._mcp_manager.server_configs if name not in discovered
                     ]
                     if pending:
                         return (
