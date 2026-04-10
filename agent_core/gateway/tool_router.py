@@ -571,7 +571,12 @@ class ToolRouter:
         3. If no tools found, recommendations are included in response
         4. Fallback to local keyword search if backend unreachable
 
-        Returns formatted text with tool list or recommendations.
+        Returns structured JSON string:
+        {
+          "tools": [{"name": ..., "description": ..., "parameters": {...}}, ...],
+          "count": N,
+          "message": "..." (only when no exact match or no tools found)
+        }
         """
         query = args.get("query", "")
         top_k = int(args.get("top_k", 5))
@@ -632,24 +637,30 @@ class ToolRouter:
         except Exception as backend_exc:
             # ── Fallback: local keyword search (offline / backend down) ─────────
             try:
+                import json as _json
                 from agent_core.retrieval.ranker import rank_tools
                 from agent_core.tools.registry import ToolRegistry
 
                 registry = ToolRegistry()
                 all_tools = registry.get_all_tools()
                 with self._registry_lock:
+                    # Include full inputSchema from local registry for fallback
                     gateway_tools = [
-                        {"name": n, "description": m["description"]}
+                        {
+                            "name": n,
+                            "description": m.get("description", ""),
+                            "input_schema": m.get("inputSchema", {}),
+                            "_server": m.get("_server", ""),
+                        }
                         for n, m in self._mcp_registry.items()
                     ]
                 all_tools += [
                     t for t in gateway_tools if t["name"] not in {t2["name"] for t2 in all_tools}
                 ]
                 results = rank_tools(query, all_tools, top_k=top_k, method="keyword")
-                selected_names = [t["name"] for t in results]
 
                 # If no results and servers are registered but tools not yet
-                # discovered, give a helpful hint instead of an empty list.
+                # discovered, return a JSON hint instead of an empty list.
                 if not results and self._mcp_manager:
                     discovered = {
                         t.get("server") for t in self._mcp_manager.tools if t.get("server")
@@ -658,12 +669,15 @@ class ToolRouter:
                         name for name in self._mcp_manager.server_configs if name not in discovered
                     ]
                     if pending:
-                        return (
-                            f"MCP servers are registered but tools haven't been "
-                            f"discovered yet: {', '.join(pending)}. "
-                            "They should be available shortly. Try again in a "
-                            "few seconds."
-                        )
+                        return _json.dumps({
+                            "tools": [],
+                            "count": 0,
+                            "message": (
+                                f"MCP servers are registered but tools haven't been discovered yet: "
+                                f"{', '.join(pending)}. They should be available shortly. "
+                                "Try again in a few seconds."
+                            ),
+                        })
 
                 # Fallback is offline - no network call to backend to log
                 return self._format_retrieve_tools_response(
@@ -682,70 +696,111 @@ class ToolRouter:
         query: str,
         is_fallback: bool = False,
     ) -> str:
-        """Format tools and recommendations into readable text response."""
-        lines = []
+        """
+        Build a structured JSON response for retrieve_tools.
 
-        # Add capability header (get_capabilities() returns list of capability labels)
-        capabilities = self.get_capabilities()
-        cap_header = f"Available capabilities: {', '.join(capabilities)}" if capabilities else ""
+        Returns a JSON string:
+        {
+          "tools": [
+            {
+              "name": "exact-tool-name",
+              "description": "...",
+              "parameters": {
+                "type": "object",
+                "properties": {"param": {"type": "string", "description": "..."}},
+                "required": ["param"]
+              }
+            }
+          ],
+          "count": N,
+          "message": "..."   (only present when no exact match / no tools found)
+        }
+        """
+        import json as _json
 
-        if cap_header:
-            lines.append(cap_header)
-            lines.append("")
+        tool_objects = []
 
-        # Add tools if found
-        if tools:
-            fallback_suffix = " (local fallback)" if is_fallback else ""
-            lines.append(f"Top {len(tools)} matching tools for {query!r}{fallback_suffix}:")
-            for i, t in enumerate(tools, 1):
-                # Handle both {"name": ...} and {"tool_name": ...} formats
-                name = t.get("tool_name") or t.get("name", "")
-                desc = t.get("description", "")
+        for t in tools:
+            name = t.get("tool_name") or t.get("name", "")
+            if not name:
+                continue
 
-                # Get abstracted inputs from input abstraction layer
+            desc = t.get("description", "")
+
+            # Resolve inputSchema: backend response → local _mcp_registry fallback
+            raw_schema = (
+                t.get("input_schema")
+                or t.get("schema")
+                or {}
+            )
+            if not raw_schema:
                 with self._registry_lock:
                     meta = self._mcp_registry.get(name, {})
                 raw_schema = meta.get("inputSchema") or {}
                 server = meta.get("_server", "")
-                abstracted = self._abstraction_registry.get(name, server, raw_schema)
+            else:
+                server = t.get("server", "") or t.get("_server", "")
 
-                req_names = [f.name for f in abstracted.required_inputs]
-                opt_names = [f.name for f in abstracted.optional_inputs]
+            # Apply input abstraction (hides internal/injected params)
+            abstracted = self._abstraction_registry.get(name, server, raw_schema)
 
-                if req_names:
-                    inputs_str = f"required: {', '.join(req_names)}"
-                    if opt_names:
-                        # Show first 3 optional inputs to keep output readable
-                        inputs_str += f" | optional: {', '.join(opt_names[:3])}"
-                else:
-                    inputs_str = "no required inputs"
+            # Build user-facing parameters schema
+            properties: dict = {}
+            required: list = []
 
-                lines.append(f"{i}. {name} — {desc} ({inputs_str})")
+            for f in abstracted.required_inputs:
+                properties[f.name] = {
+                    "type": getattr(f, "type", None) or "string",
+                    "description": getattr(f, "description", None) or "",
+                }
+                required.append(f.name)
 
-            lines.append("")
-            lines.append("Use execute_tool with the exact tool_name and required arguments.")
+            for f in abstracted.optional_inputs:
+                properties[f.name] = {
+                    "type": getattr(f, "type", None) or "string",
+                    "description": getattr(f, "description", None) or "",
+                }
 
-        # Add recommendations if tools not found
-        elif recommended_mcps:
-            lines.append(f"No tools found for: {query!r}")
-            lines.append("")
-            lines.append("Recommended MCP servers to install:")
-            for rec in recommended_mcps[:3]:
-                name = rec.get("name", "")
-                reason = rec.get("reason", "")
-                examples = rec.get("example_tasks", [])[:2]
-                example_str = ", ".join(examples) if examples else ""
+            parameters: dict = {"type": "object", "properties": properties}
+            if required:
+                parameters["required"] = required
 
-                lines.append(f"• {name} — {reason}")
-                if example_str:
-                    lines.append(f"  Examples: {example_str}")
+            tool_objects.append({
+                "name": name,
+                "description": desc,
+                "parameters": parameters,
+            })
 
-            lines.append("")
-            lines.append(
-                "Use recommend_mcps(query) or recommend_mcps_from_stack(stack) to get installation help."
+        result: dict = {"tools": tool_objects, "count": len(tool_objects)}
+
+        # Add informational message when results are approximate or absent
+        if not tool_objects and recommended_mcps:
+            result["message"] = (
+                f"No tools found for '{query}'. "
+                "Showing recommended MCP servers to install."
             )
+            result["recommended_mcps"] = [
+                {
+                    "name": rec.get("name", ""),
+                    "reason": rec.get("reason", ""),
+                    "example_tasks": rec.get("example_tasks", [])[:2],
+                }
+                for rec in recommended_mcps[:3]
+            ]
+        elif not tool_objects:
+            result["message"] = f"No tools found for query: '{query}'"
+        elif is_fallback:
+            result["message"] = (
+                "No exact match found. Showing closest available tools from local cache."
+            )
+        elif len(tool_objects) > 0:
+            # Check backend confidence to decide if these are approximate matches
+            top_confidence = (
+                tools[0].get("confidence_score", 1.0) if tools else 1.0
+            )
+            if top_confidence < 0.5:
+                result["message"] = (
+                    "No exact tool found for this query. Showing closest available tools."
+                )
 
-        else:
-            lines.append(f"No tools found for query: {query!r}")
-
-        return "\n".join(lines)
+        return _json.dumps(result)
