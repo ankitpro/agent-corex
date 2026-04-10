@@ -669,15 +669,17 @@ class ToolRouter:
                         name for name in self._mcp_manager.server_configs if name not in discovered
                     ]
                     if pending:
-                        return _json.dumps({
-                            "tools": [],
-                            "count": 0,
-                            "message": (
-                                f"MCP servers are registered but tools haven't been discovered yet: "
-                                f"{', '.join(pending)}. They should be available shortly. "
-                                "Try again in a few seconds."
-                            ),
-                        })
+                        return _json.dumps(
+                            {
+                                "tools": [],
+                                "count": 0,
+                                "message": (
+                                    f"MCP servers are registered but tools haven't been discovered yet: "
+                                    f"{', '.join(pending)}. They should be available shortly. "
+                                    "Try again in a few seconds."
+                                ),
+                            }
+                        )
 
                 # Fallback is offline - no network call to backend to log
                 return self._format_retrieve_tools_response(
@@ -728,11 +730,7 @@ class ToolRouter:
             desc = t.get("description", "")
 
             # Resolve inputSchema: backend response → local _mcp_registry fallback
-            raw_schema = (
-                t.get("input_schema")
-                or t.get("schema")
-                or {}
-            )
+            raw_schema = t.get("input_schema") or t.get("schema") or {}
             if not raw_schema:
                 with self._registry_lock:
                     meta = self._mcp_registry.get(name, {})
@@ -765,19 +763,20 @@ class ToolRouter:
             if required:
                 parameters["required"] = required
 
-            tool_objects.append({
-                "name": name,
-                "description": desc,
-                "parameters": parameters,
-            })
+            tool_objects.append(
+                {
+                    "name": name,
+                    "description": desc,
+                    "parameters": parameters,
+                }
+            )
 
         result: dict = {"tools": tool_objects, "count": len(tool_objects)}
 
         # Add informational message when results are approximate or absent
         if not tool_objects and recommended_mcps:
             result["message"] = (
-                f"No tools found for '{query}'. "
-                "Showing recommended MCP servers to install."
+                f"No tools found for '{query}'. " "Showing recommended MCP servers to install."
             )
             result["recommended_mcps"] = [
                 {
@@ -795,9 +794,7 @@ class ToolRouter:
             )
         elif len(tool_objects) > 0:
             # Check backend confidence to decide if these are approximate matches
-            top_confidence = (
-                tools[0].get("confidence_score", 1.0) if tools else 1.0
-            )
+            top_confidence = tools[0].get("confidence_score", 1.0) if tools else 1.0
             if top_confidence < 0.5:
                 result["message"] = (
                     "No exact tool found for this query. Showing closest available tools."
