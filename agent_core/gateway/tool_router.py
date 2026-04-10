@@ -622,6 +622,26 @@ class ToolRouter:
             if not isinstance(tools, list):
                 raise ValueError(f"unexpected backend response format: {type(response)}")
 
+            is_local_fallback = False
+
+            # If backend returned empty tools, fall back to local _mcp_registry
+            if not tools:
+                from agent_core.retrieval.ranker import rank_tools
+
+                with self._registry_lock:
+                    local_tools = [
+                        {
+                            "name": n,
+                            "description": m.get("description", ""),
+                            "input_schema": m.get("inputSchema", {}),
+                            "_server": m.get("_server", ""),
+                        }
+                        for n, m in self._mcp_registry.items()
+                    ]
+                if local_tools:
+                    tools = rank_tools(query, local_tools, top_k=top_k, method="keyword")
+                    is_local_fallback = True
+
             # Backend now stores retrieved_tools directly, no client-side logging needed
             selected_names = [
                 t.get("tool_name") or t.get("name", "") for t in tools if isinstance(t, dict)
@@ -632,6 +652,7 @@ class ToolRouter:
                 tools=tools,
                 recommended_mcps=response.get("recommended_mcps", []),
                 query=query,
+                is_fallback=is_local_fallback,
             )
 
         except Exception as backend_exc:
