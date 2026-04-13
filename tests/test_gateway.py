@@ -17,7 +17,6 @@ from agent_core.gateway.gateway_server import (
 )
 from agent_core.client import AuthError, ConnectionError
 
-
 # ── Tool list ─────────────────────────────────────────────────────────────────
 
 
@@ -83,7 +82,9 @@ def test_handle_tools_call_execute_query_success():
     }
 
     with patch("agent_core.gateway.gateway_server.AgentCoreXClient", return_value=mock_client):
-        result = _handle_tools_call(1, {"name": "execute_query", "arguments": {"query": "list projects"}})
+        result = _handle_tools_call(
+            1, {"name": "execute_query", "arguments": {"query": "list projects"}}
+        )
 
     assert result["id"] == 1
     content = result["result"]["content"]

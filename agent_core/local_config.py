@@ -77,11 +77,7 @@ def delete_key(key: str) -> None:
 
 def get_api_url() -> str:
     """Return backend API URL. Env var > config file > default."""
-    return (
-        os.environ.get("AGENT_COREX_API_URL")
-        or get("api_url")
-        or DEFAULT_API_URL
-    )
+    return os.environ.get("AGENT_COREX_API_URL") or get("api_url") or DEFAULT_API_URL
 
 
 def get_api_key() -> Optional[str]:

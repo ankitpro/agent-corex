@@ -257,6 +257,7 @@ def version() -> None:
 def serve() -> None:
     """Start the MCP stdio server (for Claude Desktop / Cursor / VS Code)."""
     from agent_core.gateway.gateway_server import run as gateway_run
+
     gateway_run()
 
 
