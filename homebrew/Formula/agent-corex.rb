@@ -10,9 +10,9 @@
 # No Python or extra dependencies required.
 
 class AgentCorex < Formula
-  desc "Fast, accurate MCP tool router — detect, inject, and manage MCP servers for AI agents"
+  desc "Thin CLI + MCP client for Agent-CoreX — execute any task with a single query"
   homepage "https://github.com/ankitpro/agent-corex"
-  version "3.0.3"
+  version "4.0.0"
   license "MIT"
 
   on_macos do
@@ -38,8 +38,11 @@ class AgentCorex < Formula
     <<~EOS
       Get started:
         agent-corex login --key <your-api-key>
-        agent-corex detect
-        agent-corex init
+        agent-corex run "list my supabase projects"
+        agent-corex serve   # start MCP server for Claude/Cursor
+
+      MCP config (Claude Desktop / Cursor):
+        {"agent-corex": {"command": "agent-corex", "args": ["serve"]}}
 
       Docs: https://github.com/ankitpro/agent-corex
     EOS

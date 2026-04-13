@@ -4,161 +4,83 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-corex"
-version = "3.0.3"
-description = "Fast, accurate MCP tool retrieval engine for LLMs — with pack manager, MCP gateway, and uvx support"
+version = "4.0.0"
+description = "Thin CLI + MCP client for Agent-CoreX — execute any task with a single query"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
     {name = "Ankit Agarwal", email = "ankitagarwalpro@gmail.com"}
 ]
 keywords = [
     "mcp",
-    "tool-retrieval",
-    "semantic-search",
-    "embeddings",
+    "ai-agent",
+    "cli",
     "llm",
-    "ai",
-    "ranking"
+    "agent-corex",
+    "tool-execution",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Web Environment",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 dependencies = [
     "typer>=0.9.0",
     "httpx>=0.27.0",
-    "rich>=13.0.0"
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
-# Heavy ML stack — only needed for `agent-corex retrieve` and `agent-corex start`
-ml = [
-    "sentence-transformers>=2.2.0",
-    "faiss-cpu>=1.7.4",
-    "numpy>=1.21.0"
-]
-
-# API server — only needed for `agent-corex start`
-server = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0"
-]
-
-# Everything included: pip install "agent-corex[full]"
-full = [
-    "sentence-transformers>=2.2.0",
-    "faiss-cpu>=1.7.4",
-    "numpy>=1.21.0",
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0"
-]
-
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "mypy>=1.0.0",
+    "pytest-httpx>=0.30.0",
     "ruff>=0.1.0",
-    "httpx>=0.24.0",
-    "pre-commit>=3.0.0"
-]
-
-redis = [
-    "redis>=5.0.0"
-]
-
-# V2 intelligent retrieval: pip install "agent-corex[v2]"
-v2 = [
-    "openai>=1.30.0",
-    "qdrant-client>=1.9.0",
-    "supabase>=2.4.0",
-    "redis>=5.0.0",
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
+    "mypy>=1.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/ankitpro/agent-corex"
-Documentation = "https://ankitpro.github.io/agent-corex/"
+Documentation = "https://github.com/ankitpro/agent-corex#readme"
 Repository = "https://github.com/ankitpro/agent-corex.git"
 "Bug Tracker" = "https://github.com/ankitpro/agent-corex/issues"
 Changelog = "https://github.com/ankitpro/agent-corex/releases"
-"Author Portfolio" = "https://ankitpro.github.io/portfolio"
-"Author LinkedIn" = "https://www.linkedin.com/in/ankitagarwal94"
 
 [project.scripts]
 agent-corex = "agent_core.cli.main:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent_core*", "infrastructure*"]
-
-# ── uv / uvx configuration ───────────────────────────────────────────────────
-# Allows:  uvx agent-corex [command]
-# uvx resolves the entry point "agent-corex" from [project.scripts] below.
-# No special [tool.uv] block is required — uvx uses [project.scripts] by default.
-#
-# The package can also be run as a one-shot ephemeral tool:
-#   uvx agent-corex --help
-#   uvx agent-corex pack install youtube-productivity
-#   uvx agent-corex mcp          # starts MCP gateway (stdio)
+include = ["agent_core*"]
 
 [tool.setuptools.package-data]
 agent_core = ["py.typed"]
 
-[tool.black]
+[tool.ruff]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311", "py312"]
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-line_length = 100
-skip_gitignore = true
+target-version = "py39"
+select = ["E", "F", "W"]
+ignore = ["E501"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-asyncio_mode = "auto"
-addopts = "--cov=agent_core --cov-report=html --cov-report=term-missing"
-
-[tool.ruff]
-line-length = 100
-target-version = "py38"
-select = ["E", "F", "W"]
-ignore = ["E501"]  # Line too long (handled by black)
+addopts = "--cov=agent_core --cov-report=term-missing"

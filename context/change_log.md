@@ -4,6 +4,24 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-13 — v4.0.0 — Thin client rewrite for v2 backend
+
+**What:** Complete rewrite. CLI is now a thin client delegating all intelligence to the v2 backend at `https://api.v2.agent-corex.com`. Removed local ML retrieval, MCP server management, input abstraction, JWT auth, and all optional dependencies. Added `agent_core/client.py` as the sole HTTP layer. MCP server now exposes a single `execute_query` tool.
+
+**Files changed:**
+- `agent_core/__init__.py` — version 4.0.0, stripped lazy ML imports
+- `agent_core/local_config.py` — simplified to api_url + api_key only
+- `agent_core/client.py` — NEW: httpx wrapper for v2 backend
+- `agent_core/cli/main.py` — rewritten: run, config, login, logout, health, version, serve
+- `agent_core/gateway/gateway_server.py` — rewritten: single execute_query MCP tool
+- `pyproject.toml` — v4.0.0, 3 deps only, removed all optional extras
+- `.github/workflows/build-binaries.yml` — simplified PyInstaller (no ML excludes)
+- `.github/workflows/test-and-release.yml` — simplified test install
+- `homebrew/Formula/agent-corex.rb` — v4.0.0, updated caveats
+- `tests/` — new test suite: test_client.py, test_cli.py, test_gateway.py
+
+---
+
 ## 2026-04-10 — Fix: MCP servers added via CLI not recognized at runtime
 
 **What:** CLI-added MCP servers (`agent-corex mcp add <name>`) were stored in `~/.agent-corex/registry.json` but never loaded by the gateway. The gateway only read `~/.agent-corex/mcp.json`, so `get_capabilities` showed them as "available_but_not_installed" and `retrieve_tools`/`execute_tool` couldn't reach them.

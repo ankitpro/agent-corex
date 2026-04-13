@@ -1,17 +1,10 @@
 """
-Manages ~/.agent-corex/config.json — persistent CLI configuration.
+Local configuration management for Agent-CoreX.
 
-Schema:
+Schema (~/.agent-corex/config.json):
   {
-    "api_key": "acx_...",           # API key (legacy auth, still supported)
-    "base_url": "https://www.agent-corex.com",
-    "user": { "user_id": "...", "name": "..." },
-
-    # JWT session (from device-code login flow):
-    "access_token":     "eyJ...",   # Supabase JWT
-    "refresh_token":    "...",
-    "token_expires_at": 1234567890, # Unix timestamp
-    "user_email":       "..."
+    "api_url": "https://api.v2.agent-corex.com",
+    "api_key": "acx_..."
   }
 """
 
@@ -19,24 +12,18 @@ from __future__ import annotations
 
 import json
 import os
-import pathlib
 import stat
-import time
-from typing import Optional
+import tempfile
+from pathlib import Path
+from typing import Any, Optional
 
-CONFIG_DIR = pathlib.Path.home() / ".agent-corex"
+CONFIG_DIR = Path.home() / ".agent-corex"
 CONFIG_FILE = CONFIG_DIR / "config.json"
-
-# Internal API endpoint — not user-configurable, never shown in CLI output.
-# Use AGENT_COREX_API_URL env var to override for local development only.
-# _API_URL = "https://app.agent-corex.com"
-_API_URL = "https://app.agent-corex.com"
-DEFAULT_FRONTEND_URL = "https://www.agent-corex.com"
+DEFAULT_API_URL = "https://api.v2.agent-corex.com"
 
 
 def _ensure_dir() -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    # Restrict permissions so only the owner can read the config (Unix only)
     if os.name != "nt":
         CONFIG_DIR.chmod(stat.S_IRWXU)
 
@@ -54,214 +41,65 @@ def load() -> dict:
 def save(data: dict) -> None:
     """Atomically write config dict to ~/.agent-corex/config.json."""
     _ensure_dir()
-    tmp = CONFIG_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    if os.name != "nt":
-        tmp.chmod(stat.S_IRUSR | stat.S_IWUSR)
-    tmp.replace(CONFIG_FILE)
+    fd, tmp = tempfile.mkstemp(dir=CONFIG_DIR, prefix=".config_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        if os.name != "nt":
+            os.chmod(tmp, stat.S_IRUSR | stat.S_IWUSR)
+        os.replace(tmp, CONFIG_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
-def get(key: str, default=None):
+def get(key: str, default: Any = None) -> Any:
+    """Get a single config value."""
     return load().get(key, default)
 
 
-def set_key(key: str, value) -> None:
+def set_key(key: str, value: Any) -> None:
+    """Set a single config key and save."""
     data = load()
     data[key] = value
     save(data)
 
 
 def delete_key(key: str) -> None:
+    """Remove a key from config."""
     data = load()
     data.pop(key, None)
     save(data)
 
 
-# ── URL helpers ───────────────────────────────────────────────────────────────
-
-
-def get_base_url() -> str:
-    """Return the API base URL. Not user-configurable; use AGENT_COREX_API_URL env var for local dev."""
-    env = os.getenv("AGENT_COREX_API_URL")
-    if env:
-        return env.rstrip("/")
-    return _API_URL
-
-
-def get_frontend_url() -> str:
-    """Return the frontend URL (used for browser login page)."""
-    return get("frontend_url", DEFAULT_FRONTEND_URL)
-
-
-def get_login_url() -> str:
-    return f"{get_frontend_url()}/login?source=cli"
-
-
-# ── API key helpers ───────────────────────────────────────────────────────────
+def get_api_url() -> str:
+    """Return backend API URL. Env var > config file > default."""
+    return (
+        os.environ.get("AGENT_COREX_API_URL")
+        or get("api_url")
+        or DEFAULT_API_URL
+    )
 
 
 def get_api_key() -> Optional[str]:
-    """
-    Return the active API key.
-
-    Priority:
-      1. AGENT_COREX_API_KEY environment variable  (MCP config env injection, CI/CD)
-      2. ~/.agent-corex/config.json                (stored via ``agent-corex login``)
-
-    This means a key passed via the MCP config ``env`` block — e.g. when the
-    gateway is launched by Claude Desktop / Cursor with::
-
-        {
-          "agent-corex": {
-            "command": "uvx",
-            "args": ["agent-corex", "mcp"],
-            "env": {"AGENT_COREX_API_KEY": "acx_..."}
-          }
-        }
-
-    will automatically authenticate all gateway operations (tool auth, usage
-    logging, query logging) without requiring a separate ``agent-corex login``.
-    """
-    import os
-
-    env_key = os.environ.get("AGENT_COREX_API_KEY")
-    if env_key:
-        return env_key
-    return get("api_key")
-
-
-# ── JWT session helpers ───────────────────────────────────────────────────────
-
-
-def save_session(
-    access_token: str,
-    refresh_token: str,
-    user_id: str,
-    email: str = "",
-    expires_at: Optional[int] = None,
-) -> None:
-    """Persist JWT session tokens to config.json alongside any existing API key."""
-    data = load()
-    data["access_token"] = access_token
-    data["refresh_token"] = refresh_token
-    data["token_expires_at"] = expires_at or int(time.time()) + 3600
-    if not data.get("user"):
-        data["user"] = {}
-    data["user"]["user_id"] = user_id
-    if email:
-        data["user_email"] = email
-        data["user"]["name"] = email
-    save(data)
-
-
-def get_access_token() -> Optional[str]:
-    """Return the stored JWT access token, or None if missing/expired."""
-    data = load()
-    token = data.get("access_token")
-    if not token:
-        return None
-    expires_at = data.get("token_expires_at", 0)
-    if expires_at and time.time() > expires_at - 60:
-        # Expired or about to expire — try refresh
-        refreshed = try_refresh_token()
-        return refreshed
-    return token
-
-
-def get_refresh_token() -> Optional[str]:
-    return get("refresh_token")
-
-
-def try_refresh_token() -> Optional[str]:
-    """
-    Attempt to refresh the JWT using the stored refresh_token.
-    Updates config on success. Returns new access_token or None.
-    """
-    data = load()
-    refresh_token = data.get("refresh_token")
-    if not refresh_token:
-        return None
-
-    supabase_url = os.getenv("SUPABASE_URL", "")
-    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "")
-
-    if not supabase_url:
-        return None
-
-    try:
-        import httpx
-
-        resp = httpx.post(
-            f"{supabase_url}/auth/v1/token?grant_type=refresh_token",
-            headers={
-                "apikey": supabase_anon_key,
-                "Content-Type": "application/json",
-            },
-            json={"refresh_token": refresh_token},
-            timeout=10.0,
-        )
-        if resp.status_code != 200:
-            return None
-        result = resp.json()
-        new_access = result["access_token"]
-        new_refresh = result.get("refresh_token", refresh_token)
-        expires_in = result.get("expires_in", 3600)
-
-        data["access_token"] = new_access
-        data["refresh_token"] = new_refresh
-        data["token_expires_at"] = int(time.time()) + expires_in
-        save(data)
-        return new_access
-    except Exception:
-        return None
-
-
-def clear_session() -> None:
-    """Remove JWT tokens from config (keeps API key if present)."""
-    data = load()
-    for key in ("access_token", "refresh_token", "token_expires_at", "user_email"):
-        data.pop(key, None)
-    save(data)
+    """Return API key. Env var AGENT_COREX_API_KEY > config file api_key."""
+    return os.environ.get("AGENT_COREX_API_KEY") or get("api_key") or None
 
 
 def get_auth_header() -> Optional[str]:
-    """
-    Return 'Bearer <token>' for CLI → backend requests.
-
-    Priority:
-      1. JWT access token (from device-code login)
-      2. API key
-    Returns None if neither is available.
-    """
-    token = get_access_token()
-    if token:
-        return f"Bearer {token}"
+    """Return 'Bearer <key>' for backend requests, or None if no key set."""
     key = get_api_key()
-    if key:
-        return f"Bearer {key}"
-    return None
-
-
-# ── Auth state ────────────────────────────────────────────────────────────────
+    return f"Bearer {key}" if key else None
 
 
 def is_logged_in() -> bool:
-    """
-    Return True if the user is authenticated via either:
-      - A stored API key (acx_...), OR
-      - A valid JWT session (access_token + not expired / refreshable)
-    """
-    if get_api_key():
-        return True
-    data = load()
-    if not data.get("access_token"):
-        return False
-    expires_at = data.get("token_expires_at", 0)
-    if expires_at and time.time() > expires_at - 60:
-        # Expired — try refresh
-        return try_refresh_token() is not None
-    return True
+    """Return True if an API key is configured."""
+    return bool(get_api_key())
 
 
-def get_user_email() -> str:
-    return get("user_email", "")
+def validate_api_key_format(key: str) -> bool:
+    """Basic format check: must start with 'acx_' and be at least 12 chars."""
+    return isinstance(key, str) and key.startswith("acx_") and len(key) > 12

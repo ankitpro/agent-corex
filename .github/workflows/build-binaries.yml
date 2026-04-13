@@ -41,8 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install typer[all] pydantic "python-dotenv>=1.0.0" requests httpx rich pyinstaller
-          # Install package without pulling heavy ML transitive deps
+          pip install typer[all] httpx rich pyinstaller
           pip install --no-deps --no-build-isolation .
 
       - name: Stamp version from tag
@@ -67,19 +66,6 @@ jobs:
             --hidden-import typer \
             --hidden-import rich \
             --hidden-import httpx \
-            --hidden-import requests \
-            --hidden-import dotenv \
-            --exclude-module torch \
-            --exclude-module torchvision \
-            --exclude-module torchaudio \
-            --exclude-module sentence_transformers \
-            --exclude-module transformers \
-            --exclude-module faiss \
-            --exclude-module sklearn \
-            --exclude-module scipy \
-            --exclude-module matplotlib \
-            --exclude-module fastapi \
-            --exclude-module uvicorn \
             agent_core/cli/main.py
           chmod +x dist/agent-corex
           mv dist/agent-corex dist/${{ matrix.artifact }}
@@ -95,19 +81,6 @@ jobs:
             --hidden-import typer `
             --hidden-import rich `
             --hidden-import httpx `
-            --hidden-import requests `
-            --hidden-import dotenv `
-            --exclude-module torch `
-            --exclude-module torchvision `
-            --exclude-module torchaudio `
-            --exclude-module sentence_transformers `
-            --exclude-module transformers `
-            --exclude-module faiss `
-            --exclude-module sklearn `
-            --exclude-module scipy `
-            --exclude-module matplotlib `
-            --exclude-module fastapi `
-            --exclude-module uvicorn `
             agent_core\cli\main.py
           Move-Item dist\agent-corex.exe dist\${{ matrix.artifact }}.exe
 
