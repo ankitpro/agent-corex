@@ -5,6 +5,8 @@ Wraps a subprocess: sends JSON-newline to stdin, reads one JSON-newline from
 stdout per request. All I/O is synchronous (call from a thread if needed).
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
 import sys

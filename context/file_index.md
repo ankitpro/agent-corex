@@ -4,7 +4,7 @@ Complete reference of all source files with functions and line ranges.
 
 ---
 
-**Last Updated:** 2026-04-13 — v4.0.0
+**Last Updated:** 2026-04-14 — v4.1.0
 
 ---
 
@@ -12,7 +12,7 @@ Complete reference of all source files with functions and line ranges.
 
 | Symbol | Line | Description |
 |--------|------|-------------|
-| `__version__` | 6 | `"4.0.0"` |
+| `__version__` | 6 | `"4.1.0"` |
 
 ---
 
@@ -75,6 +75,76 @@ Complete reference of all source files with functions and line ranges.
 | `health()` | 181 | `agent-corex health` |
 | `version()` | 192 | `agent-corex version` |
 | `serve()` | 197 | `agent-corex serve` → starts MCP gateway |
+
+---
+
+## `agent_core/mcp/transport.py`
+
+| Symbol | Line | Description |
+|--------|------|-------------|
+| `MCPStdioTransport.__init__` | 19 | command, args, env |
+| `MCPStdioTransport.start` | 25 | Spawn subprocess (shell=True on Windows) |
+| `MCPStdioTransport.send` | 57 | Write JSON+newline, read one line |
+| `MCPStdioTransport.stop` | 69 | Terminate subprocess |
+
+---
+
+## `agent_core/mcp/client.py`
+
+| Symbol | Line | Description |
+|--------|------|-------------|
+| `_resolve_command` | 27 | npx→npx.cmd on Windows, uvx check |
+| `MCPClient.__init__` | 44 | name, command, args, env |
+| `MCPClient.start` | 58 | Start transport + MCP initialize handshake |
+| `MCPClient._initialize` | 79 | MCP initialize + initialized notification |
+| `MCPClient.list_tools` | 116 | `tools/list` RPC |
+| `MCPClient.call_tool` | 121 | `tools/call` RPC |
+| `MCPClient._send` | 128 | Core JSON-RPC send+receive |
+| `MCPClient.stop` | 152 | Terminate transport |
+
+---
+
+## `agent_core/mcp/manager.py`
+
+| Symbol | Line | Description |
+|--------|------|-------------|
+| `MCPManager.__init__` | 26 | servers dict, tool_map dict |
+| `MCPManager.from_local_store` | 33 | Build from ~/.agent-corex/mcp.json |
+| `MCPManager.register` | 49 | Manually register a client (tests) |
+| `MCPManager.get_tools_for_server` | 55 | Start server + list tools |
+| `MCPManager.call_tool` | 65 | Execute tool synchronously |
+| `MCPManager.call_tool_async` | 92 | Async wrapper via asyncio.to_thread |
+| `MCPManager.shutdown_all` | 103 | Stop all running servers |
+| `MCPManager._get_or_start` | 113 | Get client; start if not initialized |
+
+---
+
+## `agent_core/mcp/registry.py`
+
+| Symbol | Line | Description |
+|--------|------|-------------|
+| `MCPRegistry.__init__` | 19 | Load bundled mcp_registry.json |
+| `MCPRegistry.list_all` | 30 | Return all active entries |
+| `MCPRegistry.get` | 34 | Get entry by name |
+| `MCPRegistry.to_mcp_config_entry` | 38 | Convert to mcp.json format |
+
+---
+
+## `agent_core/mcp/local_store.py`
+
+| Symbol | Line | Description |
+|--------|------|-------------|
+| `LocalStore.__init__` | 34 | Sets _dir, _mcp_file, _installed_file |
+| `LocalStore.load_raw` | 41 | Full mcp.json contents |
+| `LocalStore.load_mcp_config` | 48 | mcpServers dict only |
+| `LocalStore.save_raw` | 53 | Write mcp.json |
+| `LocalStore.add_server` | 58 | Add/update server in mcp.json |
+| `LocalStore.remove_server` | 69 | Remove server from mcp.json |
+| `LocalStore.list_servers` | 80 | Names of configured servers |
+| `LocalStore.load_installed` | 86 | Read installed_servers.json |
+| `LocalStore.mark_installed` | 92 | Record install timestamp |
+| `LocalStore.mark_removed` | 99 | Remove from installed record |
+| `LocalStore.is_installed` | 106 | Check if server is installed |
 
 ---
 

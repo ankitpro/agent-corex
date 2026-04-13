@@ -4,8 +4,12 @@ Recent changes, active work, and next steps.
 
 ---
 
-**Version:** 4.0.0
-**Last Updated:** 2026-04-13
+**Version:** 4.1.0
+**Last Updated:** 2026-04-14
+
+## What Changed — v4.1.0 (2026-04-14)
+
+Local MCP server management with hybrid execution model. Free-tier users plan via backend and execute locally; premium users continue to execute on the backend.
 
 ## What Changed — v4.0.0 (2026-04-13)
 
@@ -34,14 +38,14 @@ Complete rewrite. The CLI is now a **thin client** — all intelligence lives in
 
 ## Active Work
 
-None — rewrite complete.
+v4.1.0 implementation complete. Waiting for CI to confirm Python 3.9/3.10/3.11 matrix passes.
 
 ## Next Steps
 
-1. Tag `v4.0.0` to trigger CI (PyPI + binaries + Homebrew)
-2. Verify `pip install agent-corex==4.0.0` works
-3. Verify `uvx agent-corex run "..."` works
-4. Verify `brew upgrade agent-corex` picks up new formula
+1. Tag `v4.1.0` to trigger CI (PyPI + binaries + Homebrew)
+2. Apply backend changes (B1–B7 in plan) to `agent-corex-backend-2`
+3. Verify `agent-corex mcp add railway` writes `~/.agent-corex/mcp.json` and syncs backend
+4. Verify `agent-corex run "list my railway projects"` spawns local subprocess and executes locally
 
 ## Known Issues
 

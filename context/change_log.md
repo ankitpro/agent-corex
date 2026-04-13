@@ -4,6 +4,32 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-14 — v4.1.0 — Local MCP server management + hybrid execution
+
+**What:** Added `agent_core/mcp/` package (transport, client, manager, registry, local_store), `mcp` CLI subcommand group (list/add/remove/show/sync), and hybrid `run` command. Free tier: backend plans, client executes locally via MCP stdio subprocesses. Premium tier: unchanged backend execution. All 5 new MCP module files have `from __future__ import annotations` for Python 3.9 compatibility.
+
+**Files changed:**
+- `agent_core/mcp/__init__.py` — NEW: package exports
+- `agent_core/mcp/transport.py` — NEW: MCPStdioTransport (subprocess stdio)
+- `agent_core/mcp/client.py` — NEW: MCPClient JSON-RPC 2.0 with Windows npx.cmd support
+- `agent_core/mcp/manager.py` — NEW: MCPManager registry + lazy start
+- `agent_core/mcp/registry.py` — NEW: bundled catalog loader
+- `agent_core/mcp/local_store.py` — NEW: ~/.agent-corex/mcp.json + installed_servers.json
+- `agent_core/mcp/mcp_registry.json` — NEW: bundled catalog (8 servers)
+- `agent_core/client.py` — 6 new HTTP methods (list_available_servers, add_server, remove_server, plan_query, submit_result, list_user_servers)
+- `agent_core/cli/main.py` — mcp subcommand group; hybrid run with --local/--remote flags
+- `agent_core/local_config.py` — added is_premium()
+- `agent_core/__init__.py` — version 4.1.0
+- `pyproject.toml` — version 4.1.0, mcp_registry.json in package-data
+- `homebrew/Formula/agent-corex.rb` — version 4.1.0
+- `tests/test_mcp_client.py` — NEW
+- `tests/test_mcp_manager.py` — NEW
+- `tests/test_local_store.py` — NEW
+- `tests/test_client.py` — extended for 6 new methods
+- `tests/test_cli.py` — extended for mcp commands + hybrid run
+
+---
+
 ## 2026-04-13 — v4.0.0 — Thin client rewrite for v2 backend
 
 **What:** Complete rewrite. CLI is now a thin client delegating all intelligence to the v2 backend at `https://api.v2.agent-corex.com`. Removed local ML retrieval, MCP server management, input abstraction, JWT auth, and all optional dependencies. Added `agent_core/client.py` as the sole HTTP layer. MCP server now exposes a single `execute_query` tool.

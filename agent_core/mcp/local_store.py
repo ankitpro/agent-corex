@@ -16,6 +16,8 @@ installed_servers.json schema:
     {"railway": {"installed_at": "2026-04-13T..."}, ...}
 """
 
+from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
