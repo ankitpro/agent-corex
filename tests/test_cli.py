@@ -37,10 +37,12 @@ QUERY_RESPONSE = {
 
 
 def test_version():
+    from agent_core import __version__
+
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
     assert "agent-corex" in result.output
-    assert "4.0.0" in result.output
+    assert __version__ in result.output
 
 
 # ── run ───────────────────────────────────────────────────────────────────────
