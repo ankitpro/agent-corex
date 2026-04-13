@@ -20,13 +20,17 @@ from agent_core.client import AuthError, ConnectionError
 # ── Tool list ─────────────────────────────────────────────────────────────────
 
 
-def test_tools_list_returns_exactly_one_tool():
-    assert len(TOOLS) == 1
-    assert TOOLS[0]["name"] == "execute_query"
+def test_tools_list_returns_three_tools():
+    tool_names = [t["name"] for t in TOOLS]
+    assert len(TOOLS) == 3
+    assert "execute_query" in tool_names
+    assert "discover_capabilities" in tool_names
+    assert "search_tools" in tool_names
 
 
 def test_tools_list_has_query_input():
-    schema = TOOLS[0]["inputSchema"]
+    execute_tool = next(t for t in TOOLS if t["name"] == "execute_query")
+    schema = execute_tool["inputSchema"]
     assert "query" in schema["properties"]
     assert schema["required"] == ["query"]
 
@@ -35,8 +39,11 @@ def test_handle_tools_list():
     result = _handle_tools_list(1, {})
     assert result["id"] == 1
     tools = result["result"]["tools"]
-    assert len(tools) == 1
-    assert tools[0]["name"] == "execute_query"
+    tool_names = [t["name"] for t in tools]
+    assert len(tools) == 3
+    assert "execute_query" in tool_names
+    assert "discover_capabilities" in tool_names
+    assert "search_tools" in tool_names
 
 
 # ── Initialize ────────────────────────────────────────────────────────────────
