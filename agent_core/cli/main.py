@@ -4,6 +4,13 @@ Agent-CoreX CLI — thin client for the v2 backend.
 Usage:
   agent-corex run "<query>"
   agent-corex run "<query>" --debug
+  agent-corex run "<query>" --local      # force local execution (free tier)
+  agent-corex run "<query>" --remote     # force remote execution (premium)
+  agent-corex mcp list
+  agent-corex mcp add <server>
+  agent-corex mcp remove <server>
+  agent-corex mcp show
+  agent-corex mcp sync
   agent-corex config set api_url=<url>
   agent-corex config set api_key=<key>
   agent-corex config show
@@ -17,13 +24,12 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
-from rich import print as rprint
 
 from agent_core import __version__
 from agent_core import local_config
@@ -45,7 +51,9 @@ app = typer.Typer(
     add_completion=False,
 )
 config_app = typer.Typer(name="config", help="Manage configuration.", no_args_is_help=True)
+mcp_app = typer.Typer(name="mcp", help="Manage local MCP servers.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
+app.add_typer(mcp_app, name="mcp")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -73,7 +81,7 @@ def _handle_error(exc: Exception) -> None:
     raise typer.Exit(1)
 
 
-def _render_step_normal(i: int, step: dict) -> None:
+def _render_step_normal(i: int, step: dict, local: bool = False) -> None:
     tool = step.get("tool") or "unknown"
     if step.get("needs_input"):
         missing = ", ".join(step.get("missing_inputs", []))
@@ -86,18 +94,20 @@ def _render_step_normal(i: int, step: dict) -> None:
         console.print(f"[red]Step {i}: {tool} — {err}[/red]")
     else:
         preview = step.get("preview") or ""
+        mode = "[dim](local)[/dim]" if local else ""
         if preview:
-            console.print(f"[green]{tool}[/green] → {preview}")
+            console.print(f"[green]{tool}[/green] {mode} → {preview}")
         else:
-            console.print(f"[green]{tool}[/green] → done")
+            console.print(f"[green]{tool}[/green] {mode} → done")
 
 
-def _render_debug(response: dict) -> None:
+def _render_debug(response: dict, local: bool = False) -> None:
     query = response.get("query", "")
     steps = response.get("steps", [])
     total_ms = response.get("total_latency_ms", 0)
 
-    console.print(f"\n[bold]Query:[/bold] {query}\n")
+    mode_str = "[dim](local execution)[/dim]" if local else "[dim](remote execution)[/dim]"
+    console.print(f"\n[bold]Query:[/bold] {query}  {mode_str}\n")
 
     for i, step in enumerate(steps, 1):
         tool = step.get("tool") or "unknown"
@@ -110,13 +120,13 @@ def _render_debug(response: dict) -> None:
         error = step.get("error") or ""
 
         if step.get("needs_input"):
-            status_str = f"[yellow]needs input[/yellow]"
+            status_str = "[yellow]needs input[/yellow]"
         elif step.get("skipped"):
             status_str = f"[dim]skipped ({step.get('skip_reason', '')})[/dim]"
         elif step.get("success"):
-            status_str = f"[green]success[/green]"
+            status_str = "[green]success[/green]"
         else:
-            status_str = f"[red]failed[/red]"
+            status_str = "[red]failed[/red]"
 
         console.print(f"[bold]Step {i}:[/bold] {tool}  [{status_str}]  [dim]{latency}ms[/dim]")
         console.print(f"  Server:  {server}")
@@ -136,33 +146,336 @@ def _render_debug(response: dict) -> None:
     console.print(f"[dim]Total: {len(steps)} step(s), {total_ms}ms[/dim]")
 
 
-# ── Commands ──────────────────────────────────────────────────────────────────
+def _execute_locally(
+    client: AgentCoreXClient,
+    response: dict,
+    debug: bool,
+) -> None:
+    """Execute the planned steps locally using MCPManager, report results back."""
+    from agent_core.mcp.manager import MCPManager
+
+    steps = response.get("steps", [])
+    query_id = response.get("query_id")
+    mgr = MCPManager.from_local_store()
+
+    executed_steps = []
+    try:
+        for i, step in enumerate(steps):
+            if step.get("needs_input"):
+                missing = ", ".join(step.get("missing_inputs", []))
+                console.print(
+                    f"[yellow]Step {i+1}: {step.get('tool')} — needs input:[/yellow] {missing}"
+                )
+                executed_steps.append(step)
+                break
+
+            if step.get("skipped"):
+                reason = step.get("skip_reason") or "low confidence"
+                console.print(
+                    f"[dim]Step {i+1}: {step.get('tool')} — skipped ({reason})[/dim]"
+                )
+                executed_steps.append(step)
+                continue
+
+            server = step.get("server")
+            tool = step.get("tool")
+            inputs = step.get("inputs") or {}
+
+            if not server or not tool:
+                executed_steps.append(step)
+                continue
+
+            if server not in mgr.servers:
+                err_console.print(
+                    f"[red]Server '{server}' not installed locally.[/red] "
+                    f"Run: agent-corex mcp add {server}"
+                )
+                raise typer.Exit(1)
+
+            step_start = time.monotonic()
+            try:
+                result = mgr.call_tool(server, tool, inputs)
+                latency_ms = int((time.monotonic() - step_start) * 1000)
+                success = True
+                error = None
+            except Exception as exc:
+                latency_ms = int((time.monotonic() - step_start) * 1000)
+                result = None
+                success = False
+                error = str(exc)
+                err_console.print(f"[red]Tool execution failed:[/red] {exc}")
+
+            # Report to backend for state tracking
+            preview = ""
+            ref = None
+            try:
+                payload = {
+                    "query_id": query_id,
+                    "step_index": i,
+                    "server": server,
+                    "tool": tool,
+                    "inputs": inputs,
+                    "output": result,
+                    "success": success,
+                    "error": error,
+                    "latency_ms": latency_ms,
+                }
+                report = client.submit_result(payload)
+                ref = report.get("ref")
+                preview = report.get("preview", "")
+            except Exception:
+                # Non-fatal — display output directly if backend reporting fails
+                if isinstance(result, dict):
+                    content = result.get("content", str(result))
+                    lines = str(content).strip().splitlines()
+                    preview = "\n".join(lines[:5])
+                elif result is not None:
+                    preview = str(result)[:200]
+
+            executed_step = dict(step)
+            executed_step.update({
+                "success": success,
+                "error": error,
+                "ref": ref,
+                "preview": preview,
+                "latency_ms": latency_ms,
+            })
+            executed_steps.append(executed_step)
+
+        # Render output
+        updated = dict(response)
+        updated["steps"] = executed_steps
+        total_ms = sum(s.get("latency_ms", 0) for s in executed_steps)
+        updated["total_latency_ms"] = total_ms
+
+        if debug:
+            _render_debug(updated, local=True)
+        else:
+            for i, step in enumerate(executed_steps, 1):
+                _render_step_normal(i, step, local=True)
+            console.print(f"\n[dim]{len(executed_steps)} step(s) — {total_ms}ms[/dim]")
+
+    finally:
+        mgr.shutdown_all()
+
+
+# ── run command ───────────────────────────────────────────────────────────────
 
 
 @app.command()
 def run(
     query: str = typer.Argument(..., help="Natural language query to execute"),
     debug: bool = typer.Option(False, "--debug", "-d", help="Show full execution details"),
+    local: bool = typer.Option(False, "--local", help="Force local execution (free tier)"),
+    remote: bool = typer.Option(False, "--remote", help="Force remote execution (premium)"),
 ) -> None:
-    """Execute a task using Agent-CoreX."""
+    """Execute a task using Agent-CoreX.
+
+    Free tier: backend plans, you execute locally via your installed MCP servers.
+    Premium:   backend executes on its own workspace (no local servers needed).
+    """
+    client = _make_client()
+    use_remote = remote or (local_config.is_premium() and not local)
+
+    if use_remote:
+        # Premium / forced-remote path — backend executes
+        try:
+            response = client.execute_query(query)
+        except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
+            _handle_error(exc)
+            return
+        if debug:
+            _render_debug(response, local=False)
+        else:
+            steps = response.get("steps", [])
+            if not steps:
+                console.print("[yellow]No steps returned.[/yellow]")
+                return
+            for i, step in enumerate(steps, 1):
+                _render_step_normal(i, step, local=False)
+            total_ms = response.get("total_latency_ms", 0)
+            console.print(f"\n[dim]{len(steps)} step(s) — {total_ms}ms[/dim]")
+    else:
+        # Free-tier path — backend plans, client executes locally
+        try:
+            plan = client.plan_query(query)
+        except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
+            _handle_error(exc)
+            return
+        _execute_locally(client, plan, debug)
+
+
+# ── mcp subcommands ───────────────────────────────────────────────────────────
+
+
+@mcp_app.command("list")
+def mcp_list() -> None:
+    """List all available MCP servers in the Agent-CoreX catalog."""
     client = _make_client()
     try:
-        response = client.execute_query(query)
+        servers = client.list_available_servers()
     except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
         _handle_error(exc)
         return
 
-    if debug:
-        _render_debug(response)
+    if not servers:
+        console.print("[yellow]No servers in catalog.[/yellow]")
+        return
+
+    table = Table(title="Available MCP Servers", show_header=True)
+    table.add_column("Name", style="bold")
+    table.add_column("Description")
+    table.add_column("Status", style="dim")
+    for s in servers:
+        table.add_row(s.get("name", ""), s.get("description", ""), s.get("status", ""))
+    console.print(table)
+
+
+@mcp_app.command("add")
+def mcp_add(
+    server_name: str = typer.Argument(..., help="Server name to add (e.g. railway)"),
+) -> None:
+    """Add an MCP server — installs it locally and syncs to backend."""
+    from agent_core.mcp.registry import MCPRegistry
+    from agent_core.mcp.local_store import LocalStore
+
+    if not local_config.is_logged_in():
+        err_console.print("[red]Not logged in.[/red] Run: agent-corex login --key <key>")
+        raise typer.Exit(1)
+
+    registry = MCPRegistry()
+    entry = registry.get(server_name)
+    if not entry:
+        err_console.print(
+            f"[red]'{server_name}' not in bundled registry.[/red]\n"
+            "You can add it manually by editing [dim]~/.agent-corex/mcp.json[/dim]"
+        )
+        raise typer.Exit(1)
+
+    store = LocalStore()
+    store.add_server(
+        server_name,
+        command=entry["command"],
+        args=entry["args"],
+    )
+    store.mark_installed(server_name)
+
+    # Sync to backend
+    client = _make_client()
+    try:
+        client.add_server(server_name)
+        console.print(f"[green]Added[/green] {server_name}")
+        env_required = entry.get("env_required", [])
+        if env_required:
+            console.print(
+                f"[yellow]Note:[/yellow] This server requires env vars: "
+                + ", ".join(env_required)
+            )
+    except AgentCoreXError as exc:
+        console.print(
+            f"[yellow]Added locally[/yellow] but backend sync failed: {exc}\n"
+            "The server is still usable locally."
+        )
+
+
+@mcp_app.command("remove")
+def mcp_remove(
+    server_name: str = typer.Argument(..., help="Server name to remove"),
+) -> None:
+    """Remove a local MCP server and sync the removal to the backend."""
+    from agent_core.mcp.local_store import LocalStore
+
+    store = LocalStore()
+    removed = store.remove_server(server_name)
+    store.mark_removed(server_name)
+
+    if not removed:
+        err_console.print(f"[yellow]'{server_name}' was not in ~/.agent-corex/mcp.json[/yellow]")
+
+    # Sync to backend
+    if local_config.is_logged_in():
+        client = _make_client()
+        try:
+            client.remove_server(server_name)
+        except AgentCoreXError as exc:
+            console.print(f"[yellow]Backend sync failed:[/yellow] {exc}")
+
+    console.print(f"[green]Removed[/green] {server_name}")
+
+
+@mcp_app.command("show")
+def mcp_show() -> None:
+    """Show locally configured servers and their backend sync status."""
+    from agent_core.mcp.local_store import LocalStore
+
+    store = LocalStore()
+    local_servers = set(store.list_servers())
+
+    remote_servers: set = set()
+    if local_config.is_logged_in():
+        client = _make_client()
+        try:
+            rows = client.list_user_servers()
+            remote_servers = {r.get("server_name", "") for r in rows}
+        except Exception:
+            pass
+
+    if not local_servers and not remote_servers:
+        console.print("[yellow]No servers configured.[/yellow] Run: agent-corex mcp add <server>")
+        return
+
+    all_servers = local_servers | remote_servers
+    table = Table(title="Your MCP Servers", show_header=True)
+    table.add_column("Server", style="bold")
+    table.add_column("Local")
+    table.add_column("Synced to backend")
+    for name in sorted(all_servers):
+        loc = "[green]yes[/green]" if name in local_servers else "[dim]no[/dim]"
+        rem = "[green]yes[/green]" if name in remote_servers else "[dim]no[/dim]"
+        table.add_row(name, loc, rem)
+    console.print(table)
+
+
+@mcp_app.command("sync")
+def mcp_sync() -> None:
+    """Pull backend server list and reconcile with local ~/.agent-corex/mcp.json."""
+    from agent_core.mcp.registry import MCPRegistry
+    from agent_core.mcp.local_store import LocalStore
+
+    if not local_config.is_logged_in():
+        err_console.print("[red]Not logged in.[/red] Run: agent-corex login --key <key>")
+        raise typer.Exit(1)
+
+    client = _make_client()
+    try:
+        remote_rows = client.list_user_servers()
+    except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
+        _handle_error(exc)
+        return
+
+    store = LocalStore()
+    registry = MCPRegistry()
+    local_set = set(store.list_servers())
+    remote_set = {r.get("server_name", "") for r in remote_rows}
+
+    added = 0
+    for name in remote_set - local_set:
+        entry = registry.get(name)
+        if entry:
+            store.add_server(name, command=entry["command"], args=entry["args"])
+            store.mark_installed(name)
+            added += 1
+            console.print(f"[green]+[/green] {name} (pulled from backend)")
+        else:
+            console.print(f"[yellow]?[/yellow] {name} — not in bundled registry; edit mcp.json manually")
+
+    if added == 0 and not (remote_set - local_set):
+        console.print("[dim]Already in sync.[/dim]")
     else:
-        steps = response.get("steps", [])
-        if not steps:
-            console.print("[yellow]No steps returned.[/yellow]")
-            return
-        for i, step in enumerate(steps, 1):
-            _render_step_normal(i, step)
-        total_ms = response.get("total_latency_ms", 0)
-        console.print(f"\n[dim]{len(steps)} step(s) — {total_ms}ms[/dim]")
+        console.print(f"[green]Sync complete.[/green] Added {added} server(s).")
+
+
+# ── config, login, logout, health, version, serve ────────────────────────────
 
 
 @config_app.command("set")
@@ -196,6 +509,7 @@ def config_show() -> None:
     table.add_column("Value")
     table.add_row("api_url", api_url)
     table.add_row("api_key", masked)
+    table.add_row("premium", str(local_config.is_premium()))
     table.add_row("config file", str(local_config.CONFIG_FILE))
     console.print(table)
 
@@ -215,14 +529,18 @@ def login(
     # Verify key against backend
     client = AgentCoreXClient(api_url=local_config.get_api_url(), api_key=key)
     try:
-        client.health()
+        health_resp = client.health()
     except AuthError:
         err_console.print("[red]Key rejected by backend.[/red] Check your API key.")
         raise typer.Exit(1)
     except (ConnectionError, TimeoutError) as exc:
         err_console.print(f"[yellow]Warning:[/yellow] Could not verify key ({exc}). Saving anyway.")
+        health_resp = {}
 
     local_config.set_key("api_key", key)
+    # Persist is_premium if backend returns it
+    if health_resp.get("is_premium") is not None:
+        local_config.set_key("is_premium", health_resp["is_premium"])
     console.print(f"[green]Logged in.[/green] Key saved: {key[:8]}...")
 
 
@@ -230,6 +548,7 @@ def login(
 def logout() -> None:
     """Remove stored API key."""
     local_config.delete_key("api_key")
+    local_config.delete_key("is_premium")
     console.print("[green]Logged out.[/green]")
 
 

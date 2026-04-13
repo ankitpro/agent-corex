@@ -5,7 +5,7 @@ All intelligence lives in the backend — this is a thin wrapper.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -119,3 +119,49 @@ class AgentCoreXClient:
             "/select/",
             params={"query": query, "debug": str(debug).lower()},
         )
+
+    # ── MCP server management ─────────────────────────────────────────────────
+
+    def list_available_servers(self) -> List[Dict]:
+        """GET /mcp/servers — catalog of all available MCP servers."""
+        return self._get("/mcp/servers", timeout=10.0)
+
+    def list_user_servers(self) -> List[Dict]:
+        """GET /user/servers — servers the authenticated user has enabled."""
+        return self._get("/user/servers", timeout=10.0)
+
+    def add_server(self, name: str) -> Dict:
+        """POST /user/servers/{name} — enable a server for the authenticated user."""
+        return self._post(f"/user/servers/{name}", {}, timeout=10.0)
+
+    def remove_server(self, name: str) -> Dict:
+        """DELETE /user/servers/{name} — disable a server for the authenticated user."""
+        try:
+            resp = httpx.delete(
+                f"{self._base}/user/servers/{name}",
+                headers=self._headers(),
+                timeout=10.0,
+            )
+        except httpx.ConnectError as exc:
+            raise ConnectionError(f"Cannot connect to {self._base}") from exc
+        except httpx.TimeoutException as exc:
+            raise TimeoutError("Request timed out") from exc
+        self._raise_for_status(resp)
+        return resp.json()
+
+    # ── Hybrid execution (free-tier) ──────────────────────────────────────────
+
+    def plan_query(self, query: str) -> Dict:
+        """
+        POST /execute/plan — plan-only query execution.
+        Returns QueryResponse with planned steps (no execution).
+        Client executes locally and reports back via submit_result().
+        """
+        return self._post("/execute/plan", {"query": query}, timeout=60.0)
+
+    def submit_result(self, payload: Dict) -> Dict:
+        """
+        POST /execute/result — report a locally-executed tool result to the backend.
+        Returns {"ref": "state://...", "preview": "..."}.
+        """
+        return self._post("/execute/result", payload, timeout=10.0)

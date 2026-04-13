@@ -99,3 +99,8 @@ def is_logged_in() -> bool:
 def validate_api_key_format(key: str) -> bool:
     """Basic format check: must start with 'acx_' and be at least 12 chars."""
     return isinstance(key, str) and key.startswith("acx_") and len(key) > 12
+
+
+def is_premium() -> bool:
+    """Return True if the user's account is premium (backend execution available)."""
+    return bool(get("is_premium"))

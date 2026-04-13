@@ -12,7 +12,7 @@
 class AgentCorex < Formula
   desc "Thin CLI + MCP client for Agent-CoreX — execute any task with a single query"
   homepage "https://github.com/ankitpro/agent-corex"
-  version "4.0.2"
+  version "4.1.0"
   license "MIT"
 
   on_macos do
@@ -38,8 +38,15 @@ class AgentCorex < Formula
     <<~EOS
       Get started:
         agent-corex login --key <your-api-key>
-        agent-corex run "list my supabase projects"
-        agent-corex serve   # start MCP server for Claude/Cursor
+        agent-corex mcp add railway        # install an MCP server locally
+        agent-corex run "list my railway projects"
+        agent-corex serve                  # start MCP server for Claude/Cursor
+
+      Manage local MCP servers:
+        agent-corex mcp list               # show available servers
+        agent-corex mcp add <server>       # add a server
+        agent-corex mcp remove <server>    # remove a server
+        agent-corex mcp show               # show your enabled servers
 
       MCP config (Claude Desktop / Cursor):
         {"agent-corex": {"command": "agent-corex", "args": ["serve"]}}

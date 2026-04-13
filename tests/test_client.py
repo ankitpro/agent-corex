@@ -190,3 +190,114 @@ def test_no_auth_header_when_no_key():
         client = AgentCoreXClient(api_url=BASE, api_key=None)
         client.health()
     assert captured["auth"] is None
+
+
+# ── list_available_servers ────────────────────────────────────────────────────
+
+
+def test_list_available_servers():
+    servers = [{"name": "railway", "description": "Deploy", "status": "verified"}]
+    with patch("httpx.get", return_value=_mock_response(200, servers)):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.list_available_servers()
+    assert len(result) == 1
+    assert result[0]["name"] == "railway"
+
+
+# ── list_user_servers ─────────────────────────────────────────────────────────
+
+
+def test_list_user_servers():
+    rows = [{"server_name": "railway", "enabled_at": "2026-04-13T00:00:00Z"}]
+    with patch("httpx.get", return_value=_mock_response(200, rows)):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.list_user_servers()
+    assert result[0]["server_name"] == "railway"
+
+
+# ── add_server ────────────────────────────────────────────────────────────────
+
+
+def test_add_server_success():
+    row = {"server_name": "railway", "user_id": "u1", "enabled_at": "2026-04-13T00:00:00Z"}
+    with patch("httpx.post", return_value=_mock_response(201, row)):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.add_server("railway")
+    assert result["server_name"] == "railway"
+
+
+def test_add_server_not_in_catalog():
+    with patch("httpx.post", return_value=_mock_response(404, {"detail": "not in catalog"})):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        with pytest.raises(AgentCoreXError):
+            client.add_server("nonexistent")
+
+
+# ── remove_server ─────────────────────────────────────────────────────────────
+
+
+def test_remove_server_success():
+    with patch("httpx.delete", return_value=_mock_response(200, {"removed": "railway"})):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.remove_server("railway")
+    assert result["removed"] == "railway"
+
+
+def test_remove_server_not_enabled():
+    with patch("httpx.delete", return_value=_mock_response(404, {"detail": "not enabled"})):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        with pytest.raises(AgentCoreXError):
+            client.remove_server("notinstalled")
+
+
+# ── plan_query ────────────────────────────────────────────────────────────────
+
+
+def test_plan_query_success():
+    plan = {
+        "query": "list railway projects",
+        "steps": [
+            {
+                "intent": "list railway projects",
+                "tool": "list_projects",
+                "server": "railway",
+                "inputs": {},
+                "missing_inputs": [],
+                "ref": None,
+                "preview": None,
+                "success": False,
+                "needs_input": False,
+                "skipped": False,
+                "skip_reason": None,
+                "error": None,
+                "latency_ms": 42,
+            }
+        ],
+        "total_latency_ms": 42,
+    }
+    with patch("httpx.post", return_value=_mock_response(200, plan)):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.plan_query("list railway projects")
+    assert result["steps"][0]["tool"] == "list_projects"
+    assert result["steps"][0]["ref"] is None  # not yet executed
+
+
+# ── submit_result ─────────────────────────────────────────────────────────────
+
+
+def test_submit_result_success():
+    resp = {"ref": "state://abc123", "preview": "project-a"}
+    with patch("httpx.post", return_value=_mock_response(200, resp)):
+        client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
+        result = client.submit_result({
+            "server": "railway",
+            "tool": "list_projects",
+            "inputs": {},
+            "output": {"content": "project-a"},
+            "success": True,
+            "error": None,
+            "latency_ms": 300,
+            "step_index": 0,
+        })
+    assert result["ref"] == "state://abc123"
+    assert result["preview"] == "project-a"

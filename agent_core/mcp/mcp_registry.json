@@ -1,0 +1,90 @@
+[
+  {
+    "name": "railway",
+    "display_name": "Railway",
+    "description": "Deploy and manage Railway projects, services, and databases",
+    "category": "deployment",
+    "command": "npx",
+    "args": ["-y", "@railway/mcp-server"],
+    "env_required": [],
+    "env_optional": ["RAILWAY_TOKEN"],
+    "is_active": true
+  },
+  {
+    "name": "supabase",
+    "display_name": "Supabase",
+    "description": "Query and manage Supabase databases, auth, storage, and functions",
+    "category": "database",
+    "command": "npx",
+    "args": ["-y", "@supabase/mcp-server-supabase@latest"],
+    "env_required": [],
+    "env_optional": ["SUPABASE_ACCESS_TOKEN"],
+    "is_active": true
+  },
+  {
+    "name": "github",
+    "display_name": "GitHub",
+    "description": "Manage GitHub repositories, pull requests, issues, and actions",
+    "category": "development",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env_required": ["GITHUB_PERSONAL_ACCESS_TOKEN"],
+    "env_optional": [],
+    "is_active": true
+  },
+  {
+    "name": "filesystem",
+    "display_name": "Filesystem",
+    "description": "Read, write, and manage local files and directories",
+    "category": "utility",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+    "env_required": [],
+    "env_optional": [],
+    "is_active": true
+  },
+  {
+    "name": "postgres",
+    "display_name": "PostgreSQL",
+    "description": "Query and manage PostgreSQL databases",
+    "category": "database",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-postgres"],
+    "env_required": ["DATABASE_URL"],
+    "env_optional": [],
+    "is_active": true
+  },
+  {
+    "name": "brave-search",
+    "display_name": "Brave Search",
+    "description": "Search the web using Brave Search API",
+    "category": "search",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+    "env_required": ["BRAVE_API_KEY"],
+    "env_optional": [],
+    "is_active": true
+  },
+  {
+    "name": "slack",
+    "display_name": "Slack",
+    "description": "Send messages and manage Slack workspaces and channels",
+    "category": "communication",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-slack"],
+    "env_required": ["SLACK_BOT_TOKEN", "SLACK_TEAM_ID"],
+    "env_optional": [],
+    "is_active": true
+  },
+  {
+    "name": "linear",
+    "display_name": "Linear",
+    "description": "Manage Linear issues, projects, and teams",
+    "category": "project-management",
+    "command": "npx",
+    "args": ["-y", "@linear/mcp-server"],
+    "env_required": ["LINEAR_API_KEY"],
+    "env_optional": [],
+    "is_active": true
+  }
+]
