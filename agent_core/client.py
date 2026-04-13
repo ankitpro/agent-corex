@@ -165,3 +165,27 @@ class AgentCoreXClient:
         Returns {"ref": "state://...", "preview": "..."}.
         """
         return self._post("/execute/result", payload, timeout=10.0)
+
+    # ── Discovery ─────────────────────────────────────────────────────────────
+
+    def discover_capabilities(self, query: Optional[str] = None, debug: bool = False) -> Dict:
+        """
+        GET /discover/capabilities — "what can I do?"
+        Returns capabilities grouped by installed server, or server recommendations
+        if no servers are installed.
+        """
+        params: dict[str, str] = {"debug": str(debug).lower()}
+        if query:
+            params["query"] = query
+        return self._get("/discover/capabilities", params=params, timeout=10.0)
+
+    def search_tools(self, query: str, top_k: int = 5, debug: bool = False) -> Dict:
+        """
+        GET /search/tools — find tools matching query, filtered to installed servers.
+        Returns matching tools or server recommendations if no servers installed.
+        """
+        return self._get(
+            "/search/tools",
+            params={"query": query, "top_k": str(top_k), "debug": str(debug).lower()},
+            timeout=10.0,
+        )

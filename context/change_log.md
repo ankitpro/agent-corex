@@ -4,6 +4,16 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-14 — v4.1.0 — Discovery + search commands wired to backend
+
+**What:** Added `agent-corex discover [<query>]` and `agent-corex search "<query>"` commands that call the new backend `/discover/capabilities` and `/search/tools` endpoints. Installed servers get filtered results; empty state returns server recommendations with install hints.
+
+**Files changed:**
+- `agent_core/client.py` — 2 new methods: `discover_capabilities()`, `search_tools()`
+- `agent_core/cli/main.py` — 2 new top-level commands: `discover`, `search`
+
+---
+
 ## 2026-04-14 — v4.1.0 — Local MCP server management + hybrid execution
 
 **What:** Added `agent_core/mcp/` package (transport, client, manager, registry, local_store), `mcp` CLI subcommand group (list/add/remove/show/sync), and hybrid `run` command. Free tier: backend plans, client executes locally via MCP stdio subprocesses. Premium tier: unchanged backend execution. All 5 new MCP module files have `from __future__ import annotations` for Python 3.9 compatibility.

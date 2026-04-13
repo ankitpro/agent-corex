@@ -54,6 +54,14 @@ Complete reference of all source files with functions and line ranges.
 | `AgentCoreXClient.get_state` | 101 | `GET /state/{ref}` |
 | `AgentCoreXClient.retrieve` | 107 | `GET /retrieve/` |
 | `AgentCoreXClient.select` | 115 | `GET /select/` |
+| `AgentCoreXClient.list_available_servers` | 125 | `GET /mcp/servers` |
+| `AgentCoreXClient.list_user_servers` | 129 | `GET /user/servers` |
+| `AgentCoreXClient.add_server` | 133 | `POST /user/servers/{name}` |
+| `AgentCoreXClient.remove_server` | 137 | `DELETE /user/servers/{name}` |
+| `AgentCoreXClient.plan_query` | 154 | `POST /execute/plan` |
+| `AgentCoreXClient.submit_result` | 163 | `POST /execute/result` |
+| `AgentCoreXClient.discover_capabilities` | 171 | `GET /discover/capabilities` |
+| `AgentCoreXClient.search_tools` | 181 | `GET /search/tools` |
 
 ---
 

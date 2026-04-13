@@ -38,14 +38,13 @@ Complete rewrite. The CLI is now a **thin client** — all intelligence lives in
 
 ## Active Work
 
-v4.1.0 implementation complete. Waiting for CI to confirm Python 3.9/3.10/3.11 matrix passes.
+Discovery and search commands added (`discover`, `search`). Both call backend endpoints and surface installed-server capabilities or recommendations.
 
 ## Next Steps
 
 1. Tag `v4.1.0` to trigger CI (PyPI + binaries + Homebrew)
-2. Apply backend changes (B1–B7 in plan) to `agent-corex-backend-2`
-3. Verify `agent-corex mcp add railway` writes `~/.agent-corex/mcp.json` and syncs backend
-4. Verify `agent-corex run "list my railway projects"` spawns local subprocess and executes locally
+2. Verify end-to-end: `agent-corex discover` and `agent-corex search "deploy service"` against live backend
+3. Verify `agent-corex run "list my railway projects"` spawns local subprocess and executes locally
 
 ## Known Issues
 

@@ -11,6 +11,8 @@ Usage:
   agent-corex mcp remove <server>
   agent-corex mcp show
   agent-corex mcp sync
+  agent-corex discover [<query>]
+  agent-corex search "<query>" [--top-k N]
   agent-corex config set api_url=<url>
   agent-corex config set api_key=<key>
   agent-corex config show
@@ -376,6 +378,10 @@ def mcp_add(
             "The server is still usable locally."
         )
 
+    console.print(
+        f"\n[dim]Restart your terminal or IDE to pick up the new MCP server.[/dim]"
+    )
+
 
 @mcp_app.command("remove")
 def mcp_remove(
@@ -474,6 +480,119 @@ def mcp_sync() -> None:
         console.print("[dim]Already in sync.[/dim]")
     else:
         console.print(f"[green]Sync complete.[/green] Added {added} server(s).")
+
+
+# ── discover / search ────────────────────────────────────────────────────────
+
+
+@app.command()
+def discover(
+    query: Optional[str] = typer.Argument(None, help="What you want to do (optional)"),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Show raw tool data"),
+) -> None:
+    """Show what you can do with your installed MCP servers.
+
+    If no servers are installed, shows recommended servers to try.
+    """
+    client = _make_client()
+    try:
+        result = client.discover_capabilities(query=query, debug=debug)
+    except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
+        _handle_error(exc)
+        return
+
+    capabilities = result.get("capabilities", [])
+    recommendations = result.get("recommended_servers", [])
+    message = result.get("message")
+
+    if capabilities:
+        for cap in capabilities:
+            server = cap.get("server", "")
+            title = cap.get("title", f"Use {server} tools")
+            examples = cap.get("examples", [])
+            console.print(f"[bold green]{title}[/bold green]  [dim]({server})[/dim]")
+            for ex in examples:
+                console.print(f"  [dim]•[/dim] {ex}")
+        console.print()
+    elif recommendations:
+        if message:
+            console.print(f"[yellow]{message}[/yellow]\n")
+        console.print("[bold]Recommended servers to install:[/bold]")
+        for rec in recommendations:
+            name = rec.get("name", "")
+            reason = rec.get("reason", "")
+            examples = rec.get("examples", [])
+            console.print(f"\n  [bold]{name}[/bold]  — {reason}")
+            for ex in examples:
+                console.print(f"    [dim]•[/dim] {ex}")
+            console.print(f"    [dim]Install:[/dim] agent-corex mcp add {name}")
+        console.print()
+    else:
+        console.print("[yellow]No capabilities found. Try:[/yellow] agent-corex mcp add <server>")
+
+    if debug:
+        installed = result.get("installed_servers")
+        tools_considered = result.get("tools_considered")
+        if installed is not None:
+            console.print(f"[dim]Installed servers: {installed}[/dim]")
+        if tools_considered:
+            console.print(f"[dim]Tools considered: {len(tools_considered)}[/dim]")
+
+
+@app.command()
+def search(
+    query: str = typer.Argument(..., help="What you want to do"),
+    top_k: int = typer.Option(5, "--top-k", "-n", help="Max results"),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Show scores and metadata"),
+) -> None:
+    """Search for tools matching your query across installed MCP servers.
+
+    If no servers are installed, suggests servers that have relevant tools.
+    """
+    client = _make_client()
+    try:
+        result = client.search_tools(query=query, top_k=top_k, debug=debug)
+    except (AgentCoreXError, ConnectionError, TimeoutError, AuthError) as exc:
+        _handle_error(exc)
+        return
+
+    tools = result.get("tools", [])
+    recommendations = result.get("recommended_servers", [])
+
+    if tools:
+        table = Table(title=f"Tools for: {query}", show_header=True)
+        table.add_column("Tool", style="bold")
+        table.add_column("Server", style="dim")
+        table.add_column("Description")
+        if debug:
+            table.add_column("Score", style="dim")
+        for t in tools:
+            row = [t.get("name", ""), t.get("server", ""), t.get("description", "")]
+            if debug:
+                row.append(str(round(t.get("final_score") or 0.0, 3)))
+            table.add_row(*row)
+        console.print(table)
+    elif recommendations:
+        console.print(
+            f"[yellow]No installed servers have tools matching '{query}'.[/yellow]\n"
+            "[bold]Servers that could help:[/bold]"
+        )
+        for rec in recommendations:
+            name = rec.get("name", "")
+            reason = rec.get("reason", "")
+            examples = rec.get("examples", [])
+            console.print(f"\n  [bold]{name}[/bold]  — {reason}")
+            for ex in examples:
+                console.print(f"    [dim]•[/dim] {ex}")
+            console.print(f"    [dim]Install:[/dim] agent-corex mcp add {name}")
+        console.print()
+    else:
+        console.print(f"[yellow]No tools found for:[/yellow] {query}")
+
+    if debug:
+        installed = result.get("installed_servers")
+        if installed is not None:
+            console.print(f"[dim]Filtered to servers: {installed}[/dim]")
 
 
 # ── config, login, logout, health, version, serve ────────────────────────────
