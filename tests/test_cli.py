@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 from agent_core.cli.main import app
 from agent_core.client import AgentCoreXError, AuthError, ConnectionError
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 QUERY_RESPONSE = {
     "query": "list supabase projects",
@@ -79,7 +79,7 @@ def test_run_auth_error():
         result = runner.invoke(app, ["run", "test query"])
 
     assert result.exit_code == 1
-    assert "agent-corex login" in result.stderr or "agent-corex login" in result.output
+    assert "agent-corex login" in result.output
 
 
 def test_run_connection_error():
