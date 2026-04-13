@@ -38,7 +38,7 @@ Complete rewrite. The CLI is now a **thin client** — all intelligence lives in
 
 ## Active Work
 
-Discovery and search commands added (`discover`, `search`). Both call backend endpoints and surface installed-server capabilities or recommendations.
+Discovery and search exposed in all three surfaces: CLI commands (`discover`, `search`), HTTP client methods, and MCP tools (`discover_capabilities`, `search_tools`). Gateway server now exposes 3 tools.
 
 ## Next Steps
 

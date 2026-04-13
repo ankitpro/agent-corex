@@ -1,8 +1,10 @@
 """
-Agent-CoreX MCP stdio server — single-tool thin wrapper.
+Agent-CoreX MCP stdio server.
 
-Exposes exactly ONE tool:
-  execute_query(query: str) → structured result from v2 backend
+Exposes THREE tools:
+  execute_query(query: str)                        → end-to-end task execution
+  discover_capabilities(query?: str)               → what can I do with installed servers?
+  search_tools(query: str, top_k?: int)            → find specific tools
 
 Invoked by Claude Desktop / Cursor / VS Code via:
   agent-corex serve
@@ -31,7 +33,6 @@ SERVER_NAME = "agent-corex"
 SERVER_VERSION = __version__
 PROTOCOL_VERSION = "2024-11-05"
 
-# The single tool this MCP server exposes.
 TOOLS = [
     {
         "name": "execute_query",
@@ -50,7 +51,50 @@ TOOLS = [
             },
             "required": ["query"],
         },
-    }
+    },
+    {
+        "name": "discover_capabilities",
+        "description": (
+            "Discover what the user can do with their installed MCP servers. "
+            "Returns capabilities grouped by server with examples. "
+            "If no servers are installed, returns recommended servers to install instead. "
+            "Call this before execute_query when you want to know what's available."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Optional hint about the domain you're interested in (e.g. 'deploy', 'database'). Omit for a general overview.",
+                }
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "search_tools",
+        "description": (
+            "Search for specific tools available across the user's installed MCP servers. "
+            "Returns matching tools filtered to only the user's servers. "
+            "If no servers are installed, returns server recommendations with relevant examples. "
+            "Use this to find the right tool before calling execute_query."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "What you want to do (e.g. 'list projects', 'send email', 'deploy service').",
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Maximum number of tools to return (default 5, max 20).",
+                    "default": 5,
+                },
+            },
+            "required": ["query"],
+        },
+    },
 ]
 
 
@@ -121,56 +165,121 @@ def _handle_tools_list(id_: Any, _params: dict) -> dict:
     return _ok(id_, {"tools": TOOLS})
 
 
-def _handle_tools_call(id_: Any, params: dict) -> dict:
-    name = params.get("name", "")
-    arguments = params.get("arguments") or {}
-
-    if name != "execute_query":
-        return _err(id_, -32601, f"Unknown tool: {name!r}")
-
-    query = arguments.get("query", "").strip()
-    if not query:
-        return _ok(
-            id_,
-            {
-                "content": [{"type": "text", "text": "Error: 'query' argument is required."}],
-                "isError": True,
-            },
-        )
-
-    client = AgentCoreXClient(
+def _make_client() -> AgentCoreXClient:
+    return AgentCoreXClient(
         api_url=local_config.get_api_url(),
         api_key=local_config.get_api_key(),
     )
 
+
+def _tool_result(id_: Any, text: str, is_error: bool = False) -> dict:
+    return _ok(id_, {"content": [{"type": "text", "text": text}], "isError": is_error})
+
+
+def _handle_execute_query(id_: Any, arguments: dict) -> dict:
+    query = arguments.get("query", "").strip()
+    if not query:
+        return _tool_result(id_, "Error: 'query' argument is required.", is_error=True)
     try:
-        response = client.execute_query(query)
-        text = _format_response(response)
-        return _ok(id_, {"content": [{"type": "text", "text": text}], "isError": False})
+        response = _make_client().execute_query(query)
+        return _tool_result(id_, _format_response(response))
     except AuthError as exc:
-        return _ok(
-            id_,
-            {
-                "content": [{"type": "text", "text": f"Authentication error: {exc}"}],
-                "isError": True,
-            },
-        )
+        return _tool_result(id_, f"Authentication error: {exc}", is_error=True)
     except ConnectionError as exc:
-        return _ok(
-            id_,
-            {
-                "content": [{"type": "text", "text": f"Cannot reach Agent-CoreX backend: {exc}"}],
-                "isError": True,
-            },
-        )
+        return _tool_result(id_, f"Cannot reach Agent-CoreX backend: {exc}", is_error=True)
     except (TimeoutError, AgentCoreXError, Exception) as exc:
-        return _ok(
-            id_,
-            {
-                "content": [{"type": "text", "text": f"Error: {exc}"}],
-                "isError": True,
-            },
-        )
+        return _tool_result(id_, f"Error: {exc}", is_error=True)
+
+
+def _handle_discover_capabilities(id_: Any, arguments: dict) -> dict:
+    query: Optional[str] = arguments.get("query") or None
+    try:
+        result = _make_client().discover_capabilities(query=query)
+    except AuthError as exc:
+        return _tool_result(id_, f"Authentication error: {exc}", is_error=True)
+    except ConnectionError as exc:
+        return _tool_result(id_, f"Cannot reach Agent-CoreX backend: {exc}", is_error=True)
+    except (TimeoutError, AgentCoreXError, Exception) as exc:
+        return _tool_result(id_, f"Error: {exc}", is_error=True)
+
+    lines: list[str] = []
+    capabilities = result.get("capabilities", [])
+    recommendations = result.get("recommended_servers", [])
+    message = result.get("message")
+
+    if capabilities:
+        for cap in capabilities:
+            lines.append(f"## {cap.get('title', cap.get('server', ''))}")
+            lines.append(f"Server: {cap.get('server', '')}")
+            for ex in cap.get("examples", []):
+                lines.append(f"  - {ex}")
+            lines.append("")
+    elif recommendations:
+        if message:
+            lines.append(message)
+            lines.append("")
+        lines.append("Recommended servers to install:")
+        for rec in recommendations:
+            lines.append(f"\n### {rec.get('name', '')}")
+            lines.append(rec.get("reason", ""))
+            for ex in rec.get("examples", []):
+                lines.append(f"  - {ex}")
+            lines.append(f"  Install: agent-corex mcp add {rec.get('name', '')}")
+    else:
+        lines.append("No capabilities found. Install a server first: agent-corex mcp add <server>")
+
+    return _tool_result(id_, "\n".join(lines))
+
+
+def _handle_search_tools(id_: Any, arguments: dict) -> dict:
+    query = arguments.get("query", "").strip()
+    if not query:
+        return _tool_result(id_, "Error: 'query' argument is required.", is_error=True)
+    top_k = int(arguments.get("top_k") or 5)
+    try:
+        result = _make_client().search_tools(query=query, top_k=top_k)
+    except AuthError as exc:
+        return _tool_result(id_, f"Authentication error: {exc}", is_error=True)
+    except ConnectionError as exc:
+        return _tool_result(id_, f"Cannot reach Agent-CoreX backend: {exc}", is_error=True)
+    except (TimeoutError, AgentCoreXError, Exception) as exc:
+        return _tool_result(id_, f"Error: {exc}", is_error=True)
+
+    lines: list[str] = []
+    tools = result.get("tools", [])
+    recommendations = result.get("recommended_servers", [])
+
+    if tools:
+        lines.append(f"Tools matching '{query}':\n")
+        for t in tools:
+            lines.append(f"- [{t.get('server', '')}] {t.get('name', '')}: {t.get('description', '')}")
+    elif recommendations:
+        lines.append(f"No installed servers have tools matching '{query}'.\n")
+        lines.append("Servers that could help:")
+        for rec in recommendations:
+            lines.append(f"\n### {rec.get('name', '')}")
+            lines.append(rec.get("reason", ""))
+            for ex in rec.get("examples", []):
+                lines.append(f"  - {ex}")
+            lines.append(f"  Install: agent-corex mcp add {rec.get('name', '')}")
+    else:
+        lines.append(f"No tools found for: {query}")
+
+    return _tool_result(id_, "\n".join(lines))
+
+
+def _handle_tools_call(id_: Any, params: dict) -> dict:
+    name = params.get("name", "")
+    arguments = params.get("arguments") or {}
+
+    if name == "execute_query":
+        return _handle_execute_query(id_, arguments)
+    if name == "discover_capabilities":
+        return _handle_discover_capabilities(id_, arguments)
+    if name == "search_tools":
+        return _handle_search_tools(id_, arguments)
+
+    return _err(id_, -32601, f"Unknown tool: {name!r}")
 
 
 # ── Main loop ─────────────────────────────────────────────────────────────────

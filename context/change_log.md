@@ -4,6 +4,16 @@ Append-only history of changes to the agent-corex CLI.
 
 ---
 
+## 2026-04-14 — v4.1.0 — Expose discover_capabilities + search_tools as MCP tools
+
+**What:** Added `discover_capabilities` and `search_tools` as MCP tools in the gateway server so Claude Desktop / Cursor / VS Code can call them directly alongside `execute_query`.
+
+**Files changed:**
+- `agent_core/gateway/gateway_server.py` — 3 tools (was 1); added handlers for `discover_capabilities` and `search_tools`; extracted `_make_client()` and `_tool_result()` helpers
+- `CLAUDE.md` — updated "exactly 1 tool" rule to "exactly 3 tools"
+
+---
+
 ## 2026-04-14 — v4.1.0 — Discovery + search commands wired to backend
 
 **What:** Added `agent-corex discover [<query>]` and `agent-corex search "<query>"` commands that call the new backend `/discover/capabilities` and `/search/tools` endpoints. Installed servers get filtered results; empty state returns server recommendations with install hints.

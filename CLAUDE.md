@@ -45,9 +45,10 @@ Never add:
 
 No JWT tokens, no Supabase refresh, no session state.
 
-### MCP server exposes exactly 1 tool
+### MCP server exposes exactly 3 tools
 
-`gateway_server.py` must always return exactly `["execute_query"]` from `tools/list`. Never add more tools — the backend handles everything.
+`gateway_server.py` exposes: `execute_query`, `discover_capabilities`, `search_tools`.
+Do not add more — all execution intelligence lives in the backend.
 
 ### Network calls use httpx (not urllib)
 
