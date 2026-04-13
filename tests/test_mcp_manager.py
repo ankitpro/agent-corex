@@ -24,15 +24,21 @@ def _make_started_client(name="railway", tools=None):
 
 def test_from_local_store_creates_clients(tmp_path):
     import json
+
     mcp_json = tmp_path / "mcp.json"
-    mcp_json.write_text(json.dumps({
-        "mcpServers": {
-            "railway": {"command": "npx", "args": ["-y", "@railway/mcp-server"]},
-            "github": {"command": "npx", "args": ["-y", "@github/mcp"]},
-        }
-    }))
+    mcp_json.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "railway": {"command": "npx", "args": ["-y", "@railway/mcp-server"]},
+                    "github": {"command": "npx", "args": ["-y", "@github/mcp"]},
+                }
+            }
+        )
+    )
 
     from agent_core.mcp.local_store import LocalStore
+
     with patch("agent_core.mcp.manager.LocalStore") as MockStore:
         mock_store = MagicMock()
         mock_store.load_mcp_config.return_value = {

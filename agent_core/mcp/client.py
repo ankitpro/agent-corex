@@ -7,6 +7,7 @@ Handles:
   - tools/list and tools/call
   - Subprocess lifecycle (start / stop)
 """
+
 import json
 import logging
 import shutil
@@ -78,16 +79,19 @@ class MCPClient:
         req_id = str(uuid.uuid4())
         # Write directly (don't use transport.send — it also reads stdout)
         self._transport.process.stdin.write(
-            json.dumps({
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {},
-                    "clientInfo": {"name": "agent-corex", "version": _VERSION},
-                },
-            }) + "\n"
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": "agent-corex", "version": _VERSION},
+                    },
+                }
+            )
+            + "\n"
         )
         self._transport.process.stdin.flush()
 

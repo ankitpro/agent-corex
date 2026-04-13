@@ -289,15 +289,17 @@ def test_submit_result_success():
     resp = {"ref": "state://abc123", "preview": "project-a"}
     with patch("httpx.post", return_value=_mock_response(200, resp)):
         client = AgentCoreXClient(api_url=BASE, api_key="acx_testkey12345")
-        result = client.submit_result({
-            "server": "railway",
-            "tool": "list_projects",
-            "inputs": {},
-            "output": {"content": "project-a"},
-            "success": True,
-            "error": None,
-            "latency_ms": 300,
-            "step_index": 0,
-        })
+        result = client.submit_result(
+            {
+                "server": "railway",
+                "tool": "list_projects",
+                "inputs": {},
+                "output": {"content": "project-a"},
+                "success": True,
+                "error": None,
+                "latency_ms": 300,
+                "step_index": 0,
+            }
+        )
     assert result["ref"] == "state://abc123"
     assert result["preview"] == "project-a"

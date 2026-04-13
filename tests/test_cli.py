@@ -56,8 +56,10 @@ def test_run_success():
     mock_client = MagicMock()
     mock_client.execute_query.return_value = QUERY_RESPONSE
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "list supabase projects", "--remote"])
 
     assert result.exit_code == 0
@@ -70,8 +72,10 @@ def test_run_debug_shows_details():
     mock_client = MagicMock()
     mock_client.execute_query.return_value = QUERY_RESPONSE
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "list supabase projects", "--debug", "--remote"])
 
     assert result.exit_code == 0
@@ -85,8 +89,10 @@ def test_run_auth_error():
     mock_client = MagicMock()
     mock_client.execute_query.side_effect = AuthError("Invalid API key")
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "test query", "--remote"])
 
     assert result.exit_code == 1
@@ -98,8 +104,10 @@ def test_run_connection_error():
     mock_client = MagicMock()
     mock_client.execute_query.side_effect = ConnectionError("refused")
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "test query", "--remote"])
 
     assert result.exit_code == 1
@@ -131,8 +139,10 @@ def test_run_needs_input_step():
     mock_client = MagicMock()
     mock_client.execute_query.return_value = response
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "deploy service", "--remote"])
 
     assert result.exit_code == 0
@@ -284,9 +294,11 @@ def test_run_free_tier_success():
     mock_mgr.servers = {"railway": MagicMock()}
     mock_mgr.call_tool.return_value = {"content": "project-a"}
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False), \
-         patch("agent_core.mcp.manager.MCPManager.from_local_store", return_value=mock_mgr):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+        patch("agent_core.mcp.manager.MCPManager.from_local_store", return_value=mock_mgr),
+    ):
         result = runner.invoke(app, ["run", "list railway projects"])
 
     assert result.exit_code == 0
@@ -300,8 +312,10 @@ def test_run_forced_remote():
     mock_client = MagicMock()
     mock_client.execute_query.return_value = QUERY_RESPONSE
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+    ):
         result = runner.invoke(app, ["run", "list supabase projects", "--remote"])
 
     assert result.exit_code == 0
@@ -314,8 +328,10 @@ def test_run_premium_uses_remote():
     mock_client = MagicMock()
     mock_client.execute_query.return_value = QUERY_RESPONSE
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=True):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=True),
+    ):
         result = runner.invoke(app, ["run", "list supabase projects"])
 
     assert result.exit_code == 0
@@ -330,9 +346,11 @@ def test_run_free_missing_server():
     mock_mgr = MagicMock()
     mock_mgr.servers = {}  # railway not installed
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.local_config.is_premium", return_value=False), \
-         patch("agent_core.mcp.manager.MCPManager.from_local_store", return_value=mock_mgr):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.local_config.is_premium", return_value=False),
+        patch("agent_core.mcp.manager.MCPManager.from_local_store", return_value=mock_mgr),
+    ):
         result = runner.invoke(app, ["run", "list railway projects"])
 
     assert result.exit_code == 1
@@ -372,10 +390,12 @@ def test_mcp_add_known_server(tmp_path, monkeypatch):
         "env_required": [],
     }
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.mcp.registry.MCPRegistry.get", mock_registry.get), \
-         patch("agent_core.mcp.local_store.LocalStore.add_server", mock_store.add_server), \
-         patch("agent_core.mcp.local_store.LocalStore.mark_installed", mock_store.mark_installed):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.mcp.registry.MCPRegistry.get", mock_registry.get),
+        patch("agent_core.mcp.local_store.LocalStore.add_server", mock_store.add_server),
+        patch("agent_core.mcp.local_store.LocalStore.mark_installed", mock_store.mark_installed),
+    ):
         result = runner.invoke(app, ["mcp", "add", "railway"])
 
     assert result.exit_code == 0
@@ -407,9 +427,11 @@ def test_mcp_remove(monkeypatch):
     mock_client = MagicMock()
     mock_client.remove_server.return_value = {"removed": "railway"}
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.mcp.local_store.LocalStore.remove_server", return_value=True), \
-         patch("agent_core.mcp.local_store.LocalStore.mark_removed"):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch("agent_core.mcp.local_store.LocalStore.remove_server", return_value=True),
+        patch("agent_core.mcp.local_store.LocalStore.mark_removed"),
+    ):
         result = runner.invoke(app, ["mcp", "remove", "railway"])
 
     assert result.exit_code == 0
@@ -423,8 +445,12 @@ def test_mcp_show(monkeypatch):
     mock_client = MagicMock()
     mock_client.list_user_servers.return_value = [{"server_name": "railway"}]
 
-    with patch("agent_core.cli.main._make_client", return_value=mock_client), \
-         patch("agent_core.mcp.local_store.LocalStore.list_servers", return_value=["railway", "github"]):
+    with (
+        patch("agent_core.cli.main._make_client", return_value=mock_client),
+        patch(
+            "agent_core.mcp.local_store.LocalStore.list_servers", return_value=["railway", "github"]
+        ),
+    ):
         result = runner.invoke(app, ["mcp", "show"])
 
     assert result.exit_code == 0

@@ -6,6 +6,7 @@ Usage:
     result = mgr.call_tool("railway", "list_projects", {})
     mgr.shutdown_all()
 """
+
 import asyncio
 import logging
 import time
@@ -72,13 +73,17 @@ class MCPManager:
             result = client.call_tool(tool_name, params)
             logger.info(
                 "call_tool success | server=%s tool=%s latency_ms=%d",
-                server_name, tool_name, int((time.monotonic() - start) * 1000),
+                server_name,
+                tool_name,
+                int((time.monotonic() - start) * 1000),
             )
             return result
         except Exception as exc:
             logger.warning(
                 "call_tool failed | server=%s tool=%s error=%s",
-                server_name, tool_name, exc,
+                server_name,
+                tool_name,
+                exc,
             )
             raise
 

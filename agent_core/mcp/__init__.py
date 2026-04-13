@@ -7,6 +7,7 @@ Provides:
     MCPRegistry   — Bundled catalog of known MCP servers (command, args, env vars)
     LocalStore    — Read/write ~/.agent-corex/mcp.json and installed_servers.json
 """
+
 from .client import MCPClient
 from .manager import MCPManager
 from .registry import MCPRegistry

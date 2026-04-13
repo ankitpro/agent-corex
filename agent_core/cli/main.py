@@ -171,9 +171,7 @@ def _execute_locally(
 
             if step.get("skipped"):
                 reason = step.get("skip_reason") or "low confidence"
-                console.print(
-                    f"[dim]Step {i+1}: {step.get('tool')} — skipped ({reason})[/dim]"
-                )
+                console.print(f"[dim]Step {i+1}: {step.get('tool')} — skipped ({reason})[/dim]")
                 executed_steps.append(step)
                 continue
 
@@ -233,13 +231,15 @@ def _execute_locally(
                     preview = str(result)[:200]
 
             executed_step = dict(step)
-            executed_step.update({
-                "success": success,
-                "error": error,
-                "ref": ref,
-                "preview": preview,
-                "latency_ms": latency_ms,
-            })
+            executed_step.update(
+                {
+                    "success": success,
+                    "error": error,
+                    "ref": ref,
+                    "preview": preview,
+                    "latency_ms": latency_ms,
+                }
+            )
             executed_steps.append(executed_step)
 
         # Render output
@@ -368,8 +368,7 @@ def mcp_add(
         env_required = entry.get("env_required", [])
         if env_required:
             console.print(
-                f"[yellow]Note:[/yellow] This server requires env vars: "
-                + ", ".join(env_required)
+                f"[yellow]Note:[/yellow] This server requires env vars: " + ", ".join(env_required)
             )
     except AgentCoreXError as exc:
         console.print(
@@ -467,7 +466,9 @@ def mcp_sync() -> None:
             added += 1
             console.print(f"[green]+[/green] {name} (pulled from backend)")
         else:
-            console.print(f"[yellow]?[/yellow] {name} — not in bundled registry; edit mcp.json manually")
+            console.print(
+                f"[yellow]?[/yellow] {name} — not in bundled registry; edit mcp.json manually"
+            )
 
     if added == 0 and not (remote_set - local_set):
         console.print("[dim]Already in sync.[/dim]")

@@ -8,7 +8,6 @@ import pytest
 
 from agent_core.mcp.client import MCPClient, _resolve_command
 
-
 # ── _resolve_command ──────────────────────────────────────────────────────────
 
 
@@ -57,21 +56,25 @@ def _init_response(req_id: str) -> str:
 
 
 def test_list_tools_success():
-    tools_response = json.dumps({
-        "jsonrpc": "2.0",
-        "id": "TOOLS_ID",
-        "result": {
-            "tools": [
-                {"name": "list_projects", "description": "List projects"},
-                {"name": "create_project", "description": "Create a project"},
-            ]
-        },
-    })
+    tools_response = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": "TOOLS_ID",
+            "result": {
+                "tools": [
+                    {"name": "list_projects", "description": "List projects"},
+                    {"name": "create_project", "description": "Create a project"},
+                ]
+            },
+        }
+    )
 
-    with patch("agent_core.mcp.client._resolve_command", return_value="npx"), \
-         patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen, \
-         patch("sys.platform", "linux"), \
-         patch("time.sleep"):
+    with (
+        patch("agent_core.mcp.client._resolve_command", return_value="npx"),
+        patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen,
+        patch("sys.platform", "linux"),
+        patch("time.sleep"),
+    ):
 
         # Build a process that streams: init response, then tools/list response
         # We need to control what readline() returns based on the call context
@@ -81,6 +84,7 @@ def test_list_tools_success():
 
         # stdin.write captures the request_id from the first write (initialize)
         written_ids = []
+
         def capture_write(data):
             try:
                 msg = json.loads(data.strip())
@@ -94,6 +98,7 @@ def test_list_tools_success():
 
         # stdout provides the init response first, then tools/list response
         call_count = [0]
+
         def readline_side_effect():
             call_count[0] += 1
             if call_count[0] == 1:
@@ -103,11 +108,18 @@ def test_list_tools_success():
             elif call_count[0] == 2:
                 # Return tools/list response using the second id
                 req_id = written_ids[1] if len(written_ids) > 1 else "dummy2"
-                return json.dumps({
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"tools": [{"name": "list_projects", "description": "List projects"}]}
-                }) + "\n"
+                return (
+                    json.dumps(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": req_id,
+                            "result": {
+                                "tools": [{"name": "list_projects", "description": "List projects"}]
+                            },
+                        }
+                    )
+                    + "\n"
+                )
             return ""
 
         process.stdout.readline.side_effect = readline_side_effect
@@ -122,16 +134,19 @@ def test_list_tools_success():
 
 
 def test_call_tool_success():
-    with patch("agent_core.mcp.client._resolve_command", return_value="npx"), \
-         patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen, \
-         patch("sys.platform", "linux"), \
-         patch("time.sleep"):
+    with (
+        patch("agent_core.mcp.client._resolve_command", return_value="npx"),
+        patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen,
+        patch("sys.platform", "linux"),
+        patch("time.sleep"),
+    ):
 
         process = MagicMock()
         process.poll.return_value = None
         process.stderr.read.return_value = ""
 
         written_ids = []
+
         def capture_write(data):
             try:
                 msg = json.loads(data.strip())
@@ -144,6 +159,7 @@ def test_call_tool_success():
         process.stdin.flush = MagicMock()
 
         call_count = [0]
+
         def readline():
             call_count[0] += 1
             if call_count[0] == 1:
@@ -151,11 +167,16 @@ def test_call_tool_success():
                 return json.dumps({"jsonrpc": "2.0", "id": req_id, "result": {}}) + "\n"
             elif call_count[0] == 2:
                 req_id = written_ids[1] if len(written_ids) > 1 else "y"
-                return json.dumps({
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"content": "project-a\nproject-b"},
-                }) + "\n"
+                return (
+                    json.dumps(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": req_id,
+                            "result": {"content": "project-a\nproject-b"},
+                        }
+                    )
+                    + "\n"
+                )
             return ""
 
         process.stdout.readline.side_effect = readline
@@ -169,16 +190,19 @@ def test_call_tool_success():
 
 
 def test_stop_terminates_process():
-    with patch("agent_core.mcp.client._resolve_command", return_value="npx"), \
-         patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen, \
-         patch("sys.platform", "linux"), \
-         patch("time.sleep"):
+    with (
+        patch("agent_core.mcp.client._resolve_command", return_value="npx"),
+        patch("agent_core.mcp.transport.subprocess.Popen") as mock_popen,
+        patch("sys.platform", "linux"),
+        patch("time.sleep"),
+    ):
 
         process = MagicMock()
         process.poll.return_value = None
         process.stderr.read.return_value = ""
 
         written_ids = []
+
         def capture_write(data):
             try:
                 msg = json.loads(data.strip())

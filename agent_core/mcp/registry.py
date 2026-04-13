@@ -3,6 +3,7 @@ MCPRegistry — bundled catalog of known MCP servers.
 
 Loaded from mcp_registry.json which ships with the package.
 """
+
 import json
 from pathlib import Path
 from typing import Dict, List, Optional

@@ -15,6 +15,7 @@ mcp.json schema:
 installed_servers.json schema:
     {"railway": {"installed_at": "2026-04-13T..."}, ...}
 """
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,7 +53,9 @@ class LocalStore:
         with open(self._mcp_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
-    def add_server(self, name: str, command: str, args: List[str], env: Dict[str, str] | None = None) -> None:
+    def add_server(
+        self, name: str, command: str, args: List[str], env: Dict[str, str] | None = None
+    ) -> None:
         """Add or update a server in mcp.json."""
         data = self.load_raw()
         entry: Dict[str, Any] = {"command": command, "args": args}

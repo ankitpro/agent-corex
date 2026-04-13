@@ -4,6 +4,7 @@ MCPStdioTransport — minimal sync transport layer for MCP stdio servers.
 Wraps a subprocess: sends JSON-newline to stdin, reads one JSON-newline from
 stdout per request. All I/O is synchronous (call from a thread if needed).
 """
+
 import json
 import subprocess
 import sys
@@ -22,6 +23,7 @@ class MCPStdioTransport:
     def start(self) -> None:
         """Spawn the subprocess."""
         import os
+
         env = os.environ.copy()
         if self.env:
             env.update(self.env)
