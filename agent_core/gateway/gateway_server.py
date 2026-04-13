@@ -252,7 +252,9 @@ def _handle_search_tools(id_: Any, arguments: dict) -> dict:
     if tools:
         lines.append(f"Tools matching '{query}':\n")
         for t in tools:
-            lines.append(f"- [{t.get('server', '')}] {t.get('name', '')}: {t.get('description', '')}")
+            lines.append(
+                f"- [{t.get('server', '')}] {t.get('name', '')}: {t.get('description', '')}"
+            )
     elif recommendations:
         lines.append(f"No installed servers have tools matching '{query}'.\n")
         lines.append("Servers that could help:")
