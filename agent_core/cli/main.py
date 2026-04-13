@@ -378,9 +378,7 @@ def mcp_add(
             "The server is still usable locally."
         )
 
-    console.print(
-        f"\n[dim]Restart your terminal or IDE to pick up the new MCP server.[/dim]"
-    )
+    console.print(f"\n[dim]Restart your terminal or IDE to pick up the new MCP server.[/dim]")
 
 
 @mcp_app.command("remove")
