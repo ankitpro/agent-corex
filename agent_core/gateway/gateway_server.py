@@ -34,7 +34,38 @@ SERVER_NAME = "agent-corex"
 SERVER_VERSION = __version__
 PROTOCOL_VERSION = "2024-11-05"
 
-TOOLS = [
+# Module-level capability payload cache. Populated lazily on first use
+# (initialize / tools/list / prompts / resources) and refreshed only when
+# `invalidate_capability_cache()` is called — the CLI invalidates on every
+# `mcp add` / `mcp remove` so the process restart path picks up fresh data.
+_capability_payload: Optional[dict] = None
+
+
+def _get_capability_payload() -> dict:
+    """Fetch capabilities once and memoize. Never raises."""
+    global _capability_payload
+    if _capability_payload is not None:
+        return _capability_payload
+    try:
+        _capability_payload = _capabilities.fetch(_make_client())
+    except Exception:
+        _capability_payload = {
+            "servers": {},
+            "skills": [],
+            "templates": [],
+            "installed_servers": [],
+        }
+    return _capability_payload
+
+
+def invalidate_capability_cache() -> None:
+    """Clear in-process + on-disk capability caches. Used by tests."""
+    global _capability_payload
+    _capability_payload = None
+    _capabilities.invalidate()
+
+
+BASE_TOOLS = [
     {
         "name": "execute_query",
         "description": (
@@ -98,6 +129,79 @@ TOOLS = [
     },
 ]
 
+# Backwards-compat alias: older tests / imports expect `TOOLS`. The runtime
+# always goes through `_build_dynamic_tools(payload)` for tools/list.
+TOOLS = BASE_TOOLS
+
+
+def _build_dynamic_tools(payload: dict) -> list[dict]:
+    """
+    Clone BASE_TOOLS and rewrite descriptions to enumerate installed servers
+    and steer the LLM toward execute_query over built-in shell tools.
+
+    MCP hosts (Claude Desktop, Cursor, VS Code) surface tool descriptions to
+    the model at every turn — this is the channel that actually drives
+    routing. The instructions/prompts fields are unreliable across hosts.
+    """
+    tools = [dict(t) for t in BASE_TOOLS]
+    servers: dict = payload.get("servers") or {}
+    installed = payload.get("installed_servers") or list(servers.keys())
+
+    if not installed:
+        return tools
+
+    server_list = ", ".join(installed)
+
+    # Collect up to 6 concrete example phrases across all installed servers
+    examples: list[str] = []
+    for block in servers.values():
+        for cap in (block or {}).get("capabilities", []):
+            for ex in cap.get("examples", []):
+                if ex and ex not in examples:
+                    examples.append(ex)
+                    if len(examples) >= 6:
+                        break
+            if len(examples) >= 6:
+                break
+        if len(examples) >= 6:
+            break
+
+    # Add template patterns as high-confidence example phrasings
+    for tmpl in (payload.get("templates") or [])[:6]:
+        pattern = tmpl.get("pattern")
+        if pattern and pattern not in examples:
+            examples.append(pattern)
+
+    example_block = ""
+    if examples:
+        example_block = " Examples: " + "; ".join(f'"{e}"' for e in examples[:8]) + "."
+
+    for tool in tools:
+        if tool["name"] == "execute_query":
+            tool["description"] = (
+                f"Execute tasks against the user's installed MCP servers "
+                f"({server_list}) via Agent-CoreX. "
+                f"ALWAYS prefer this tool over running shell commands, CLI invocations, "
+                f"or Bash when the task touches any of: {server_list}. "
+                f"Send a natural-language query; tool selection, input resolution, and "
+                f"execution are handled automatically by the backend."
+                f"{example_block}"
+            )
+        elif tool["name"] == "discover_capabilities":
+            tool["description"] = (
+                f"Show what the user can do with their installed MCP servers "
+                f"({server_list}). Returns capabilities grouped by server with "
+                f"example phrasings. Call this first if unsure which server or "
+                f"tool applies to the current task."
+            )
+        elif tool["name"] == "search_tools":
+            tool["description"] = (
+                f"Search for tools across the user's installed MCP servers "
+                f"({server_list}). Use this to locate the right tool before "
+                f"calling execute_query when a query is ambiguous."
+            )
+    return tools
+
 
 # ── Response helpers ──────────────────────────────────────────────────────────
 
@@ -151,37 +255,125 @@ def _format_response(response: dict) -> str:
 # ── JSON-RPC handlers ─────────────────────────────────────────────────────────
 
 
-def _build_instructions() -> str:
-    """
-    Build the MCP `instructions` string shown to the LLM on initialize.
-
-    Fetches the structured capability payload from the backend (cached on
-    disk, invalidated on install/remove) and renders it as a compact
-    system-prompt block scoped to the user's installed servers. Never
-    raises — on any failure it returns an empty string so the gateway
-    still starts.
-    """
-    try:
-        payload = _capabilities.fetch(_make_client())
-        return _capabilities.build_system_block(payload)
-    except Exception:
-        return ""
-
-
 def _handle_initialize(id_: Any, _params: dict) -> dict:
+    """
+    Advertise tools + prompts + resources so MCP hosts will query all three.
+
+    `instructions` is still sent for hosts that honor it, but the real
+    steering happens via dynamic tool descriptions in tools/list — that is
+    the channel every host surfaces to the model at every turn.
+    """
     result = {
         "protocolVersion": PROTOCOL_VERSION,
         "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
-        "capabilities": {"tools": {}},
+        "capabilities": {
+            "tools": {},
+            "prompts": {},
+            "resources": {},
+        },
     }
-    instructions = _build_instructions()
-    if instructions:
-        result["instructions"] = instructions
+    payload = _get_capability_payload()
+    block = _capabilities.build_system_block(payload)
+    if block:
+        result["instructions"] = block
     return _ok(id_, result)
 
 
 def _handle_tools_list(id_: Any, _params: dict) -> dict:
-    return _ok(id_, {"tools": TOOLS})
+    payload = _get_capability_payload()
+    return _ok(id_, {"tools": _build_dynamic_tools(payload)})
+
+
+# ── prompts/* ────────────────────────────────────────────────────────────────
+
+_PROMPT_NAME = "agent_corex_capabilities"
+
+
+def _handle_prompts_list(id_: Any, _params: dict) -> dict:
+    return _ok(
+        id_,
+        {
+            "prompts": [
+                {
+                    "name": _PROMPT_NAME,
+                    "description": (
+                        "Load the current Agent-CoreX capability context "
+                        "(installed MCP servers, their tools, and example "
+                        "phrasings). Invoke this prompt to steer the model "
+                        "toward agent-corex for tasks matching the installed "
+                        "servers."
+                    ),
+                    "arguments": [],
+                }
+            ]
+        },
+    )
+
+
+def _handle_prompts_get(id_: Any, params: dict) -> dict:
+    name = params.get("name", "")
+    if name != _PROMPT_NAME:
+        return _err(id_, -32602, f"Unknown prompt: {name!r}")
+    payload = _get_capability_payload()
+    block = _capabilities.build_system_block(payload) or (
+        "No MCP servers installed. Run `agent-corex mcp add <server>` first."
+    )
+    return _ok(
+        id_,
+        {
+            "description": "Agent-CoreX installed capabilities",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": {"type": "text", "text": block},
+                }
+            ],
+        },
+    )
+
+
+# ── resources/* ──────────────────────────────────────────────────────────────
+
+_CAPABILITIES_URI = "agent-corex://capabilities"
+
+
+def _handle_resources_list(id_: Any, _params: dict) -> dict:
+    return _ok(
+        id_,
+        {
+            "resources": [
+                {
+                    "uri": _CAPABILITIES_URI,
+                    "name": "Agent-CoreX capabilities",
+                    "description": (
+                        "Structured JSON of installed MCP servers, their "
+                        "tools, skills, and query templates. Read this to "
+                        "decide which tools apply to a given task."
+                    ),
+                    "mimeType": "application/json",
+                }
+            ]
+        },
+    )
+
+
+def _handle_resources_read(id_: Any, params: dict) -> dict:
+    uri = params.get("uri", "")
+    if uri != _CAPABILITIES_URI:
+        return _err(id_, -32602, f"Unknown resource: {uri!r}")
+    payload = _get_capability_payload()
+    return _ok(
+        id_,
+        {
+            "contents": [
+                {
+                    "uri": _CAPABILITIES_URI,
+                    "mimeType": "application/json",
+                    "text": json.dumps(payload, ensure_ascii=False, indent=2),
+                }
+            ]
+        },
+    )
 
 
 def _make_client() -> AgentCoreXClient:
@@ -322,6 +514,14 @@ def _dispatch(message: dict) -> Optional[dict]:
         return _handle_tools_list(id_, params)
     if method == "tools/call":
         return _handle_tools_call(id_, params)
+    if method == "prompts/list":
+        return _handle_prompts_list(id_, params)
+    if method == "prompts/get":
+        return _handle_prompts_get(id_, params)
+    if method == "resources/list":
+        return _handle_resources_list(id_, params)
+    if method == "resources/read":
+        return _handle_resources_read(id_, params)
     if method == "ping":
         return _ok(id_, {})
 

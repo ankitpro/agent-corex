@@ -5,10 +5,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from agent_core.gateway import gateway_server as _gw
 from agent_core.gateway.gateway_server import (
+    _build_dynamic_tools,
     _dispatch,
     _format_response,
     _handle_initialize,
+    _handle_prompts_get,
+    _handle_prompts_list,
+    _handle_resources_list,
+    _handle_resources_read,
     _handle_tools_call,
     _handle_tools_list,
     SERVER_NAME,
@@ -16,6 +22,37 @@ from agent_core.gateway.gateway_server import (
     TOOLS,
 )
 from agent_core.client import AuthError, ConnectionError
+
+
+@pytest.fixture
+def _stub_payload(monkeypatch):
+    """Stub _get_capability_payload so tests don't hit the real backend."""
+    payload = {
+        "servers": {
+            "railway": {
+                "capabilities": [
+                    {
+                        "name": "list_projects",
+                        "description": "List Railway projects.",
+                        "examples": ["list railway projects"],
+                        "tool_ref": "railway.list_projects",
+                    }
+                ]
+            }
+        },
+        "skills": [],
+        "templates": [
+            {
+                "pattern": "list railway projects",
+                "server": "railway",
+                "tool": "list_projects",
+            }
+        ],
+        "installed_servers": ["railway"],
+    }
+    monkeypatch.setattr(_gw, "_get_capability_payload", lambda: payload)
+    return payload
+
 
 # ── Tool list ─────────────────────────────────────────────────────────────────
 
@@ -55,10 +92,11 @@ def test_handle_initialize():
     r = result["result"]
     assert r["serverInfo"]["name"] == SERVER_NAME
     assert r["serverInfo"]["version"] == SERVER_VERSION
+    # v4.1.0: advertise tools + prompts + resources so hosts query all three.
+    # prompts exposes the capability context; resources exposes the raw JSON.
     assert "tools" in r["capabilities"]
-    # Must NOT expose resources or prompts
-    assert "resources" not in r["capabilities"]
-    assert "prompts" not in r["capabilities"]
+    assert "prompts" in r["capabilities"]
+    assert "resources" in r["capabilities"]
 
 
 # ── tools/call ────────────────────────────────────────────────────────────────
@@ -248,3 +286,82 @@ def test_format_response_failed():
     text = _format_response(response)
     assert "FAILED" in text
     assert "execution_failed" in text
+
+
+# ── Dynamic tool descriptions (v4.1.0+) ──────────────────────────────────────
+
+
+def test_build_dynamic_tools_injects_installed_servers(_stub_payload):
+    tools = _build_dynamic_tools(_stub_payload)
+    assert len(tools) == 3
+    execute = next(t for t in tools if t["name"] == "execute_query")
+    desc = execute["description"]
+    # Must enumerate installed server
+    assert "railway" in desc
+    # Must steer away from shell
+    assert "shell" in desc.lower() or "bash" in desc.lower()
+    # Must include an example phrasing
+    assert "list railway projects" in desc
+
+
+def test_build_dynamic_tools_no_servers_leaves_base_description():
+    empty = {"servers": {}, "installed_servers": [], "templates": []}
+    tools = _build_dynamic_tools(empty)
+    execute = next(t for t in tools if t["name"] == "execute_query")
+    # Base description doesn't mention specific servers
+    assert "railway" not in execute["description"]
+
+
+def test_handle_tools_list_returns_dynamic(_stub_payload):
+    result = _handle_tools_list(1, {})
+    tools = result["result"]["tools"]
+    execute = next(t for t in tools if t["name"] == "execute_query")
+    assert "railway" in execute["description"]
+
+
+# ── prompts/* ────────────────────────────────────────────────────────────────
+
+
+def test_handle_prompts_list_has_capabilities_prompt(_stub_payload):
+    result = _handle_prompts_list(1, {})
+    prompts = result["result"]["prompts"]
+    assert len(prompts) == 1
+    assert prompts[0]["name"] == "agent_corex_capabilities"
+
+
+def test_handle_prompts_get_returns_system_block(_stub_payload):
+    result = _handle_prompts_get(1, {"name": "agent_corex_capabilities"})
+    messages = result["result"]["messages"]
+    assert len(messages) == 1
+    text = messages[0]["content"]["text"]
+    assert "railway" in text
+    assert "list_projects" in text
+
+
+def test_handle_prompts_get_unknown_name_errors(_stub_payload):
+    result = _handle_prompts_get(1, {"name": "nope"})
+    assert "error" in result
+
+
+# ── resources/* ──────────────────────────────────────────────────────────────
+
+
+def test_handle_resources_list_has_capabilities_resource(_stub_payload):
+    result = _handle_resources_list(1, {})
+    resources = result["result"]["resources"]
+    assert len(resources) == 1
+    assert resources[0]["uri"] == "agent-corex://capabilities"
+    assert resources[0]["mimeType"] == "application/json"
+
+
+def test_handle_resources_read_returns_json_payload(_stub_payload):
+    result = _handle_resources_read(1, {"uri": "agent-corex://capabilities"})
+    contents = result["result"]["contents"]
+    text = contents[0]["text"]
+    parsed = json.loads(text)
+    assert "railway" in parsed["servers"]
+
+
+def test_handle_resources_read_unknown_uri_errors(_stub_payload):
+    result = _handle_resources_read(1, {"uri": "agent-corex://nope"})
+    assert "error" in result
