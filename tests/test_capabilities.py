@@ -16,8 +16,8 @@ import pytest
 
 from agent_core import capabilities
 
-
 # ---- Fixtures ----
+
 
 @pytest.fixture
 def tmp_home(tmp_path, monkeypatch):
@@ -75,6 +75,7 @@ def _seed_installed(tmp_home, name="railway"):
 
 # ---- fetch ----
 
+
 def test_fetch_caches_payload(tmp_home):
     _seed_installed(tmp_home)
     client = _FakeClient()
@@ -106,6 +107,7 @@ def test_fetch_backend_failure_falls_back(tmp_home):
 
 
 # ---- build_system_block ----
+
 
 def test_build_system_block_renders_capabilities_and_templates():
     payload = {
@@ -139,6 +141,7 @@ def test_build_system_block_empty_payload_returns_empty_string():
 
 
 # ---- invalidate ----
+
 
 def test_invalidate_removes_cache_file(tmp_home):
     _seed_installed(tmp_home)

@@ -364,6 +364,7 @@ def mcp_add(
 
     # Drop the stale capability cache so the next gateway start re-fetches.
     from agent_core import capabilities as _capabilities
+
     _capabilities.invalidate()
 
     # Sync to backend
@@ -397,6 +398,7 @@ def mcp_remove(
     store.mark_removed(server_name)
 
     from agent_core import capabilities as _capabilities
+
     _capabilities.invalidate()
 
     if not removed:
