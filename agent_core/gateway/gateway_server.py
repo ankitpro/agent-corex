@@ -215,7 +215,11 @@ def _err(id_: Any, code: int, message: str) -> dict:
 
 
 def _write(obj: dict) -> None:
-    line = json.dumps(obj, ensure_ascii=False)
+    # ensure_ascii=True escapes every non-ASCII char as \uXXXX. MCP hosts
+    # decode either form, and this belt-and-suspenders guarantees we never
+    # hit a UnicodeEncodeError if the host's stdout is a legacy codepage
+    # (e.g. Windows cp1252) and `_force_utf8_stdio` didn't get to run.
+    line = json.dumps(obj, ensure_ascii=True)
     sys.stdout.write(line + "\n")
     sys.stdout.flush()
 
@@ -531,8 +535,28 @@ def _dispatch(message: dict) -> Optional[dict]:
     return None
 
 
+def _force_utf8_stdio() -> None:
+    """
+    Force stdin/stdout to UTF-8 so the gateway can emit any JSON payload
+    regardless of the host OS default encoding.
+
+    On Windows, Python defaults stdout to cp1252, which cannot encode common
+    characters like '→' or any non-Latin script — an MCP host parsing the
+    broken response would disconnect the server. `reconfigure()` is a no-op
+    on streams that are already UTF-8.
+    """
+    for stream in (sys.stdout, sys.stdin, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
 def run() -> None:
     """Enter the MCP stdio read loop. Runs until stdin closes."""
+    _force_utf8_stdio()
     for raw_line in sys.stdin:
         raw_line = raw_line.strip()
         if not raw_line:
