@@ -179,6 +179,17 @@ class AgentCoreXClient:
             params["query"] = query
         return self._get("/discover/capabilities", params=params, timeout=10.0)
 
+    def get_capabilities(self, servers: Optional[List[str]] = None) -> Dict:
+        """
+        GET /capabilities — structured capabilities + skills + templates.
+        Returns the canonical Agent-CoreX 2.0 capability payload, filtered
+        to *servers* if provided, otherwise to the user's installed servers.
+        """
+        params: dict[str, str] = {}
+        if servers:
+            params["servers"] = ",".join(servers)
+        return self._get("/capabilities", params=params or None, timeout=15.0)
+
     def search_tools(self, query: str, top_k: int = 5, debug: bool = False) -> Dict:
         """
         GET /search/tools — find tools matching query, filtered to installed servers.

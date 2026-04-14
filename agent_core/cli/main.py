@@ -362,6 +362,10 @@ def mcp_add(
     )
     store.mark_installed(server_name)
 
+    # Drop the stale capability cache so the next gateway start re-fetches.
+    from agent_core import capabilities as _capabilities
+    _capabilities.invalidate()
+
     # Sync to backend
     client = _make_client()
     try:
@@ -391,6 +395,9 @@ def mcp_remove(
     store = LocalStore()
     removed = store.remove_server(server_name)
     store.mark_removed(server_name)
+
+    from agent_core import capabilities as _capabilities
+    _capabilities.invalidate()
 
     if not removed:
         err_console.print(f"[yellow]'{server_name}' was not in ~/.agent-corex/mcp.json[/yellow]")

@@ -20,6 +20,7 @@ import sys
 from typing import Any, Optional
 
 from agent_core import __version__
+from agent_core import capabilities as _capabilities
 from agent_core import local_config
 from agent_core.client import (
     AgentCoreXClient,
@@ -150,15 +151,33 @@ def _format_response(response: dict) -> str:
 # ── JSON-RPC handlers ─────────────────────────────────────────────────────────
 
 
+def _build_instructions() -> str:
+    """
+    Build the MCP `instructions` string shown to the LLM on initialize.
+
+    Fetches the structured capability payload from the backend (cached on
+    disk, invalidated on install/remove) and renders it as a compact
+    system-prompt block scoped to the user's installed servers. Never
+    raises — on any failure it returns an empty string so the gateway
+    still starts.
+    """
+    try:
+        payload = _capabilities.fetch(_make_client())
+        return _capabilities.build_system_block(payload)
+    except Exception:
+        return ""
+
+
 def _handle_initialize(id_: Any, _params: dict) -> dict:
-    return _ok(
-        id_,
-        {
-            "protocolVersion": PROTOCOL_VERSION,
-            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
-            "capabilities": {"tools": {}},
-        },
-    )
+    result = {
+        "protocolVersion": PROTOCOL_VERSION,
+        "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+        "capabilities": {"tools": {}},
+    }
+    instructions = _build_instructions()
+    if instructions:
+        result["instructions"] = instructions
+    return _ok(id_, result)
 
 
 def _handle_tools_list(id_: Any, _params: dict) -> dict:
