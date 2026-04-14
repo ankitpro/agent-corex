@@ -12,7 +12,7 @@
 class AgentCorex < Formula
   desc "Thin CLI + MCP client for Agent-CoreX — execute any task with a single query"
   homepage "https://github.com/ankitpro/agent-corex"
-  version "4.4.2"
+  version "4.4.3"
   license "MIT"
 
   on_macos do
