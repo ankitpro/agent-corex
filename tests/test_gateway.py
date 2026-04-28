@@ -104,7 +104,7 @@ def test_handle_initialize():
 
 def test_handle_tools_call_execute_query_success():
     mock_client = MagicMock()
-    mock_client.execute_query.return_value = {
+    mock_client.plan_query.return_value = {
         "query": "list projects",
         "steps": [
             {
@@ -113,23 +113,27 @@ def test_handle_tools_call_execute_query_success():
                 "intent": "list supabase projects",
                 "inputs": {},
                 "missing_inputs": [],
-                "ref": "state://abc",
-                "preview": "proj-a, proj-b",
-                "success": True,
+                "success": False,
                 "needs_input": False,
                 "skipped": False,
                 "skip_reason": None,
                 "error": None,
-                "latency_ms": 200,
+                "latency_ms": 0,
             }
         ],
-        "total_latency_ms": 200,
+        "total_latency_ms": 0,
     }
+    mock_client.submit_result.return_value = {"ref": "state://abc", "preview": "proj-a, proj-b"}
+
+    mock_mgr = MagicMock()
+    mock_mgr.call_tool.return_value = [{"type": "text", "text": "proj-a, proj-b"}]
 
     with patch("agent_core.gateway.gateway_server.AgentCoreXClient", return_value=mock_client):
-        result = _handle_tools_call(
-            1, {"name": "execute_query", "arguments": {"query": "list projects"}}
-        )
+        with patch("agent_core.mcp.manager.MCPManager") as mock_mcp_manager:
+            mock_mcp_manager.from_local_store.return_value = mock_mgr
+            result = _handle_tools_call(
+                1, {"name": "execute_query", "arguments": {"query": "list projects"}}
+            )
 
     assert result["id"] == 1
     content = result["result"]["content"]
@@ -152,7 +156,7 @@ def test_handle_tools_call_empty_query():
 
 def test_handle_tools_call_auth_error():
     mock_client = MagicMock()
-    mock_client.execute_query.side_effect = AuthError("invalid key")
+    mock_client.plan_query.side_effect = AuthError("invalid key")
 
     with patch("agent_core.gateway.gateway_server.AgentCoreXClient", return_value=mock_client):
         result = _handle_tools_call(1, {"name": "execute_query", "arguments": {"query": "test"}})
@@ -163,7 +167,7 @@ def test_handle_tools_call_auth_error():
 
 def test_handle_tools_call_connection_error():
     mock_client = MagicMock()
-    mock_client.execute_query.side_effect = ConnectionError("refused")
+    mock_client.plan_query.side_effect = ConnectionError("refused")
 
     with patch("agent_core.gateway.gateway_server.AgentCoreXClient", return_value=mock_client):
         result = _handle_tools_call(1, {"name": "execute_query", "arguments": {"query": "test"}})
