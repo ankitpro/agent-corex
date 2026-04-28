@@ -227,6 +227,32 @@ def _write(obj: dict) -> None:
 # ── Response formatter ────────────────────────────────────────────────────────
 
 
+def _stringify_preview(result: Any) -> str:
+    """Convert a raw MCP tool result to a short preview string."""
+    if isinstance(result, str):
+        return result[:300]
+    if isinstance(result, list):
+        if not result:
+            return ""
+        # Extract text content from MCP content blocks
+        texts = []
+        for item in result:
+            if isinstance(item, dict) and item.get("type") == "text":
+                texts.append(item.get("text", ""))
+            elif isinstance(item, str):
+                texts.append(item)
+        return " ".join(texts)[:300] if texts else str(result)[:300]
+    if isinstance(result, dict):
+        if "error" in result:
+            return result.get("error", "error")[:300]
+        # Try to extract a text field
+        for key in ("text", "content", "output", "result", "data"):
+            if key in result:
+                return str(result[key])[:300]
+        return str(result)[:300]
+    return str(result)[:300] if result else ""
+
+
 def _format_response(response: dict) -> str:
     """Convert a QueryResponse dict into readable text for MCP content."""
     steps = response.get("steps", [])
@@ -395,15 +421,86 @@ def _handle_execute_query(id_: Any, arguments: dict) -> dict:
     query = arguments.get("query", "").strip()
     if not query:
         return _tool_result(id_, "Error: 'query' argument is required.", is_error=True)
+
+    client = _make_client()
+
+    # Get plan from backend (free-tier: backend plans, client executes locally with stored credentials)
     try:
-        response = _make_client().execute_query(query)
-        return _tool_result(id_, _format_response(response))
+        plan = client.plan_query(query)
     except AuthError as exc:
         return _tool_result(id_, f"Authentication error: {exc}", is_error=True)
     except ConnectionError as exc:
         return _tool_result(id_, f"Cannot reach Agent-CoreX backend: {exc}", is_error=True)
     except (TimeoutError, AgentCoreXError, Exception) as exc:
         return _tool_result(id_, f"Error: {exc}", is_error=True)
+
+    # Execute each planned step locally using MCPManager (loads env from ~/.agent-corex/mcp.json)
+    from agent_core.mcp.manager import MCPManager
+    import time
+
+    mgr = MCPManager.from_local_store()
+    steps = plan.get("steps", [])
+    executed_steps = []
+
+    for i, step in enumerate(steps):
+        # Skip steps that need input or were already skipped
+        if step.get("needs_input") or step.get("skipped"):
+            executed_steps.append(step)
+            continue
+
+        server = step.get("server") or ""
+        tool = step.get("tool") or ""
+        inputs = step.get("inputs") or {}
+
+        if not server or not tool:
+            step = dict(step)
+            step["success"] = False
+            step["error"] = "no_tool_planned"
+            executed_steps.append(step)
+            continue
+
+        step = dict(step)  # Don't modify the original step
+        t0 = time.monotonic()
+        try:
+            # Execute the tool locally with the user's stored env vars
+            raw_result = mgr.call_tool(server, tool, inputs)
+            latency_ms = int((time.monotonic() - t0) * 1000)
+            step["latency_ms"] = latency_ms
+
+            # Report result back to backend for state management
+            try:
+                ref_data = client.submit_result({
+                    "server": server,
+                    "tool": tool,
+                    "inputs": inputs,
+                    "output": raw_result,
+                    "success": True,
+                    "step_index": i,
+                    "latency_ms": latency_ms,
+                })
+                step["success"] = True
+                step["ref"] = ref_data.get("ref")
+                step["preview"] = ref_data.get("preview") or _stringify_preview(raw_result)
+            except Exception:
+                # If submit_result fails, still report local execution succeeded
+                step["success"] = True
+                step["preview"] = _stringify_preview(raw_result)
+        except ValueError as exc:
+            # Server not in local store
+            step["success"] = False
+            step["error"] = str(exc)
+        except Exception as exc:
+            step["success"] = False
+            step["error"] = f"execution_failed: {exc}"
+
+        executed_steps.append(step)
+
+    mgr.shutdown_all()
+
+    return _tool_result(id_, _format_response({
+        "steps": executed_steps,
+        "total_latency_ms": plan.get("total_latency_ms", 0),
+    }))
 
 
 def _handle_discover_capabilities(id_: Any, arguments: dict) -> dict:

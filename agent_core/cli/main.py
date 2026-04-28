@@ -354,11 +354,33 @@ def mcp_add(
         )
         raise typer.Exit(1)
 
+    # Collect credentials before writing anything
+    env_required: list[str] = entry.get("env_required", [])
+    env_optional: list[str] = entry.get("env_optional", [])
+    collected_env: dict[str, str] = {}
+
+    for var in env_required:
+        value = typer.prompt(f"  {var} (required)", hide_input="TOKEN" in var.upper() or "KEY" in var.upper() or "SECRET" in var.upper())
+        collected_env[var] = value
+
+    if env_optional:
+        console.print(f"[dim]Optional credentials (press Enter to skip):[/dim]")
+        for var in env_optional:
+            value = typer.prompt(
+                f"  {var}",
+                default="",
+                show_default=False,
+                hide_input="TOKEN" in var.upper() or "KEY" in var.upper() or "SECRET" in var.upper(),
+            )
+            if value:
+                collected_env[var] = value
+
     store = LocalStore()
     store.add_server(
         server_name,
         command=entry["command"],
         args=entry["args"],
+        env=collected_env if collected_env else None,
     )
     store.mark_installed(server_name)
 
@@ -372,11 +394,6 @@ def mcp_add(
     try:
         client.add_server(server_name)
         console.print(f"[green]Added[/green] {server_name}")
-        env_required = entry.get("env_required", [])
-        if env_required:
-            console.print(
-                f"[yellow]Note:[/yellow] This server requires env vars: " + ", ".join(env_required)
-            )
     except AgentCoreXError as exc:
         console.print(
             f"[yellow]Added locally[/yellow] but backend sync failed: {exc}\n"

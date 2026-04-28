@@ -2,6 +2,6 @@
 Agent-CoreX: Thin CLI client for the Agent-CoreX v2 backend.
 """
 
-__version__ = "4.4.4"
+__version__ = "4.4.5"
 __author__ = "Ankit Agarwal"
 __email__ = "ankitagarwalpro@gmail.com"
