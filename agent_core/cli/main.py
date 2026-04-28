@@ -360,7 +360,10 @@ def mcp_add(
     collected_env: dict[str, str] = {}
 
     for var in env_required:
-        value = typer.prompt(f"  {var} (required)", hide_input="TOKEN" in var.upper() or "KEY" in var.upper() or "SECRET" in var.upper())
+        value = typer.prompt(
+            f"  {var} (required)",
+            hide_input="TOKEN" in var.upper() or "KEY" in var.upper() or "SECRET" in var.upper(),
+        )
         collected_env[var] = value
 
     if env_optional:
@@ -370,7 +373,9 @@ def mcp_add(
                 f"  {var}",
                 default="",
                 show_default=False,
-                hide_input="TOKEN" in var.upper() or "KEY" in var.upper() or "SECRET" in var.upper(),
+                hide_input="TOKEN" in var.upper()
+                or "KEY" in var.upper()
+                or "SECRET" in var.upper(),
             )
             if value:
                 collected_env[var] = value

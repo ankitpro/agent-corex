@@ -469,15 +469,17 @@ def _handle_execute_query(id_: Any, arguments: dict) -> dict:
 
             # Report result back to backend for state management
             try:
-                ref_data = client.submit_result({
-                    "server": server,
-                    "tool": tool,
-                    "inputs": inputs,
-                    "output": raw_result,
-                    "success": True,
-                    "step_index": i,
-                    "latency_ms": latency_ms,
-                })
+                ref_data = client.submit_result(
+                    {
+                        "server": server,
+                        "tool": tool,
+                        "inputs": inputs,
+                        "output": raw_result,
+                        "success": True,
+                        "step_index": i,
+                        "latency_ms": latency_ms,
+                    }
+                )
                 step["success"] = True
                 step["ref"] = ref_data.get("ref")
                 step["preview"] = ref_data.get("preview") or _stringify_preview(raw_result)
@@ -497,10 +499,15 @@ def _handle_execute_query(id_: Any, arguments: dict) -> dict:
 
     mgr.shutdown_all()
 
-    return _tool_result(id_, _format_response({
-        "steps": executed_steps,
-        "total_latency_ms": plan.get("total_latency_ms", 0),
-    }))
+    return _tool_result(
+        id_,
+        _format_response(
+            {
+                "steps": executed_steps,
+                "total_latency_ms": plan.get("total_latency_ms", 0),
+            }
+        ),
+    )
 
 
 def _handle_discover_capabilities(id_: Any, arguments: dict) -> dict:
